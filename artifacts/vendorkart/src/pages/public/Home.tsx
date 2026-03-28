@@ -13,12 +13,16 @@ export default function Home() {
   return (
     <PublicLayout>
       {/* Hero Section */}
-      <section className="relative overflow-hidden text-background py-24 lg:py-32" style={{background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #1e40af 70%, #1d4ed8 100%)"}}>
+      <section className="relative overflow-hidden text-white py-24 lg:py-32">
         <div className="absolute inset-0">
-          {/* Geometric pattern overlay */}
-          <div className="absolute inset-0 opacity-10" style={{backgroundImage: "radial-gradient(circle at 20% 50%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 80% 20%, #6366f1 0%, transparent 40%), radial-gradient(circle at 60% 80%, #0ea5e9 0%, transparent 40%)"}} />
-          <div className="absolute inset-0 opacity-5" style={{backgroundImage: "repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%)", backgroundSize: "20px 20px"}} />
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-blue-900/40" />
+          <img
+            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            alt="Vendorkart B2B Marketplace"
+            className="w-full h-full object-cover"
+          />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/75 to-blue-950/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
