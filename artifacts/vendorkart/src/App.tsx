@@ -13,7 +13,8 @@ import CustomerDashboard from "@/pages/customer/Dashboard";
 import Cart from "@/pages/customer/Cart";
 import VendorDashboard from "@/pages/vendor/Dashboard";
 import AddProduct from "@/pages/vendor/AddProduct";
-import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminPanel from "@/pages/admin/AdminPanel";
+import AdminLogin from "@/pages/admin/Login";
 import Vendors from "@/pages/public/Vendors";
 import VendorStore from "@/pages/public/VendorStore";
 import NotFound from "@/pages/not-found";
@@ -51,8 +52,9 @@ function Router() {
       <Route path="/vendor-dashboard/:rest*" component={VendorDashboard} />
 
       {/* Admin */}
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/:rest*" component={AdminDashboard} />
+      <Route path="/admin-login" component={AdminLogin} />
+      <Route path="/admin" component={AdminPanel} />
+      <Route path="/admin/:rest*" component={AdminPanel} />
 
       <Route component={NotFound} />
     </Switch>

@@ -93,6 +93,17 @@ router.put("/vendors/:id/reject", async (req, res) => {
   }
 });
 
+router.put("/vendors/:id/suspend", async (req, res) => {
+  try {
+    await db.update(vendorsTable)
+      .set({ status: "suspended" as any, updatedAt: new Date() })
+      .where(eq(vendorsTable.id, Number(req.params.id)));
+    return res.json({ message: "Vendor suspended" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to suspend vendor" });
+  }
+});
+
 router.get("/products", async (req, res) => {
   try {
     const status = req.query.status as string;
