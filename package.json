@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "pnpm --filter @workspace/api-server run dev",
     "build": "pnpm -r --if-present run build",
-    "typecheck": "tsc --build && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck"
+    "typecheck": "tsc --build && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
+    "start": "pnpm --filter @workspace/api-server start"
   },
   "private": true,
   "devDependencies": {
