@@ -1,7 +1,7 @@
 import React from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useGetVendorProfile } from "@workspace/api-client-react";
-import { Store, Package, ShoppingBag, IndianRupee, TrendingUp, AlertCircle, Plus } from "lucide-react";
+import { Store, Package, ShoppingBag, IndianRupee, TrendingUp, Clock, CheckCircle2, Plus, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,11 +11,14 @@ export default function VendorDashboard() {
 
   if (isLoading) return <DashboardLayout><div className="p-8"><Skeleton className="h-64 w-full rounded-3xl" /></div></DashboardLayout>;
 
+  const isPending = profile?.status === "pending";
+  const isRejected = profile?.status === "rejected";
+
   const stats = [
     { label: "Total Revenue", value: `₹${(profile?.totalSales || 0).toLocaleString()}`, icon: IndianRupee, color: "text-green-500", bg: "bg-green-500/10" },
     { label: "Active Products", value: profile?.productCount || 0, icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Pending Orders", value: 12, icon: ShoppingBag, color: "text-amber-500", bg: "bg-amber-500/10" }, // Mocked
-    { label: "Store Rating", value: `${profile?.rating?.toFixed(1) || 'N/A'} / 5`, icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { label: "Pending Orders", value: 0, icon: ShoppingBag, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { label: "Store Rating", value: `${profile?.rating?.toFixed(1) || "N/A"} / 5`, icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-500/10" },
   ];
 
   return (
@@ -25,17 +28,43 @@ export default function VendorDashboard() {
           <h1 className="text-3xl font-display font-bold text-foreground">Vendor Hub</h1>
           <p className="text-muted-foreground mt-1">Manage your store, products, and incoming orders.</p>
         </div>
-        <Button className="rounded-xl h-12 px-6 shadow-lg shadow-primary/20" asChild>
-          <Link href="/vendor-dashboard/add-product"><Plus className="w-5 h-5 mr-2" /> Add New Product</Link>
-        </Button>
+        {isPending || isRejected ? (
+          <Button disabled className="rounded-xl h-12 px-6 opacity-50 cursor-not-allowed">
+            <Lock className="w-4 h-4 mr-2" /> Add New Product
+          </Button>
+        ) : (
+          <Button className="rounded-xl h-12 px-6 shadow-lg shadow-primary/20" asChild>
+            <Link href="/vendor-dashboard/add-product"><Plus className="w-5 h-5 mr-2" /> Add New Product</Link>
+          </Button>
+        )}
       </div>
 
-      {profile?.status === 'pending' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 flex items-start gap-4 text-amber-800">
-          <AlertCircle className="w-6 h-6 shrink-0 mt-0.5" />
+      {isPending && (
+        <div className="rounded-2xl border border-amber-400/30 bg-amber-500/8 p-6 mb-8 flex items-start gap-4">
+          <div className="p-2.5 rounded-xl bg-amber-500/15 flex-shrink-0">
+            <Clock className="w-5 h-5 text-amber-500" />
+          </div>
           <div>
-            <h3 className="font-bold text-lg">Your account is pending approval</h3>
-            <p className="mt-1">Our admin team is reviewing your business details. You can set up your store and add products, but they won't be visible publicly until approved.</p>
+            <h3 className="font-bold text-lg text-amber-700 dark:text-amber-400">Awaiting Admin Approval</h3>
+            <p className="mt-1 text-amber-700/80 dark:text-amber-400/80 text-sm leading-relaxed">
+              Your vendor account is under review. The admin will verify your business details before activating your store.
+              <br />
+              <span className="font-semibold">Until approved: </span>You cannot add products and your store will not appear in the vendor listing.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isRejected && (
+        <div className="rounded-2xl border border-red-400/30 bg-red-500/8 p-6 mb-8 flex items-start gap-4">
+          <div className="p-2.5 rounded-xl bg-red-500/15 flex-shrink-0">
+            <Lock className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg text-red-700 dark:text-red-400">Account Not Approved</h3>
+            <p className="mt-1 text-red-700/80 dark:text-red-400/80 text-sm">
+              {profile?.rejectionReason || "Your vendor application was not approved. Please contact support for more information."}
+            </p>
           </div>
         </div>
       )}

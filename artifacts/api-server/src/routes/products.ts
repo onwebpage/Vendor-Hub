@@ -79,6 +79,9 @@ router.post("/", authenticate, requireRole("vendor"), async (req, res) => {
     const userId = (req as any).userId;
     const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.userId, userId));
     if (!vendor) return res.status(404).json({ message: "Vendor profile not found" });
+    if (vendor.status !== "approved") {
+      return res.status(403).json({ message: "Your vendor account is pending approval. You can add products once the admin approves your account." });
+    }
 
     const { categoryId, name, description, shortDescription, images, price, comparePrice, moq, unit, stock, sku, bulkPricing } = req.body;
     const slug = uniqueSlug(name);

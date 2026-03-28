@@ -3,13 +3,13 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateProduct, useListCategories } from "@workspace/api-client-react";
+import { useCreateProduct, useListCategories, useGetVendorProfile } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ImagePlus } from "lucide-react";
+import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock } from "lucide-react";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
 } from "@/components/ui/form";
