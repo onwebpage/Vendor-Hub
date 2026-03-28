@@ -48,7 +48,7 @@ export async function setupFrontend() {
   } else {
     const distPath = path.resolve(__dirname, "../../vendorkart/dist/public");
     app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
+    app.get(/.*/, (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
