@@ -3,6 +3,11 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const isDev = process.env.NODE_ENV !== "production";
 
 const app: Express = express();
 
@@ -30,5 +35,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+export async function setupFrontend() {
+  if (isDev) {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      root: path.resolve(__dirname, "../../vendorkart"),
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.resolve(__dirname, "../../vendorkart/dist/public");
+    app.use(express.static(distPath));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+}
 
 export default app;
