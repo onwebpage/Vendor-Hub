@@ -43,7 +43,7 @@ export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: categories } = useListCategories();
-  const { data: vendorProfile, isLoading: profileLoading } = useGetVendorProfile();
+  const { data: vendorProfile, isLoading: profileLoading, isError: profileError } = useGetVendorProfile();
   const { mutateAsync: createProduct, isPending } = useCreateProduct();
 
   const form = useForm<ProductFormValues>({
@@ -86,7 +86,26 @@ export default function AddProduct() {
     );
   }
 
-  if (vendorProfile?.status === "pending") {
+  if (profileError || !vendorProfile) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto mt-16 text-center">
+          <div className="inline-flex p-5 rounded-3xl bg-muted border border-border mb-6">
+            <Lock className="w-12 h-12 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Unable to load vendor profile</h2>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            Please log in again and try accessing this page.
+          </p>
+          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+            Back to Dashboard
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (vendorProfile.status === "pending") {
     return (
       <DashboardLayout>
         <div className="max-w-2xl mx-auto mt-16 text-center">
@@ -105,7 +124,7 @@ export default function AddProduct() {
     );
   }
 
-  if (vendorProfile?.status === "rejected" || vendorProfile?.status === "suspended") {
+  if (vendorProfile.status === "rejected" || vendorProfile.status === "suspended") {
     return (
       <DashboardLayout>
         <div className="max-w-2xl mx-auto mt-16 text-center">
@@ -113,10 +132,29 @@ export default function AddProduct() {
             <Lock className="w-12 h-12 text-red-500" />
           </div>
           <h2 className="text-2xl font-bold mb-3">
-            {vendorProfile?.status === "suspended" ? "Account Suspended" : "Account Not Approved"}
+            {vendorProfile.status === "suspended" ? "Account Suspended" : "Account Not Approved"}
           </h2>
           <p className="text-muted-foreground mb-6 leading-relaxed">
-            {vendorProfile?.rejectionReason || "Your vendor account is not active. Please contact support for assistance."}
+            {vendorProfile.rejectionReason || "Your vendor account is not active. Please contact support for assistance."}
+          </p>
+          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+            Back to Dashboard
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (vendorProfile.status !== "approved") {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto mt-16 text-center">
+          <div className="inline-flex p-5 rounded-3xl bg-muted border border-border mb-6">
+            <Lock className="w-12 h-12 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Access Restricted</h2>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            You must be an approved vendor to add products.
           </p>
           <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
             Back to Dashboard
