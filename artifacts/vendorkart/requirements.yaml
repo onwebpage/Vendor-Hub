@@ -1,0 +1,24 @@
+packages:
+  "framer-motion": "For smooth page transitions, list animations, and premium micro-interactions"
+  "recharts": "For admin and vendor dashboard analytics visualizations"
+  "date-fns": "For human-readable date formatting in orders and logs"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For Zod schema validation integration with forms"
+  "clsx": "For conditional class names"
+  "tailwind-merge": "For merging tailwind classes safely"
+
+images:
+  - path: "artifacts/vendorkart/public/images/hero-bg.png"
+    description: "Modern abstract B2B corporate background with deep indigo and subtle glowing geometric shapes, clean and professional"
+    aspect_ratio: "16:9"
+  - path: "artifacts/vendorkart/public/images/vendor-banner-placeholder.png"
+    description: "Professional industrial abstract pattern, minimal, suitable for a business profile header background"
+    aspect_ratio: "3:1"
+  - path: "artifacts/vendorkart/public/images/auth-bg.png"
+    description: "Clean bright 3d illustration of business networking, supply chain, and global commerce elements floating"
+    aspect_ratio: "9:16"
+
+notes:
+  - Using generated orval hooks from @workspace/api-client-react
+  - Auth token and user data stored in localStorage ('vendorkart_token', 'vendorkart_user')
+  - Offline-first/mock fallback implemented in UI where API might be pending

@@ -1,0 +1,118 @@
+Build a full B2B multi-vendor marketplace called "Vendorkart" with three panels: Customer, Vendor, and Admin. The system should support vendor storefronts, bulk ordering, and subscription-based vendor access. Razorpay will be integrated later, so implement a temporary dummy payment gateway.
+
+PUBLIC WEBSITE:
+
+* Home page with hero section, categories, featured vendors, featured products
+* Categories page (Electronics, Clothing, Home Decor, Industrial, etc.)
+* All Vendors listing page
+* Product listing page with search, filters, MOQ, bulk pricing
+* Product details page with vendor info
+* Vendor store page with unique URL: /{vendor-name}
+* About us
+* Contact us
+* Login / Register
+
+VENDOR STORE PAGE:
+Each vendor gets their own storefront:
+
+* Banner / cover image
+* Logo
+* Business description
+* Product categories
+* Product listings
+* Inquiry button
+* UPI QR + UPI ID section
+* Ratings & reviews
+
+CUSTOMER DASHBOARD:
+/customer-dashboard
+
+* Dashboard overview
+* Profile management
+* Orders (active, completed)
+* Wishlist
+* Cart
+* Address book
+* Payment history
+* Notifications
+* Support tickets
+* Invoice download
+* Bulk order support
+
+VENDOR DASHBOARD:
+/vendor-dashboard
+
+* Dashboard overview
+* Subscription plan
+* Add product
+* Manage products
+* Category management
+* Orders
+* Payments / earnings
+* Store settings (banner, logo, details)
+* UPI setup (QR upload + UPI ID)
+* Notifications
+* Support
+
+SUBSCRIPTION SYSTEM:
+Basic Plan:
+
+* 50 Products
+* 5 Categories
+* No banner upload
+
+Standard Plan:
+
+* 100 Products
+* 10 Categories
+* Banner upload allowed
+
+Premium Plan:
+
+* Unlimited products
+* Unlimited categories
+* Featured listing
+* Banner upload
+
+Admin controls vendor permissions based on subscription.
+
+ADMIN PANEL:
+/admin
+
+* Dashboard analytics
+* Vendor approval / rejection
+* Customer management
+* Product approval
+* Category management
+* Orders management
+* Commission settings
+* Subscription plans
+* Banner / ads management
+* Email system
+* Reports & analytics
+* Dispute management
+* Refund control
+* Coupon system
+* CMS homepage editor
+* Activity logs
+
+PAYMENT SYSTEM (TEMPORARY):
+Implement dummy payment gateway for now:
+
+* Fake Razorpay UI
+* "Pay Now" button
+* On click → simulate payment success
+* Generate fake transaction ID
+* Mark order as paid
+* Save payment record
+* Show success page
+
+Also include:
+
+* Email notification system (UI only)
+* Multi vendor marketplace architecture
+* Role-based access (Admin, Vendor, Customer)
+* Mobile responsive UI
+* Modern B2B UI design
+* SEO friendly URLs
+* Clean dashboard UI

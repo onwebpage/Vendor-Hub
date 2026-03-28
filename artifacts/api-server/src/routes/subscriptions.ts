@@ -1,0 +1,72 @@
+import { Router } from "express";
+import { db } from "@workspace/db";
+import { subscriptionPlansTable, vendorSubscriptionsTable, vendorsTable } from "@workspace/db/schema";
+import { eq } from "drizzle-orm";
+import { authenticate, requireRole } from "../lib/auth.js";
+
+const router = Router();
+
+router.get("/plans", async (_req, res) => {
+  try {
+    const plans = await db.select().from(subscriptionPlansTable).where(eq(subscriptionPlansTable.isActive, true));
+    return res.json(plans.map(p => ({ ...p, price: Number(p.price) })));
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to list plans" });
+  }
+});
+
+router.get("/current", authenticate, requireRole("vendor"), async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.userId, userId));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+    const subs = await db.select().from(vendorSubscriptionsTable)
+      .where(eq(vendorSubscriptionsTable.vendorId, vendor.id));
+    const [activeSub] = subs.filter(s => s.status === "active");
+
+    if (!activeSub) return res.status(404).json({ message: "No active subscription" });
+    const [plan] = await db.select().from(subscriptionPlansTable).where(eq(subscriptionPlansTable.id, activeSub.planId));
+    return res.json({ ...activeSub, plan: { ...plan, price: Number(plan.price) } });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to get subscription" });
+  }
+});
+
+router.post("/subscribe", authenticate, requireRole("vendor"), async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { planId } = req.body;
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.userId, userId));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+    const [plan] = await db.select().from(subscriptionPlansTable).where(eq(subscriptionPlansTable.id, planId));
+    if (!plan) return res.status(404).json({ message: "Plan not found" });
+
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    await db.update(vendorSubscriptionsTable)
+      .set({ status: "expired" })
+      .where(eq(vendorSubscriptionsTable.vendorId, vendor.id));
+
+    const [sub] = await db.insert(vendorSubscriptionsTable).values({
+      vendorId: vendor.id,
+      planId,
+      status: "active",
+      startDate: new Date(),
+      endDate,
+      autoRenew: true,
+    }).returning();
+
+    await db.update(vendorsTable)
+      .set({ subscriptionPlan: plan.slug as any, updatedAt: new Date() })
+      .where(eq(vendorsTable.id, vendor.id));
+
+    return res.json({ ...sub, plan: { ...plan, price: Number(plan.price) } });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to subscribe" });
+  }
+});
+
+export default router;

@@ -1,8 +1,38 @@
-import { Router, type IRouter } from "express";
-import healthRouter from "./health";
+import { Router } from "express";
+import healthRouter from "./health.js";
+import authRouter from "./auth.js";
+import categoriesRouter from "./categories.js";
+import vendorsRouter from "./vendors.js";
+import productsRouter from "./products.js";
+import cartRouter from "./cart.js";
+import wishlistRouter from "./wishlist.js";
+import ordersRouter from "./orders.js";
+import paymentsRouter from "./payments.js";
+import subscriptionsRouter from "./subscriptions.js";
+import reviewsRouter from "./reviews.js";
+import notificationsRouter from "./notifications.js";
+import supportRouter from "./support.js";
+import couponsRouter from "./coupons.js";
+import addressesRouter from "./addresses.js";
+import adminRouter from "./admin.js";
 
-const router: IRouter = Router();
+const router = Router();
 
 router.use(healthRouter);
+router.use("/auth", authRouter);
+router.use("/categories", categoriesRouter);
+router.use("/vendors", vendorsRouter);
+router.use("/products", productsRouter);
+router.use("/cart", cartRouter);
+router.use("/wishlist", wishlistRouter);
+router.use("/orders", ordersRouter);
+router.use("/payments", paymentsRouter);
+router.use("/subscriptions", subscriptionsRouter);
+router.use("/reviews", reviewsRouter);
+router.use("/notifications", notificationsRouter);
+router.use("/support", supportRouter);
+router.use("/coupons", couponsRouter);
+router.use("/addresses", addressesRouter);
+router.use("/admin", adminRouter);
 
 export default router;
