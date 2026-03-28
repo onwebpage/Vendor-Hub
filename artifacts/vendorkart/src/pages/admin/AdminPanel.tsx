@@ -377,44 +377,68 @@ function ProductsPanel() {
 
 // ─── CUSTOMERS ────────────────────────────────────────────────────────────────
 function CustomersPanel() {
-  const mockCustomers = [
-    { name: "Rajesh Mehta", email: "rajesh@megasupply.com", city: "Mumbai", joined: "Jan 2025", orders: 24, spent: "₹4.2L" },
-    { name: "Priya Sharma", email: "priya@fashionhub.com", city: "Delhi", joined: "Feb 2025", orders: 18, spent: "₹2.8L" },
-    { name: "Anil Gupta", email: "anil@agritech.com", city: "Nagpur", joined: "Mar 2025", orders: 12, spent: "₹1.5L" },
-    { name: "Sunita Patel", email: "sunita@medequip.com", city: "Ahmedabad", joined: "Apr 2025", orders: 8, spent: "₹3.1L" },
-    { name: "Deepak Verma", email: "deepak@techparts.com", city: "Bengaluru", joined: "May 2025", orders: 31, spent: "₹7.4L" },
-    { name: "Kavitha Nair", email: "kavitha@supply.com", city: "Chennai", joined: "Jun 2025", orders: 15, spent: "₹2.2L" },
-  ];
+  const [search, setSearch] = useState("");
+  const { data, loading } = useAdminFetch<any[]>("/api/admin/customers");
+  const customers: any[] = data ?? [];
+
+  const filtered = customers.filter((c) =>
+    !search ||
+    c.name?.toLowerCase().includes(search.toLowerCase()) ||
+    c.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-white/6">
-            {["Customer", "Email", "City", "Joined", "Orders", "Total Spent"].map((h) => (
-              <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {mockCustomers.map((c, i) => (
-            <tr key={i} className="border-b border-white/4 hover:bg-white/2 transition-colors">
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold">
-                    {c.name.split(" ").map((w) => w[0]).join("")}
-                  </div>
-                  <span className="text-white text-sm font-semibold">{c.name}</span>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-white/50 text-sm">{c.email}</td>
-              <td className="px-4 py-3 text-white/50 text-sm">{c.city}</td>
-              <td className="px-4 py-3 text-white/50 text-sm">{c.joined}</td>
-              <td className="px-4 py-3 text-white font-semibold text-sm">{c.orders}</td>
-              <td className="px-4 py-3 text-emerald-400 font-bold text-sm">{c.spent}</td>
+    <div className="space-y-5">
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customers…"
+          className="pl-9 h-10 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/30" />
+      </div>
+
+      <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/6">
+              {["Customer", "Email", "Phone", "Joined", "Status"].map((h) => (
+                <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {loading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-b border-white/4">
+                  {Array.from({ length: 5 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}
+                </tr>
+              ))
+              : filtered.map((c) => (
+                <tr key={c.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                        {(c.name || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="text-white text-sm font-semibold">{c.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-white/50 text-sm">{c.email}</td>
+                  <td className="px-4 py-3 text-white/50 text-sm">{c.phone || "—"}</td>
+                  <td className="px-4 py-3 text-white/50 text-sm">
+                    {c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge className={`text-[10px] border ${c.isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-red-500/15 text-red-400 border-red-500/25"}`}>
+                      {c.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+        {!loading && filtered.length === 0 && (
+          <div className="text-center py-12 text-white/30">No customers registered yet</div>
+        )}
+      </div>
     </div>
   );
 }

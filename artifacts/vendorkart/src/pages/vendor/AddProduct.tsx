@@ -16,6 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name required"),
@@ -42,6 +43,7 @@ export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: categories } = useListCategories();
+  const { data: vendorProfile, isLoading: profileLoading } = useGetVendorProfile();
   const { mutateAsync: createProduct, isPending } = useCreateProduct();
 
   const form = useForm<ProductFormValues>({
@@ -72,6 +74,57 @@ export default function AddProduct() {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to add product" });
     }
   };
+
+  if (profileLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-4xl mx-auto p-8">
+          <Skeleton className="h-10 w-64 mb-8 rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-3xl" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (vendorProfile?.status === "pending") {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto mt-16 text-center">
+          <div className="inline-flex p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 mb-6">
+            <Clock className="w-12 h-12 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Approval Pending</h2>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            Your vendor account is still under review by the admin. You will be able to add products once your account is approved. Your store will also not be visible to buyers until then.
+          </p>
+          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+            Back to Dashboard
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (vendorProfile?.status === "rejected" || vendorProfile?.status === "suspended") {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto mt-16 text-center">
+          <div className="inline-flex p-5 rounded-3xl bg-red-500/10 border border-red-500/20 mb-6">
+            <Lock className="w-12 h-12 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">
+            {vendorProfile?.status === "suspended" ? "Account Suspended" : "Account Not Approved"}
+          </h2>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            {vendorProfile?.rejectionReason || "Your vendor account is not active. Please contact support for assistance."}
+          </p>
+          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+            Back to Dashboard
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

@@ -63,6 +63,7 @@ router.get("/slug/:slug", async (req, res) => {
     const [vendor] = await db.select().from(vendorsTable)
       .where(eq(vendorsTable.slug, req.params.slug));
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    if (vendor.status !== "approved") return res.status(403).json({ message: "This store is not available" });
 
     const products = await db.select().from(productsTable)
       .where(and(eq(productsTable.vendorId, vendor.id), eq(productsTable.status, "approved")))
