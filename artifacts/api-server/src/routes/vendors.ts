@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { vendorsTable, usersTable, productsTable, reviewsTable } from "@workspace/db/schema";
+import { vendorsTable, usersTable, productsTable, reviewsTable, ordersTable } from "@workspace/db/schema";
 import { eq, and, ilike, count, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 
@@ -30,6 +30,41 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/my-products", authenticate, requireRole("vendor"), async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.userId, userId));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    const products = await db.select().from(productsTable)
+      .where(eq(productsTable.vendorId, vendor.id))
+      .orderBy(sql`${productsTable.createdAt} DESC`);
+    return res.json(products.map(p => ({ ...p, price: Number(p.price), comparePrice: p.comparePrice ? Number(p.comparePrice) : null })));
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to list vendor products" });
+  }
+});
+
+router.get("/my-orders", authenticate, requireRole("vendor"), async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.userId, userId));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    const allOrders = await db.select().from(ordersTable).orderBy(sql`${ordersTable.createdAt} DESC`).limit(100);
+    const vendorOrders = allOrders.filter((order: any) =>
+      Array.isArray(order.items) && order.items.some((item: any) => item.vendorId === vendor.id)
+    ).map((order: any) => ({
+      ...order,
+      subtotal: Number(order.subtotal),
+      discount: Number(order.discount),
+      total: Number(order.total),
+      vendorItems: order.items.filter((item: any) => item.vendorId === vendor.id),
+    }));
+    return res.json(vendorOrders);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to list vendor orders" });
+  }
+});
+
 router.get("/profile", authenticate, requireRole("vendor"), async (req, res) => {
   try {
     const userId = (req as any).userId;
@@ -47,9 +82,9 @@ router.put("/profile", authenticate, requireRole("vendor"), async (req, res) => 
     const [existing] = await db.select().from(vendorsTable).where(eq(vendorsTable.userId, userId));
     if (!existing) return res.status(404).json({ message: "Vendor profile not found" });
 
-    const { businessName, description, logo, banner, phone, address, city, state, pincode, gstNumber, upiId, upiQrImage } = req.body;
+    const { businessName, description, logo, banner, phone, email, address, city, state, pincode, gstNumber, upiId, upiQrImage } = req.body;
     const [vendor] = await db.update(vendorsTable)
-      .set({ businessName, description, logo, banner, phone, address, city, state, pincode, gstNumber, upiId, upiQrImage, updatedAt: new Date() })
+      .set({ businessName, description, logo, banner, phone, email, address, city, state, pincode, gstNumber, upiId, upiQrImage, updatedAt: new Date() })
       .where(eq(vendorsTable.userId, userId))
       .returning();
     return res.json(vendor);

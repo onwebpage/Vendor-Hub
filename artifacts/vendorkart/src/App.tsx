@@ -13,6 +13,12 @@ import CustomerDashboard from "@/pages/customer/Dashboard";
 import Cart from "@/pages/customer/Cart";
 import VendorDashboard from "@/pages/vendor/Dashboard";
 import AddProduct from "@/pages/vendor/AddProduct";
+import VendorProducts from "@/pages/vendor/Products";
+import VendorOrders from "@/pages/vendor/Orders";
+import VendorCategories from "@/pages/vendor/Categories";
+import VendorPayments from "@/pages/vendor/Payments";
+import StoreSettings from "@/pages/vendor/StoreSettings";
+import VendorNotifications from "@/pages/vendor/Notifications";
 import AdminPanel from "@/pages/admin/AdminPanel";
 import AdminLogin from "@/pages/admin/Login";
 import Vendors from "@/pages/public/Vendors";
@@ -49,6 +55,12 @@ function Router() {
       {/* Vendor */}
       <Route path="/vendor-dashboard" component={VendorDashboard} />
       <Route path="/vendor-dashboard/add-product" component={AddProduct} />
+      <Route path="/vendor-dashboard/products" component={VendorProducts} />
+      <Route path="/vendor-dashboard/orders" component={VendorOrders} />
+      <Route path="/vendor-dashboard/categories" component={VendorCategories} />
+      <Route path="/vendor-dashboard/payments" component={VendorPayments} />
+      <Route path="/vendor-dashboard/store-settings" component={StoreSettings} />
+      <Route path="/vendor-dashboard/notifications" component={VendorNotifications} />
       <Route path="/vendor-dashboard/:rest*" component={VendorDashboard} />
 
       {/* Admin */}
