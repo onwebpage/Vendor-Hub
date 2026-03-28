@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Package, TrendingUp, Star } from "lucide-react";
+import { Package, TrendingUp, Star, Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Product } from "@workspace/api-client-react";
 

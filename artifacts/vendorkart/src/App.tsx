@@ -14,6 +14,8 @@ import Cart from "@/pages/customer/Cart";
 import VendorDashboard from "@/pages/vendor/Dashboard";
 import AddProduct from "@/pages/vendor/AddProduct";
 import AdminDashboard from "@/pages/admin/Dashboard";
+import Vendors from "@/pages/public/Vendors";
+import VendorStore from "@/pages/public/VendorStore";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -32,6 +34,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/products" component={Products} />
       <Route path="/products/:id" component={ProductDetail} />
+      <Route path="/vendors" component={Vendors} />
+      <Route path="/vendors/:slug" component={VendorStore} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 
