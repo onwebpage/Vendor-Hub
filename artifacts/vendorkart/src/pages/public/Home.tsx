@@ -71,65 +71,195 @@ export default function Home() {
   return (
     <PublicLayout>
       {/* ═══════════════════════════════════════════════════
-          HERO — full viewport, centered content
+          HERO — split layout with rich bg
       ═══════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden text-white min-h-screen flex flex-col items-center justify-center">
+      <section className="relative overflow-hidden text-white min-h-screen flex flex-col">
+        {/* ── Background layers ── */}
         <div className="absolute inset-0">
-          <img src={`${import.meta.env.BASE_URL}images/hero-bg.png`} alt="B2B Marketplace" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/95 via-slate-900/85 to-slate-950/95" />
-          <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(ellipse 80% 50% at 50% 40%, rgba(59,130,246,0.08) 0%, transparent 70%)" }} />
+          {/* Base dark gradient */}
+          <div className="absolute inset-0 bg-[#03050d]" />
+          {/* Mesh grid */}
+          <div className="absolute inset-0 opacity-[0.035]" style={{
+            backgroundImage: `linear-gradient(rgba(99,102,241,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.8) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px"
+          }} />
+          {/* Radial glow — top-left */}
+          <div className="absolute -top-32 -left-32 w-[700px] h-[700px] rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 65%)" }} />
+          {/* Radial glow — bottom-right */}
+          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(139,92,246,0.14) 0%, transparent 65%)" }} />
+          {/* Horizontal light line */}
+          <div className="absolute top-[38%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
         </div>
 
-        <div className="relative w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <span className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-blue-500/10 text-blue-300 text-xs font-bold tracking-widest mb-8 border border-blue-500/20 uppercase backdrop-blur-sm">
-              <Zap className="w-3 h-3 fill-blue-400 text-blue-400" /> India's #1 B2B Wholesale Marketplace
-            </span>
+        {/* ── Main content ── */}
+        <div className="relative z-10 flex-1 flex items-center">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
 
-            <h1 className="text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight mb-8 leading-[1.04]">
-              Wholesale Sourcing,<br />
-              <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">
-                Simplified.
-              </span>
-            </h1>
+            {/* LEFT — copy */}
+            <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
+              {/* Top badge */}
+              <div className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full mb-8 border border-indigo-500/25 bg-indigo-500/8 backdrop-blur-sm">
+                <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                <span className="text-indigo-300 text-xs font-bold tracking-widest uppercase">India's #1 B2B Wholesale Marketplace</span>
+              </div>
 
-            <p className="text-lg lg:text-xl text-white/55 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Connect directly with verified manufacturers, distributors, and bulk suppliers across India.
-              Secure payments, competitive pricing, and reliable logistics — all in one place.
-            </p>
+              <h1 className="text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.06] mb-7">
+                <span className="text-white">Smarter B2B</span><br />
+                <span className="text-white">Sourcing,</span><br />
+                <span className="relative">
+                  <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">
+                    Built for India.
+                  </span>
+                  {/* underline accent */}
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400/60 via-indigo-400/60 to-violet-400/0 rounded-full" />
+                </span>
+              </h1>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Button size="lg" className="h-14 px-10 text-base font-bold rounded-2xl shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all bg-blue-600 hover:bg-blue-500 border-0" asChild>
-                <Link href="/register?role=customer">
-                  Start Buying Free <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </Button>
-              <Button size="lg" className="h-14 px-10 text-base font-bold rounded-2xl bg-white/8 border border-white/15 text-white hover:bg-white/12 hover:border-white/30 backdrop-blur-sm transition-all" asChild>
-                <Link href="/register?role=vendor">Sell on Vendorkart</Link>
-              </Button>
-            </div>
+              <p className="text-base lg:text-lg text-white/50 mb-10 max-w-lg leading-relaxed">
+                Connect directly with verified manufacturers, distributors, and bulk suppliers across all 28 states.
+                Escrow payments, competitive pricing, real-time logistics — all in one platform.
+              </p>
 
-            <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 text-sm text-white/40">
-              {["GST-Verified Suppliers", "Escrow Payments", "Zero Commission Buying", "Free to Join"].map((t) => (
-                <div key={t} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" /> {t}
+              {/* CTA buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-10">
+                <Button size="lg" asChild
+                  className="h-14 px-9 text-base font-bold rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border-0 shadow-2xl shadow-blue-600/30 hover:shadow-blue-500/45 hover:-translate-y-0.5 transition-all">
+                  <Link href="/register?role=customer">
+                    Start Buying Free <ArrowRight className="ml-2 w-5 h-5" />
+                  </Link>
+                </Button>
+                <Button size="lg" asChild
+                  className="h-14 px-9 text-base font-bold rounded-2xl bg-white/6 border border-white/14 text-white hover:bg-white/10 hover:border-white/25 backdrop-blur-sm transition-all group">
+                  <Link href="/register?role=vendor">
+                    Sell on Vendorkart <ArrowUpRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Trust pills */}
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { label: "GST-Verified Suppliers", color: "text-emerald-400" },
+                  { label: "Escrow Payments", color: "text-blue-400" },
+                  { label: "Zero Commission", color: "text-violet-400" },
+                  { label: "Free to Join", color: "text-amber-400" },
+                ].map((t) => (
+                  <div key={t.label} className="flex items-center gap-1.5 text-sm text-white/40">
+                    <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 ${t.color}`} />
+                    {t.label}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* RIGHT — visual dashboard card */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
+              className="relative hidden lg:flex items-center justify-center"
+            >
+              {/* Glow behind card */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-80 h-80 rounded-full blur-3xl opacity-20" style={{ background: "radial-gradient(circle, #6366f1 0%, #3b82f6 50%, transparent 70%)" }} />
+              </div>
+
+              {/* Main dashboard card */}
+              <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-white/4 backdrop-blur-xl p-6 shadow-2xl">
+                <div className="flex items-center justify-between mb-5">
+                  <span className="text-white/60 text-xs font-semibold tracking-wider uppercase">Live Overview</span>
+                  <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live
+                  </span>
                 </div>
-              ))}
-            </div>
-          </motion.div>
+
+                {/* Metric row */}
+                <div className="grid grid-cols-2 gap-4 mb-5">
+                  {[
+                    { label: "Active Orders", value: "3,842", change: "+12%", up: true, color: "text-blue-400" },
+                    { label: "Trade Volume", value: "₹850Cr+", change: "+28%", up: true, color: "text-violet-400" },
+                    { label: "Verified Vendors", value: "12,000+", change: "+340", up: true, color: "text-emerald-400" },
+                    { label: "Satisfaction", value: "98.4%", change: "Excellent", up: true, color: "text-amber-400" },
+                  ].map((m) => (
+                    <div key={m.label} className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                      <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wide mb-1">{m.label}</p>
+                      <p className={`text-xl font-extrabold ${m.color}`}>{m.value}</p>
+                      <p className="text-white/30 text-[10px] mt-0.5 font-medium">{m.change}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mini bar chart */}
+                <div className="rounded-2xl border border-white/8 bg-white/4 p-4 mb-5">
+                  <div className="flex items-end justify-between gap-1.5 h-16">
+                    {[35, 55, 40, 65, 50, 80, 70, 95, 78, 88, 60, 100].map((h, i) => (
+                      <div key={i} className="flex-1 rounded-t-sm"
+                        style={{
+                          height: `${h}%`,
+                          background: `linear-gradient(to top, rgba(99,102,241,${0.4 + h / 200}), rgba(59,130,246,${0.3 + h / 250}))`,
+                        }} />
+                    ))}
+                  </div>
+                  <p className="text-white/30 text-[10px] mt-2 font-medium">Monthly GMV Trend — FY 2025</p>
+                </div>
+
+                {/* Recent activity */}
+                <div className="space-y-2.5">
+                  {[
+                    { name: "TechCorp India", product: "Industrial Sensors ×500", time: "2m ago", color: "from-blue-500 to-indigo-600" },
+                    { name: "AgriFirst Ltd", product: "Drip Irrigation Kit ×200", time: "7m ago", color: "from-emerald-500 to-teal-600" },
+                    { name: "FashionHub", product: "Cotton Fabric Roll ×1000", time: "14m ago", color: "from-violet-500 to-purple-600" },
+                  ].map((a) => (
+                    <div key={a.name} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-3 py-2.5">
+                      <span className={`w-7 h-7 rounded-full bg-gradient-to-br ${a.color} flex items-center justify-center text-[9px] font-extrabold text-white flex-shrink-0`}>
+                        {a.name.slice(0, 2).toUpperCase()}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/80 text-xs font-semibold truncate">{a.name}</p>
+                        <p className="text-white/35 text-[10px] truncate">{a.product}</p>
+                      </div>
+                      <span className="text-white/25 text-[10px] flex-shrink-0">{a.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Floating badge — top right */}
+              <motion.div
+                animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-5 -right-4 rounded-2xl border border-white/12 bg-white/8 backdrop-blur-xl px-4 py-3 shadow-xl"
+              >
+                <p className="text-white/50 text-[10px] font-bold uppercase tracking-wide">New Order</p>
+                <p className="text-white font-extrabold text-sm">₹4,80,000</p>
+                <p className="text-emerald-400 text-[10px] font-semibold">Escrow Protected</p>
+              </motion.div>
+
+              {/* Floating badge — bottom left */}
+              <motion.div
+                animate={{ y: [0, 8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute -bottom-4 -left-6 rounded-2xl border border-white/12 bg-white/8 backdrop-blur-xl px-4 py-3 shadow-xl"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <p className="text-white/80 text-xs font-bold">GST Verified</p>
+                </div>
+                <p className="text-white/40 text-[10px] mt-0.5">12,000+ Suppliers Active</p>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
 
-        {/* Stats bar pinned at bottom of hero */}
+        {/* ── Stats bar ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
-          className="relative w-full z-10 mt-auto"
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}
+          className="relative z-10"
         >
-          <div className="border-t border-white/8 bg-slate-950/60 backdrop-blur-md">
-            <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/8">
+          <div className="border-t border-white/8 bg-white/3 backdrop-blur-md">
+            <div className="max-w-7xl mx-auto px-4 py-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/8">
               {statsData.map((s, i) => (
                 <div key={i} className="text-center px-6">
-                  <p className="text-3xl font-extrabold text-white">{s.value}</p>
-                  <p className="text-white/35 text-xs mt-1 font-medium tracking-wide">{s.label}</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-white">{s.value}</p>
+                  <p className="text-white/30 text-xs mt-1 font-semibold tracking-wide uppercase">{s.label}</p>
                 </div>
               ))}
             </div>
