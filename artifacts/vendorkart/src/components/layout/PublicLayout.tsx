@@ -5,7 +5,7 @@ import {
   ShoppingBag, Search, Menu, X, Heart, LogOut, LayoutDashboard,
   ChevronDown, Cpu, Shirt, Home as HomeIcon, Factory, Grid3X3,
   ArrowRight, SlidersHorizontal, Tag, Package, Zap, TrendingUp,
-  ArrowUpRight, Command,
+  ArrowUpRight, Command, Store,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useListProducts } from "@workspace/api-client-react";
 
 /* ─────────────────────────────────────────────────────────
    DATA
@@ -47,10 +48,31 @@ const quickLinks = [
 /* ─────────────────────────────────────────────────────────
    SEARCH MODAL
 ───────────────────────────────────────────────────────── */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = React.useState(value);
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
 function SearchModal({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
+
+  const debouncedQuery = useDebounce(query.trim(), 350);
+  const isTyping = debouncedQuery.length >= 2;
+
+  const { data: liveResults, isLoading: isSearching } = useListProducts(
+    { search: debouncedQuery || undefined, limit: 5 },
+    { query: { enabled: isTyping } }
+  );
+
+  const products = liveResults?.products ?? [];
+  const hasResults = isTyping && products.length > 0;
+  const noResults = isTyping && !isSearching && products.length === 0;
 
   React.useEffect(() => {
     inputRef.current?.focus();
@@ -65,19 +87,19 @@ function SearchModal({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center pt-[10vh] px-4"
+      className="fixed inset-0 z-[9999] flex flex-col items-center pt-[8vh] px-4"
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
 
       {/* Modal card */}
       <motion.div
@@ -89,7 +111,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       >
         {/* Search input row */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-          <Search className="w-5 h-5 text-primary flex-shrink-0" />
+          <Search className={`w-5 h-5 flex-shrink-0 transition-colors ${isSearching ? "text-primary animate-pulse" : "text-primary"}`} />
           <input
             ref={inputRef}
             value={query}
@@ -108,67 +130,153 @@ function SearchModal({ onClose }: { onClose: () => void }) {
           </kbd>
         </div>
 
-        <div className="p-5 space-y-6">
-          {/* Quick Filters */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-              <SlidersHorizontal className="w-3 h-3" /> Quick Filters
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {quickFilters.map((f) => (
-                <Link
-                  key={f.label}
-                  href={f.href}
-                  onClick={onClose}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-semibold transition-all ${f.color}`}
-                >
-                  <f.icon className="w-3.5 h-3.5" />
-                  {f.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Popular Searches */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-              <TrendingUp className="w-3 h-3" /> Popular Searches
-            </p>
-            <div className="grid grid-cols-2 gap-1">
-              {popularSearches.map((term) => (
+        {/* ── Live product results ── */}
+        <AnimatePresence mode="wait">
+          {hasResults && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="px-5 pt-4 pb-1">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                  <Package className="w-3 h-3" /> Live Results
+                  <span className="ml-auto text-xs normal-case font-normal">{products.length} found</span>
+                </p>
+                <div className="space-y-1">
+                  {products.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/products/${p.id}`}
+                      onClick={onClose}
+                      className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-secondary/60 transition-colors group cursor-pointer"
+                    >
+                      {/* Thumbnail */}
+                      <div className="w-12 h-12 rounded-xl bg-secondary/50 flex-shrink-0 overflow-hidden border border-border">
+                        {p.images?.[0] ? (
+                          <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-5 h-5 text-muted-foreground/40" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{p.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {p.vendorName && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+                              <Store className="w-3 h-3 flex-shrink-0" />{p.vendorName}
+                            </span>
+                          )}
+                          {p.moq && (
+                            <span className="text-xs text-muted-foreground/60 flex-shrink-0">MOQ: {p.moq}</span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Price */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-primary">{fmt(p.price)}</p>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/0 group-hover:text-muted-foreground ml-auto transition-all mt-1" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                {/* View all results link */}
                 <button
-                  key={term}
-                  onClick={() => handleSearch(term)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/60 transition-colors text-left group"
+                  onClick={() => handleSearch(debouncedQuery)}
+                  className="w-full mt-2 mb-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
                 >
-                  <Search className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors flex-shrink-0" />
-                  <span className="text-sm text-foreground truncate">{term}</span>
-                  <ArrowUpRight className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground ml-auto transition-all flex-shrink-0" />
+                  View all results for "{debouncedQuery}"
+                  <ArrowRight className="w-4 h-4" />
                 </button>
-              ))}
-            </div>
-          </div>
+              </div>
+            </motion.div>
+          )}
 
-          {/* Quick Navigation */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-              <ArrowRight className="w-3 h-3" /> Jump To
-            </p>
-            <div className="flex gap-2">
-              {quickLinks.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  onClick={onClose}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/70 transition-colors text-sm font-medium text-foreground"
-                >
-                  <l.icon className="w-4 h-4 text-muted-foreground" />
-                  {l.label}
-                </Link>
-              ))}
+          {/* Searching spinner */}
+          {isTyping && isSearching && !hasResults && (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-secondary/50 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 rounded bg-secondary/50 animate-pulse w-3/4" />
+                  <div className="h-3 rounded bg-secondary/40 animate-pulse w-1/2" />
+                </div>
+                <div className="h-4 w-16 rounded bg-secondary/50 animate-pulse" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Default state (no query or too short) ── */}
+        {!isTyping && (
+          <div className="p-5 space-y-6">
+            {/* Quick Filters */}
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <SlidersHorizontal className="w-3 h-3" /> Quick Filters
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {quickFilters.map((f) => (
+                  <Link
+                    key={f.label}
+                    href={f.href}
+                    onClick={onClose}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-semibold transition-all ${f.color}`}
+                  >
+                    <f.icon className="w-3.5 h-3.5" />
+                    {f.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Popular Searches */}
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <TrendingUp className="w-3 h-3" /> Popular Searches
+              </p>
+              <div className="grid grid-cols-2 gap-1">
+                {popularSearches.map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => handleSearch(term)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/60 transition-colors text-left group"
+                  >
+                    <Search className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors flex-shrink-0" />
+                    <span className="text-sm text-foreground truncate">{term}</span>
+                    <ArrowUpRight className="w-3 h-3 text-muted-foreground/0 group-hover:text-muted-foreground ml-auto transition-all flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Navigation */}
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <ArrowRight className="w-3 h-3" /> Jump To
+              </p>
+              <div className="flex gap-2">
+                {quickLinks.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    onClick={onClose}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-secondary/40 hover:bg-secondary/70 transition-colors text-sm font-medium text-foreground"
+                  >
+                    <l.icon className="w-4 h-4 text-muted-foreground" />
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Footer hint */}
         <div className="px-5 py-3 border-t border-border flex items-center gap-4 text-[11px] text-muted-foreground">
