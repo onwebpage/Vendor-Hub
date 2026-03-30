@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, commissionSettingsTable, activityLogsTable,
+  contactMessagesTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
@@ -213,6 +214,27 @@ router.get("/activity-logs", async (_req, res) => {
   const logs = await db.select().from(activityLogsTable)
     .orderBy(sql`${activityLogsTable.createdAt} DESC`).limit(100);
   return res.json(logs);
+});
+
+router.get("/contact-messages", async (_req, res) => {
+  try {
+    const messages = await db.select().from(contactMessagesTable)
+      .orderBy(sql`${contactMessagesTable.createdAt} DESC`);
+    return res.json(messages);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch contact messages" });
+  }
+});
+
+router.put("/contact-messages/:id/read", async (req, res) => {
+  try {
+    await db.update(contactMessagesTable)
+      .set({ status: "read" })
+      .where(eq(contactMessagesTable.id, Number(req.params.id)));
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update message" });
+  }
 });
 
 export default router;

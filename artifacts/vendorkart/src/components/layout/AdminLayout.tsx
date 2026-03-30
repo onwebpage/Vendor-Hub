@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Store, Users, Package, ShoppingBag, Tags,
   CreditCard, FileText, Activity, Settings, LogOut, Menu, X,
-  ShieldCheck, Bell, ChevronRight, BarChart3
+  ShieldCheck, Bell, ChevronRight, BarChart3, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuthStore } from "@/lib/admin-auth-store";
@@ -18,6 +18,7 @@ const NAV = [
   { icon: Tags, label: "Categories", href: "/admin/categories" },
   { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: FileText, label: "Coupons", href: "/admin/coupons" },
+  { icon: MessageSquare, label: "Contact", href: "/admin/contact" },
   { icon: Activity, label: "Activity", href: "/admin/activity" },
 ];
 

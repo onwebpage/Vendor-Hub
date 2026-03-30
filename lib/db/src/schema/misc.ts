@@ -100,6 +100,18 @@ export const activityLogsTable = pgTable("activity_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const contactMessagesTable = pgTable("contact_messages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  subject: text("subject"),
+  message: text("message").notNull(),
+  type: text("type"),
+  status: text("status").notNull().default("unread"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertReviewSchema = createInsertSchema(reviewsTable).omit({ id: true, createdAt: true });
 export const insertCouponSchema = createInsertSchema(couponsTable).omit({ id: true, createdAt: true });
 export const insertSupportTicketSchema = createInsertSchema(supportTicketsTable).omit({ id: true, createdAt: true, updatedAt: true });
@@ -110,3 +122,4 @@ export type Address = typeof addressesTable.$inferSelect;
 export type Notification = typeof notificationsTable.$inferSelect;
 export type SupportTicket = typeof supportTicketsTable.$inferSelect;
 export type Coupon = typeof couponsTable.$inferSelect;
+export type ContactMessage = typeof contactMessagesTable.$inferSelect;

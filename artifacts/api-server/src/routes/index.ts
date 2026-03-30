@@ -15,6 +15,7 @@ import supportRouter from "./support.js";
 import couponsRouter from "./coupons.js";
 import addressesRouter from "./addresses.js";
 import adminRouter from "./admin.js";
+import contactRouter from "./contact.js";
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use("/support", supportRouter);
 router.use("/coupons", couponsRouter);
 router.use("/addresses", addressesRouter);
 router.use("/admin", adminRouter);
+router.use("/contact", contactRouter);
 
 export default router;

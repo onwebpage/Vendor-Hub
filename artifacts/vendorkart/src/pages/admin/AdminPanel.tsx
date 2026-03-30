@@ -6,7 +6,8 @@ import {
   TrendingUp, TrendingDown, CheckCircle2, XCircle, Clock,
   IndianRupee, Star, MapPin, BadgeCheck, RefreshCw,
   Search, Eye, MoreHorizontal, ArrowUpRight, Filter,
-  Tags, CreditCard, Activity, ShieldAlert
+  Tags, CreditCard, Activity, ShieldAlert, MessageSquare,
+  Mail, Phone, User, BookOpen, Building2, HeadphonesIcon, ChevronDown, ChevronUp
 } from "lucide-react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -471,6 +472,144 @@ function CategoriesPanel() {
   );
 }
 
+// ─── CONTACT MESSAGES ─────────────────────────────────────────────────────────
+const TYPE_META: Record<string, { label: string; icon: any; color: string }> = {
+  general:     { label: "General",     icon: MessageSquare,    color: "text-blue-400 bg-blue-500/12" },
+  vendor:      { label: "Vendor",      icon: Building2,        color: "text-violet-400 bg-violet-500/12" },
+  buyer:       { label: "Buyer",       icon: HeadphonesIcon,   color: "text-emerald-400 bg-emerald-500/12" },
+  partnership: { label: "Partnership", icon: BookOpen,         color: "text-amber-400 bg-amber-500/12" },
+  billing:     { label: "Billing",     icon: CreditCard,       color: "text-rose-400 bg-rose-500/12" },
+};
+
+function ContactMessagesPanel() {
+  const { data: messages, loading } = useAdminFetch<any[]>("/api/admin/contact-messages");
+  const { token } = useAdminAuthStore();
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [filter, setFilter] = useState("all");
+
+  const markRead = async (id: number) => {
+    await fetch(`/api/admin/contact-messages/${id}/read`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    window.location.reload();
+  };
+
+  const list = (messages || []).filter((m: any) => {
+    if (filter === "unread") return m.status === "unread";
+    if (filter === "read") return m.status === "read";
+    return true;
+  });
+
+  const unreadCount = (messages || []).filter((m: any) => m.status === "unread").length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header stats */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Total Messages", value: messages?.length ?? 0, color: "text-blue-400" },
+          { label: "Unread", value: unreadCount, color: "text-amber-400" },
+          { label: "Read", value: (messages?.length ?? 0) - unreadCount, color: "text-emerald-400" },
+        ].map((s) => (
+          <div key={s.label} className="bg-white/3 rounded-2xl border border-white/8 p-5 text-center">
+            <p className={`text-3xl font-extrabold ${s.color}`}>{s.value}</p>
+            <p className="text-white/40 text-xs font-semibold mt-1 uppercase tracking-wider">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-2">
+        {["all", "unread", "read"].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-xl text-sm font-semibold capitalize transition-all ${
+              filter === f ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : "text-white/40 hover:text-white/60 border border-transparent"
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {/* Messages list */}
+      <div className="space-y-3">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl bg-white/5" />)
+        ) : list.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-white/3 rounded-3xl border border-white/8">
+            <MessageSquare className="w-10 h-10 text-white/15 mb-3" />
+            <p className="text-white/40 text-sm">No messages found</p>
+          </div>
+        ) : list.map((msg: any) => {
+          const typeMeta = TYPE_META[msg.type] || { label: msg.type || "General", icon: MessageSquare, color: "text-white/40 bg-white/8" };
+          const TypeIcon = typeMeta.icon;
+          const isOpen = expanded === msg.id;
+          return (
+            <div
+              key={msg.id}
+              className={`bg-white/3 rounded-2xl border transition-all ${
+                msg.status === "unread" ? "border-indigo-500/25" : "border-white/8"
+              }`}
+            >
+              <div
+                className="flex items-start gap-4 p-5 cursor-pointer"
+                onClick={() => setExpanded(isOpen ? null : msg.id)}
+              >
+                <div className={`p-2.5 rounded-xl flex-shrink-0 ${typeMeta.color}`}>
+                  <TypeIcon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-white font-bold text-sm truncate">{msg.name}</p>
+                    {msg.status === "unread" && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                    )}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto flex-shrink-0 ${typeMeta.color}`}>
+                      {typeMeta.label}
+                    </span>
+                  </div>
+                  <p className="text-white/50 text-xs">{msg.email}{msg.phone && ` · ${msg.phone}`}</p>
+                  {msg.subject && <p className="text-white/70 text-xs font-medium mt-1 truncate">{msg.subject}</p>}
+                  <p className="text-white/35 text-xs mt-1 truncate">{msg.message}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <p className="text-white/25 text-[10px]">{new Date(msg.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+                  {isOpen ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
+                </div>
+              </div>
+
+              {isOpen && (
+                <div className="px-5 pb-5 pt-0 border-t border-white/6">
+                  <p className="text-white/70 text-sm leading-relaxed mt-4 mb-4 whitespace-pre-wrap">{msg.message}</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <a
+                      href={`mailto:${msg.email}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 text-white/60 hover:text-white/90 text-xs transition-all border border-white/8"
+                    >
+                      <Mail className="w-3.5 h-3.5" /> Reply via Email
+                    </a>
+                    {msg.status === "unread" && (
+                      <button
+                        onClick={() => markRead(msg.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/12 text-emerald-400 hover:bg-emerald-500/20 text-xs transition-all border border-emerald-500/20"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Mark as Read
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── PLACEHOLDER SECTION ──────────────────────────────────────────────────────
 function PlaceholderSection({ icon: Icon, label }: { icon: any; label: string }) {
   return (
@@ -491,6 +630,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/categories": { title: "Categories", component: CategoriesPanel },
   "/admin/payments": { title: "Payments", component: () => <PlaceholderSection icon={CreditCard} label="Payment" /> },
   "/admin/coupons": { title: "Coupons", component: () => <PlaceholderSection icon={Tags} label="Coupon" /> },
+  "/admin/contact": { title: "Contact Messages", component: ContactMessagesPanel },
   "/admin/activity": { title: "Activity Logs", component: () => <PlaceholderSection icon={Activity} label="Activity" /> },
 };
 
