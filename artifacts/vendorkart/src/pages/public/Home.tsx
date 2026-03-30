@@ -1,11 +1,12 @@
 import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { ArrowRight, ArrowUpRight, CheckCircle2, TrendingUp, Users, Shield, Package, Star, Building2, Zap, Globe, BarChart3, Lock, HeadphonesIcon } from "lucide-react";
+import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { ArrowRight, ArrowUpRight, CheckCircle2, TrendingUp, Users, Shield, Package, Star, Building2, Zap, Globe, BarChart3, Lock, HeadphonesIcon, Sparkles, ShieldCheck, IndianRupee, Activity, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { useListProducts } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/shared/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRef, useEffect, useState } from "react";
 
 const testimonials = [
   { name: "Rajesh Mehta", role: "CEO, MegaSupply Pvt Ltd", avatar: "RM", rating: 5, text: "Vendorkart transformed how we source industrial components. We cut procurement costs by 32% in just 3 months.", color: "from-blue-500 to-indigo-600" },
@@ -71,195 +72,369 @@ export default function Home() {
   return (
     <PublicLayout>
       {/* ═══════════════════════════════════════════════════
-          HERO — split layout with rich bg
+          HERO — premium full-screen
       ═══════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden text-white min-h-screen flex flex-col">
-        {/* ── Background layers ── */}
-        <div className="absolute inset-0">
-          {/* Base dark gradient */}
-          <div className="absolute inset-0 bg-[#03050d]" />
-          {/* Mesh grid */}
-          <div className="absolute inset-0 opacity-[0.035]" style={{
-            backgroundImage: `linear-gradient(rgba(99,102,241,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.8) 1px, transparent 1px)`,
-            backgroundSize: "60px 60px"
+
+        {/* ── Deep layered background ── */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Base — near black */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #010308 0%, #020510 50%, #010208 100%)" }} />
+
+          {/* Fine dot grid */}
+          <div className="absolute inset-0 opacity-[0.28]" style={{
+            backgroundImage: `radial-gradient(circle, rgba(148,163,184,0.25) 1px, transparent 1px)`,
+            backgroundSize: "28px 28px"
           }} />
-          {/* Radial glow — top-left */}
-          <div className="absolute -top-32 -left-32 w-[700px] h-[700px] rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 65%)" }} />
-          {/* Radial glow — bottom-right */}
-          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(139,92,246,0.14) 0%, transparent 65%)" }} />
-          {/* Horizontal light line */}
-          <div className="absolute top-[38%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
+
+          {/* Aurora blob 1 — blue, top-right */}
+          <motion.div
+            className="absolute rounded-full blur-[120px]"
+            style={{ width: 700, height: 700, top: -180, right: -100, background: "radial-gradient(circle, rgba(37,99,235,0.22) 0%, rgba(79,70,229,0.10) 50%, transparent 75%)" }}
+            animate={{ scale: [1, 1.12, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Aurora blob 2 — violet, bottom-left */}
+          <motion.div
+            className="absolute rounded-full blur-[140px]"
+            style={{ width: 600, height: 600, bottom: -100, left: -80, background: "radial-gradient(circle, rgba(124,58,237,0.20) 0%, rgba(139,92,246,0.08) 55%, transparent 80%)" }}
+            animate={{ scale: [1, 1.08, 1], opacity: [0.6, 0.9, 0.6] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          />
+          {/* Aurora blob 3 — teal, center */}
+          <motion.div
+            className="absolute rounded-full blur-[160px]"
+            style={{ width: 500, height: 400, top: "30%", left: "30%", background: "radial-gradient(circle, rgba(20,184,166,0.08) 0%, transparent 70%)" }}
+            animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+            transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+          />
+
+          {/* Top beam / spotlight */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-[350px]"
+            style={{ background: "linear-gradient(to bottom, rgba(99,102,241,0.6) 0%, rgba(99,102,241,0.08) 80%, transparent 100%)" }} />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[200px]"
+            style={{ background: "radial-gradient(ellipse at top, rgba(99,102,241,0.12) 0%, transparent 70%)" }} />
+
+          {/* Horizontal accent line */}
+          <div className="absolute top-[42%] left-0 right-0 h-px"
+            style={{ background: "linear-gradient(to right, transparent 0%, rgba(99,102,241,0.15) 30%, rgba(139,92,246,0.15) 70%, transparent 100%)" }} />
+
+          {/* Bottom vignette */}
+          <div className="absolute bottom-0 left-0 right-0 h-48"
+            style={{ background: "linear-gradient(to bottom, transparent, rgba(1,3,8,0.8))" }} />
         </div>
 
         {/* ── Main content ── */}
         <div className="relative z-10 flex-1 flex items-center">
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24 grid lg:grid-cols-[1fr_1.1fr] gap-12 xl:gap-20 items-center">
 
-            {/* LEFT — copy */}
-            <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-              {/* Top badge */}
-              <div className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full mb-8 border border-indigo-500/25 bg-indigo-500/8 backdrop-blur-sm">
-                <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                <span className="text-indigo-300 text-xs font-bold tracking-widest uppercase">India's #1 B2B Wholesale Marketplace</span>
+            {/* ══════════════ LEFT — copy ══════════════ */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="inline-flex items-center gap-2.5 py-2 px-4 rounded-full mb-8"
+                style={{
+                  background: "linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.08) 100%)",
+                  border: "1px solid rgba(99,102,241,0.3)",
+                  boxShadow: "0 0 20px rgba(99,102,241,0.12), inset 0 1px 0 rgba(255,255,255,0.06)"
+                }}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-400" />
+                </span>
+                <span className="text-indigo-300 text-xs font-bold tracking-[0.12em] uppercase">India's #1 B2B Wholesale Marketplace</span>
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400/70" />
+              </motion.div>
+
+              {/* Headline */}
+              <div className="mb-7">
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-[52px] sm:text-[62px] xl:text-[72px] font-black tracking-[-0.03em] leading-[1.03]"
+                >
+                  <span className="text-white block">Smarter B2B</span>
+                  <span className="text-white block">Sourcing,</span>
+                  <span className="block relative mt-1">
+                    <span style={{
+                      background: "linear-gradient(95deg, #60a5fa 0%, #818cf8 35%, #a78bfa 65%, #c084fc 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}>
+                      Built for India.
+                    </span>
+                  </span>
+                </motion.h1>
               </div>
 
-              <h1 className="text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.06] mb-7">
-                <span className="text-white">Smarter B2B</span><br />
-                <span className="text-white">Sourcing,</span><br />
-                <span className="relative">
-                  <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">
-                    Built for India.
-                  </span>
-                  {/* underline accent */}
-                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400/60 via-indigo-400/60 to-violet-400/0 rounded-full" />
-                </span>
-              </h1>
-
-              <p className="text-base lg:text-lg text-white/50 mb-10 max-w-lg leading-relaxed">
+              <motion.p
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.35 }}
+                className="text-base lg:text-[17px] text-white/45 mb-10 max-w-[460px] leading-[1.75]"
+              >
                 Connect directly with verified manufacturers, distributors, and bulk suppliers across all 28 states.
                 Escrow payments, competitive pricing, real-time logistics — all in one platform.
-              </p>
+              </motion.p>
 
               {/* CTA buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                <Button size="lg" asChild
-                  className="h-14 px-9 text-base font-bold rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border-0 shadow-2xl shadow-blue-600/30 hover:shadow-blue-500/45 hover:-translate-y-0.5 transition-all">
+              <motion.div
+                initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.45 }}
+                className="flex flex-col sm:flex-row gap-4 mb-10"
+              >
+                <Button size="lg" asChild className="h-[54px] px-9 text-[15px] font-bold rounded-2xl border-0 transition-all duration-200 hover:-translate-y-0.5"
+                  style={{
+                    background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+                    boxShadow: "0 8px 32px rgba(37,99,235,0.35), 0 0 0 1px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)"
+                  }}>
                   <Link href="/register?role=customer">
                     Start Buying Free <ArrowRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
                 <Button size="lg" asChild
-                  className="h-14 px-9 text-base font-bold rounded-2xl bg-white/6 border border-white/14 text-white hover:bg-white/10 hover:border-white/25 backdrop-blur-sm transition-all group">
+                  className="h-[54px] px-9 text-[15px] font-bold rounded-2xl text-white transition-all duration-200 hover:-translate-y-0.5 group"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    backdropFilter: "blur(12px)",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)"
+                  }}>
                   <Link href="/register?role=vendor">
                     Sell on Vendorkart <ArrowUpRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   </Link>
                 </Button>
-              </div>
+              </motion.div>
 
               {/* Trust pills */}
-              <div className="flex flex-wrap gap-3">
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                className="flex flex-wrap gap-x-6 gap-y-3"
+              >
                 {[
                   { label: "GST-Verified Suppliers", color: "text-emerald-400" },
                   { label: "Escrow Payments", color: "text-blue-400" },
                   { label: "Zero Commission", color: "text-violet-400" },
                   { label: "Free to Join", color: "text-amber-400" },
                 ].map((t) => (
-                  <div key={t.label} className="flex items-center gap-1.5 text-sm text-white/40">
-                    <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 ${t.color}`} />
-                    {t.label}
+                  <div key={t.label} className="flex items-center gap-2 text-[13px] text-white/40">
+                    <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${t.color}`} />
+                    <span>{t.label}</span>
                   </div>
                 ))}
-              </div>
+              </motion.div>
             </motion.div>
 
-            {/* RIGHT — visual dashboard card */}
+            {/* ══════════════ RIGHT — premium dashboard ══════════════ */}
             <motion.div
-              initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
+              initial={{ opacity: 0, x: 40, scale: 0.97 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className="relative hidden lg:flex items-center justify-center"
             >
-              {/* Glow behind card */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-80 h-80 rounded-full blur-3xl opacity-20" style={{ background: "radial-gradient(circle, #6366f1 0%, #3b82f6 50%, transparent 70%)" }} />
+              {/* Glow halo */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-[400px] h-[400px] rounded-full blur-[80px] opacity-25"
+                  style={{ background: "radial-gradient(circle, #4f46e5 0%, #7c3aed 40%, transparent 70%)" }} />
               </div>
 
-              {/* Main dashboard card */}
-              <div className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-white/4 backdrop-blur-xl p-6 shadow-2xl">
-                <div className="flex items-center justify-between mb-5">
-                  <span className="text-white/60 text-xs font-semibold tracking-wider uppercase">Live Overview</span>
-                  <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live
-                  </span>
-                </div>
-
-                {/* Metric row */}
-                <div className="grid grid-cols-2 gap-4 mb-5">
-                  {[
-                    { label: "Active Orders", value: "3,842", change: "+12%", up: true, color: "text-blue-400" },
-                    { label: "Trade Volume", value: "₹850Cr+", change: "+28%", up: true, color: "text-violet-400" },
-                    { label: "Verified Vendors", value: "12,000+", change: "+340", up: true, color: "text-emerald-400" },
-                    { label: "Satisfaction", value: "98.4%", change: "Excellent", up: true, color: "text-amber-400" },
-                  ].map((m) => (
-                    <div key={m.label} className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                      <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wide mb-1">{m.label}</p>
-                      <p className={`text-xl font-extrabold ${m.color}`}>{m.value}</p>
-                      <p className="text-white/30 text-[10px] mt-0.5 font-medium">{m.change}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Mini bar chart */}
-                <div className="rounded-2xl border border-white/8 bg-white/4 p-4 mb-5">
-                  <div className="flex items-end justify-between gap-1.5 h-16">
-                    {[35, 55, 40, 65, 50, 80, 70, 95, 78, 88, 60, 100].map((h, i) => (
-                      <div key={i} className="flex-1 rounded-t-sm"
-                        style={{
-                          height: `${h}%`,
-                          background: `linear-gradient(to top, rgba(99,102,241,${0.4 + h / 200}), rgba(59,130,246,${0.3 + h / 250}))`,
-                        }} />
-                    ))}
-                  </div>
-                  <p className="text-white/30 text-[10px] mt-2 font-medium">Monthly GMV Trend — FY 2025</p>
-                </div>
-
-                {/* Recent activity */}
-                <div className="space-y-2.5">
-                  {[
-                    { name: "TechCorp India", product: "Industrial Sensors ×500", time: "2m ago", color: "from-blue-500 to-indigo-600" },
-                    { name: "AgriFirst Ltd", product: "Drip Irrigation Kit ×200", time: "7m ago", color: "from-emerald-500 to-teal-600" },
-                    { name: "FashionHub", product: "Cotton Fabric Roll ×1000", time: "14m ago", color: "from-violet-500 to-purple-600" },
-                  ].map((a) => (
-                    <div key={a.name} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-3 py-2.5">
-                      <span className={`w-7 h-7 rounded-full bg-gradient-to-br ${a.color} flex items-center justify-center text-[9px] font-extrabold text-white flex-shrink-0`}>
-                        {a.name.slice(0, 2).toUpperCase()}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white/80 text-xs font-semibold truncate">{a.name}</p>
-                        <p className="text-white/35 text-[10px] truncate">{a.product}</p>
+              {/* ── Main card ── */}
+              <div className="relative w-full max-w-[370px]"
+                style={{
+                  filter: "drop-shadow(0 40px 80px rgba(79,70,229,0.18))"
+                }}
+              >
+                <div className="rounded-3xl overflow-hidden"
+                  style={{
+                    background: "linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    backdropFilter: "blur(24px)",
+                    boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 -1px 0 rgba(0,0,0,0.3) inset"
+                  }}
+                >
+                  {/* Card header */}
+                  <div className="px-6 pt-5 pb-4 flex items-center justify-between"
+                    style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                        style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}>
+                        <Activity className="w-4 h-4 text-white" />
                       </div>
-                      <span className="text-white/25 text-[10px] flex-shrink-0">{a.time}</span>
+                      <span className="text-white/70 text-xs font-bold tracking-wider uppercase">Live Marketplace</span>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                      style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                      </span>
+                      Live
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    {/* Metric grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {[
+                        { label: "Active Orders", value: "3,842", change: "+12%", color: "#60a5fa", bg: "rgba(37,99,235,0.08)", border: "rgba(37,99,235,0.15)" },
+                        { label: "Trade Volume", value: "₹850Cr+", change: "+28%", color: "#a78bfa", bg: "rgba(124,58,237,0.08)", border: "rgba(124,58,237,0.15)" },
+                        { label: "Verified Vendors", value: "12,000+", change: "+340", color: "#34d399", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.15)" },
+                        { label: "Satisfaction", value: "98.4%", change: "Excellent", color: "#fbbf24", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.15)" },
+                      ].map((m) => (
+                        <div key={m.label} className="rounded-2xl p-3.5"
+                          style={{ background: m.bg, border: `1px solid ${m.border}` }}>
+                          <p className="text-white/40 text-[9px] font-bold uppercase tracking-wider mb-1.5">{m.label}</p>
+                          <p className="font-black text-[18px] leading-none" style={{ color: m.color }}>{m.value}</p>
+                          <div className="flex items-center gap-1 mt-1.5">
+                            <TrendingUp className="w-2.5 h-2.5" style={{ color: m.color }} />
+                            <p className="text-[9px] font-bold" style={{ color: m.color }}>{m.change}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Bar chart */}
+                    <div className="rounded-2xl p-4 mb-4"
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">Monthly GMV — FY 2025</p>
+                        <p className="text-emerald-400 text-[10px] font-bold">↑ 34%</p>
+                      </div>
+                      <div className="flex items-end justify-between gap-1 h-[52px]">
+                        {[28, 42, 35, 58, 48, 72, 62, 88, 74, 92, 68, 100].map((h, i) => (
+                          <motion.div
+                            key={i}
+                            className="flex-1 rounded-t"
+                            initial={{ scaleY: 0, originY: 1 }}
+                            animate={{ scaleY: 1 }}
+                            transition={{ duration: 0.5, delay: 0.6 + i * 0.04, ease: "easeOut" }}
+                            style={{
+                              height: `${h}%`,
+                              background: i === 11
+                                ? "linear-gradient(to top, #4f46e5, #818cf8)"
+                                : `linear-gradient(to top, rgba(79,70,229,${0.25 + h / 280}), rgba(99,102,241,${0.15 + h / 350}))`,
+                              borderRadius: "3px 3px 0 0"
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex justify-between mt-2">
+                        {["Apr", "Jun", "Aug", "Oct", "Dec", "Mar"].map(m => (
+                          <span key={m} className="text-white/20 text-[8px] font-medium">{m}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Activity feed */}
+                    <div className="space-y-2">
+                      {[
+                        { name: "TechCorp India", product: "Industrial Sensors ×500", time: "2m", color: "from-blue-500 to-indigo-600", value: "₹2.4L" },
+                        { name: "AgriFirst Ltd", product: "Drip Irrigation Kit ×200", time: "7m", color: "from-emerald-500 to-teal-600", value: "₹85K" },
+                        { name: "FashionHub", product: "Cotton Fabric ×1000m", time: "14m", color: "from-violet-500 to-purple-600", value: "₹1.1L" },
+                      ].map((a) => (
+                        <div key={a.name} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+                          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <span className={`w-7 h-7 rounded-full bg-gradient-to-br ${a.color} flex items-center justify-center text-[9px] font-black text-white flex-shrink-0`}>
+                            {a.name.slice(0, 2)}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white/75 text-[11px] font-bold truncate">{a.name}</p>
+                            <p className="text-white/30 text-[9px] truncate">{a.product}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-emerald-400 text-[10px] font-bold">{a.value}</p>
+                            <p className="text-white/20 text-[9px]">{a.time} ago</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+
+                {/* ── Floating badge: top-right ── */}
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -top-6 -right-6 rounded-2xl px-4 py-3"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.05) 100%)",
+                    border: "1px solid rgba(255,255,255,0.13)",
+                    backdropFilter: "blur(20px)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset"
+                  }}
+                >
+                  <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest">New Order</p>
+                  <p className="text-white font-black text-base leading-tight">₹4,80,000</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    <p className="text-emerald-400 text-[9px] font-bold">Escrow Protected</p>
+                  </div>
+                </motion.div>
+
+                {/* ── Floating badge: bottom-left ── */}
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+                  className="absolute -bottom-5 -left-7 rounded-2xl px-4 py-3"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.05) 100%)",
+                    border: "1px solid rgba(255,255,255,0.13)",
+                    backdropFilter: "blur(20px)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset"
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
+                      <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white/80 text-[11px] font-bold">GST Verified</p>
+                      <p className="text-white/35 text-[9px]">12,000+ Suppliers</p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* ── Floating badge: left-center (quote) ── */}
+                <motion.div
+                  animate={{ x: [0, -6, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  className="absolute top-1/3 -left-14 rounded-xl px-3 py-2.5"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(234,88,12,0.08) 100%)",
+                    border: "1px solid rgba(245,158,11,0.25)",
+                    backdropFilter: "blur(16px)",
+                    boxShadow: "0 4px 20px rgba(245,158,11,0.1)"
+                  }}
+                >
+                  <p className="text-amber-400/70 text-[8px] font-bold uppercase tracking-widest">Quote Ready</p>
+                  <p className="text-white font-bold text-[11px]">18 vendors matched</p>
+                </motion.div>
               </div>
-
-              {/* Floating badge — top right */}
-              <motion.div
-                animate={{ y: [0, -8, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -top-5 -right-4 rounded-2xl border border-white/12 bg-white/8 backdrop-blur-xl px-4 py-3 shadow-xl"
-              >
-                <p className="text-white/50 text-[10px] font-bold uppercase tracking-wide">New Order</p>
-                <p className="text-white font-extrabold text-sm">₹4,80,000</p>
-                <p className="text-emerald-400 text-[10px] font-semibold">Escrow Protected</p>
-              </motion.div>
-
-              {/* Floating badge — bottom left */}
-              <motion.div
-                animate={{ y: [0, 8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -bottom-4 -left-6 rounded-2xl border border-white/12 bg-white/8 backdrop-blur-xl px-4 py-3 shadow-xl"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <p className="text-white/80 text-xs font-bold">GST Verified</p>
-                </div>
-                <p className="text-white/40 text-[10px] mt-0.5">12,000+ Suppliers Active</p>
-              </motion.div>
             </motion.div>
           </div>
         </div>
 
         {/* ── Stats bar ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.65 }}
           className="relative z-10"
         >
-          <div className="border-t border-white/8 bg-white/3 backdrop-blur-md">
-            <div className="max-w-7xl mx-auto px-4 py-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/8">
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.025)", backdropFilter: "blur(20px)" }}>
+            <div className="max-w-7xl mx-auto px-4 py-5 grid grid-cols-2 sm:grid-cols-4">
               {statsData.map((s, i) => (
-                <div key={i} className="text-center px-6">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-white">{s.value}</p>
-                  <p className="text-white/30 text-xs mt-1 font-semibold tracking-wide uppercase">{s.label}</p>
+                <div key={i} className="text-center px-4 py-1 relative">
+                  {i > 0 && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-px hidden sm:block" style={{ background: "rgba(255,255,255,0.08)" }} />}
+                  <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">{s.value}</p>
+                  <p className="text-white/30 text-[11px] mt-0.5 font-semibold tracking-widest uppercase">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -268,15 +443,32 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════════
-          TRUST LOGOS
+          TRUST LOGOS — infinite marquee
       ═══════════════════════════════════════════════════ */}
-      <div className="bg-slate-950 border-b border-white/5 py-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 flex items-center gap-10 overflow-x-auto no-scrollbar">
-          <span className="text-white/20 text-[11px] font-bold tracking-widest uppercase whitespace-nowrap flex-shrink-0">Trusted by</span>
-          <div className="flex items-center gap-8 flex-shrink-0">
-            {["TechCorp India", "MegaSupply", "AgriFirst", "AutoParts Direct", "MedEquip Co", "HomeDecor Hub", "FashionBulk", "IndustrialPro", "ElectroBulk"].map((b) => (
-              <span key={b} className="text-white/25 text-sm font-bold whitespace-nowrap hover:text-white/40 transition-colors cursor-default">{b}</span>
-            ))}
+      <div className="relative overflow-hidden py-5" style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.06)", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="flex items-center gap-8 mb-0">
+          <div className="flex-shrink-0 px-6">
+            <span className="text-white/20 text-[10px] font-bold tracking-[0.18em] uppercase whitespace-nowrap">Trusted by</span>
+          </div>
+          <div className="overflow-hidden flex-1">
+            <motion.div
+              className="flex items-center gap-12 whitespace-nowrap"
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+            >
+              {[
+                "TechCorp India", "MegaSupply Ltd", "AgriFirst", "AutoParts Direct",
+                "MedEquip Co", "HomeDecor Hub", "FashionBulk", "IndustrialPro", "ElectroBulk",
+                "TechCorp India", "MegaSupply Ltd", "AgriFirst", "AutoParts Direct",
+                "MedEquip Co", "HomeDecor Hub", "FashionBulk", "IndustrialPro", "ElectroBulk",
+              ].map((b, i) => (
+                <span key={i} className="text-white/22 text-[13px] font-bold tracking-wide"
+                  style={{ flexShrink: 0 }}>
+                  {b}
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-white/10 mx-6 align-middle" />
+                </span>
+              ))}
+            </motion.div>
           </div>
         </div>
       </div>
