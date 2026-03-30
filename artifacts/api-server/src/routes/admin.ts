@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, vendorSubscriptionsTable, commissionSettingsTable, activityLogsTable,
-  contactMessagesTable, bannersTable, emailLogsTable, paymentsTable,
+  contactMessagesTable, bannersTable, emailLogsTable, paymentsTable, categoriesTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
@@ -183,6 +183,84 @@ router.put("/products/:id/approve", async (req, res) => {
     return res.json({ message: "Product approved" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to approve product" });
+  }
+});
+
+router.post("/products", async (req, res) => {
+  try {
+    const { name, vendorId, categoryId, price, comparePrice, stock, moq, unit, sku, status, isFeatured, description, shortDescription } = req.body;
+    if (!name || !vendorId || !categoryId || !price) {
+      return res.status(400).json({ message: "name, vendorId, categoryId, and price are required" });
+    }
+    const slug = slugify(name) + "-" + Date.now();
+    const [product] = await db.insert(productsTable).values({
+      name,
+      slug,
+      vendorId: Number(vendorId),
+      categoryId: Number(categoryId),
+      price: String(price),
+      comparePrice: comparePrice ? String(comparePrice) : null,
+      stock: Number(stock) || 0,
+      moq: Number(moq) || 1,
+      unit: unit || "piece",
+      sku: sku || null,
+      status: status || "approved",
+      isFeatured: isFeatured ?? false,
+      description: description || null,
+      shortDescription: shortDescription || null,
+    }).returning();
+    logActivity({ action: "product_created", resource: "product", details: `Admin created product: ${product.name}` });
+    return res.status(201).json({ ...product, price: Number(product.price) });
+  } catch (err) {
+    req.log.error({ err }, "Admin create product error");
+    return res.status(500).json({ message: "Failed to create product" });
+  }
+});
+
+router.put("/products/:id", async (req, res) => {
+  try {
+    const productId = Number(req.params.id);
+    const { name, vendorId, categoryId, price, comparePrice, stock, moq, unit, sku, status, isFeatured, description, shortDescription } = req.body;
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (name !== undefined) { updates.name = name; updates.slug = slugify(name) + "-" + productId; }
+    if (vendorId !== undefined) updates.vendorId = Number(vendorId);
+    if (categoryId !== undefined) updates.categoryId = Number(categoryId);
+    if (price !== undefined) updates.price = String(price);
+    if (comparePrice !== undefined) updates.comparePrice = comparePrice ? String(comparePrice) : null;
+    if (stock !== undefined) updates.stock = Number(stock);
+    if (moq !== undefined) updates.moq = Number(moq);
+    if (unit !== undefined) updates.unit = unit;
+    if (sku !== undefined) updates.sku = sku;
+    if (status !== undefined) updates.status = status;
+    if (isFeatured !== undefined) updates.isFeatured = isFeatured;
+    if (description !== undefined) updates.description = description;
+    if (shortDescription !== undefined) updates.shortDescription = shortDescription;
+    const [updated] = await db.update(productsTable).set(updates).where(eq(productsTable.id, productId)).returning();
+    if (!updated) return res.status(404).json({ message: "Product not found" });
+    logActivity({ action: "product_updated", resource: "product", details: `Admin updated product: ${updated.name}` });
+    return res.json({ ...updated, price: Number(updated.price) });
+  } catch (err) {
+    req.log.error({ err }, "Admin update product error");
+    return res.status(500).json({ message: "Failed to update product" });
+  }
+});
+
+router.get("/categories", async (_req, res) => {
+  try {
+    const cats = await db.select().from(categoriesTable);
+    return res.json(cats);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to list categories" });
+  }
+});
+
+router.get("/vendors-list", async (_req, res) => {
+  try {
+    const vendors = await db.select({ id: vendorsTable.id, businessName: vendorsTable.businessName, email: vendorsTable.email })
+      .from(vendorsTable).where(eq(vendorsTable.status, "approved"));
+    return res.json(vendors);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to list vendors" });
   }
 });
 

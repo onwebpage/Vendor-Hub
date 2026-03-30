@@ -9,7 +9,7 @@ import {
   Tags, CreditCard, Activity, ShieldAlert, MessageSquare,
   Mail, Phone, User, BookOpen, Building2, HeadphonesIcon, ChevronDown, ChevronUp,
   Image, Globe, Trash2, Plus, Percent, BarChart3, FileText, Zap, Crown, PieChart,
-  X, ImageIcon, Loader2
+  X, ImageIcon, Loader2, Pencil, AlertTriangle
 } from "lucide-react";
 import { useRef } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -331,67 +331,436 @@ function VendorsPanel() {
 }
 
 // ─── PRODUCTS ─────────────────────────────────────────────────────────────────
-function ProductsPanel() {
-  const [search, setSearch] = useState("");
-  const { data, loading } = useAdminFetch<any>("/api/products?limit=50");
-  const products: any[] = data?.products ?? [];
-  const filtered = products.filter((p) =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase())
-  );
+const PRODUCT_STATUS_COLORS: Record<string, string> = {
+  approved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  pending: "bg-amber-500/15 text-amber-400 border-amber-500/25",
+  rejected: "bg-red-500/15 text-red-400 border-red-500/25",
+  draft: "bg-slate-500/15 text-slate-400 border-slate-500/25",
+};
+
+const EMPTY_FORM = {
+  name: "", sku: "", price: "", comparePrice: "", stock: "", moq: "1", unit: "piece",
+  vendorId: "", categoryId: "", status: "approved", isFeatured: false,
+  shortDescription: "", description: "",
+};
+
+function ProductFormModal({ open, onClose, initial, vendors, categories, token, onSaved }: {
+  open: boolean; onClose: () => void; initial?: any; vendors: any[]; categories: any[];
+  token: string; onSaved: () => void;
+}) {
+  const [form, setForm] = useState<any>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      if (initial) {
+        setForm({
+          name: initial.name ?? "",
+          sku: initial.sku ?? "",
+          price: String(initial.price ?? ""),
+          comparePrice: initial.comparePrice ? String(initial.comparePrice) : "",
+          stock: String(initial.stock ?? ""),
+          moq: String(initial.moq ?? "1"),
+          unit: initial.unit ?? "piece",
+          vendorId: String(initial.vendorId ?? ""),
+          categoryId: String(initial.categoryId ?? ""),
+          status: initial.status ?? "approved",
+          isFeatured: initial.isFeatured ?? false,
+          shortDescription: initial.shortDescription ?? "",
+          description: initial.description ?? "",
+        });
+      } else {
+        setForm(EMPTY_FORM);
+      }
+      setError("");
+    }
+  }, [open, initial]);
+
+  const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.name.trim() || !form.vendorId || !form.categoryId || !form.price) {
+      setError("Name, vendor, category, and price are required."); return;
+    }
+    setSaving(true); setError("");
+    try {
+      const url = initial ? `${BASE}/api/admin/products/${initial.id}` : `${BASE}/api/admin/products`;
+      const method = initial ? "PUT" : "POST";
+      const r = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: form.name, sku: form.sku || null,
+          price: Number(form.price), comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
+          stock: Number(form.stock) || 0, moq: Number(form.moq) || 1, unit: form.unit,
+          vendorId: Number(form.vendorId), categoryId: Number(form.categoryId),
+          status: form.status, isFeatured: form.isFeatured,
+          shortDescription: form.shortDescription || null, description: form.description || null,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setError(d.message || "Failed to save"); setSaving(false); return; }
+      onSaved(); onClose();
+    } catch {
+      setError("Network error. Try again.");
+    }
+    setSaving(false);
+  };
+
+  if (!open) return null;
+
+  const inputCls = "w-full h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-indigo-500/50 focus:bg-white/8";
+  const selectCls = "w-full h-9 px-3 rounded-xl bg-[#111827] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50";
+  const labelCls = "block text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1.5";
 
   return (
-    <div className="space-y-5">
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…"
-          className="pl-9 h-10 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/30" />
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div
+        className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#0c1120] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/8">
+          <div>
+            <h2 className="text-white font-extrabold text-lg">{initial ? "Edit Product" : "Add New Product"}</h2>
+            <p className="text-white/35 text-xs mt-0.5">{initial ? `Editing: ${initial.name}` : "Create a new product in the catalog"}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/8 hover:bg-white/12 flex items-center justify-center transition-colors">
+            <X className="w-4 h-4 text-white/60" />
+          </button>
+        </div>
 
-      <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-white/6">
-              {["Product", "Vendor", "Category", "Price", "MOQ", "Stock", "Rating"].map((h) => (
-                <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading
-              ? Array.from({ length: 8 }).map((_, i) => (
-                <tr key={i} className="border-b border-white/4">
-                  {Array.from({ length: 7 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}
-                </tr>
-              ))
-              : filtered.map((p) => (
-                <tr key={p.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
-                  <td className="px-4 py-3 max-w-[220px]">
-                    <p className="text-white text-sm font-semibold truncate">{p.name}</p>
-                    <p className="text-white/30 text-[10px]">{p.sku}</p>
-                  </td>
-                  <td className="px-4 py-3 text-white/50 text-sm">{p.vendorName || `Vendor #${p.vendorId}`}</td>
-                  <td className="px-4 py-3 text-white/50 text-sm">{p.categoryName || "—"}</td>
-                  <td className="px-4 py-3 text-white font-semibold text-sm">₹{Number(p.price).toLocaleString("en-IN")}</td>
-                  <td className="px-4 py-3 text-white/50 text-sm">{p.moq} {p.unit}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-sm font-semibold ${p.stock > 100 ? "text-emerald-400" : p.stock > 0 ? "text-amber-400" : "text-red-400"}`}>
-                      {p.stock}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="flex items-center gap-1 text-amber-400 text-sm">
-                      <Star className="w-3 h-3 fill-current" /> {(p.rating || 0).toFixed(1)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-        {!loading && filtered.length === 0 && (
-          <div className="text-center py-12 text-white/30">No products found</div>
-        )}
+        <div className="p-6 space-y-5">
+          {/* Row 1: Name + SKU */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Product Name *</label>
+              <input className={inputCls} placeholder="e.g. Industrial Sensors 50A" value={form.name} onChange={e => set("name", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>SKU</label>
+              <input className={inputCls} placeholder="e.g. SEN-50A-001" value={form.sku} onChange={e => set("sku", e.target.value)} />
+            </div>
+          </div>
+
+          {/* Row 2: Vendor + Category */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Vendor *</label>
+              <select className={selectCls} value={form.vendorId} onChange={e => set("vendorId", e.target.value)}>
+                <option value="">Select vendor…</option>
+                {vendors.map(v => <option key={v.id} value={v.id}>{v.businessName || v.email}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Category *</label>
+              <select className={selectCls} value={form.categoryId} onChange={e => set("categoryId", e.target.value)}>
+                <option value="">Select category…</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Row 3: Price + Compare Price */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Price (₹) *</label>
+              <input className={inputCls} type="number" min="0" placeholder="0" value={form.price} onChange={e => set("price", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Compare Price (₹)</label>
+              <input className={inputCls} type="number" min="0" placeholder="MRP / original price" value={form.comparePrice} onChange={e => set("comparePrice", e.target.value)} />
+            </div>
+          </div>
+
+          {/* Row 4: Stock + MOQ + Unit */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={labelCls}>Stock</label>
+              <input className={inputCls} type="number" min="0" placeholder="0" value={form.stock} onChange={e => set("stock", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>MOQ</label>
+              <input className={inputCls} type="number" min="1" placeholder="1" value={form.moq} onChange={e => set("moq", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Unit</label>
+              <select className={selectCls} value={form.unit} onChange={e => set("unit", e.target.value)}>
+                {["piece", "kg", "litre", "meter", "box", "pack", "set", "dozen", "ton", "roll", "bundle"].map(u => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Row 5: Status + Featured */}
+          <div className="grid grid-cols-2 gap-4 items-end">
+            <div>
+              <label className={labelCls}>Status</label>
+              <select className={selectCls} value={form.status} onChange={e => set("status", e.target.value)}>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3 pb-0.5">
+              <button
+                type="button"
+                onClick={() => set("isFeatured", !form.isFeatured)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${form.isFeatured ? "bg-indigo-500" : "bg-white/10"}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.isFeatured ? "translate-x-5" : ""}`} />
+              </button>
+              <span className="text-white/60 text-sm font-medium">Featured Product</span>
+            </div>
+          </div>
+
+          {/* Row 6: Short description */}
+          <div>
+            <label className={labelCls}>Short Description</label>
+            <input className={inputCls} placeholder="One-line summary for listings" value={form.shortDescription} onChange={e => set("shortDescription", e.target.value)} />
+          </div>
+
+          {/* Row 7: Description */}
+          <div>
+            <label className={labelCls}>Full Description</label>
+            <textarea
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-indigo-500/50 resize-none"
+              rows={4} placeholder="Detailed product description…"
+              value={form.description} onChange={e => set("description", e.target.value)}
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            <Button variant="outline" onClick={onClose} disabled={saving}
+              className="flex-1 h-10 rounded-xl border-white/15 text-white/70 hover:bg-white/5 bg-transparent">
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}
+              className="flex-1 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 border-0 font-bold text-white">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {saving ? "Saving…" : initial ? "Save Changes" : "Add Product"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function DeleteProductModal({ product, onClose, onDeleted, token }: {
+  product: any; onClose: () => void; onDeleted: () => void; token: string;
+}) {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await fetch(`${BASE}/api/admin/products/${product.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setDeleting(false);
+    onDeleted(); onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative z-10 w-full max-w-sm rounded-3xl border border-white/10 bg-[#0c1120] shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-6 h-6 text-red-400" />
+        </div>
+        <h3 className="text-white font-extrabold text-base text-center mb-1">Delete Product?</h3>
+        <p className="text-white/40 text-sm text-center mb-5">
+          "<span className="text-white/70">{product?.name}</span>" will be permanently removed.
+          This cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onClose} disabled={deleting}
+            className="flex-1 h-10 rounded-xl border-white/15 text-white/70 hover:bg-white/5 bg-transparent">
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} disabled={deleting}
+            className="flex-1 h-10 rounded-xl bg-red-600 hover:bg-red-500 border-0 font-bold text-white">
+            {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+            {deleting ? "Deleting…" : "Delete"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductsPanel() {
+  const { token } = useAdminAuthStore();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [refresh, setRefresh] = useState(0);
+  const [showForm, setShowForm] = useState(false);
+  const [editProduct, setEditProduct] = useState<any>(null);
+  const [deleteProduct, setDeleteProduct] = useState<any>(null);
+
+  const { data, loading } = useAdminFetch<any>("/api/admin/products", [refresh]);
+  const { data: vendorsData } = useAdminFetch<any[]>("/api/admin/vendors-list", []);
+  const { data: catsData } = useAdminFetch<any[]>("/api/admin/categories", []);
+
+  const products: any[] = data?.products ?? [];
+  const vendors: any[] = vendorsData ?? [];
+  const categories: any[] = catsData ?? [];
+
+  const filtered = products.filter((p) => {
+    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku || "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "all" || p.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const openAdd = () => { setEditProduct(null); setShowForm(true); };
+  const openEdit = (p: any) => { setEditProduct(p); setShowForm(true); };
+  const onSaved = () => setRefresh(r => r + 1);
+  const onDeleted = () => setRefresh(r => r + 1);
+
+  const statusCounts = { all: products.length, approved: 0, pending: 0, rejected: 0, draft: 0 };
+  products.forEach(p => { if (statusCounts[p.status as keyof typeof statusCounts] !== undefined) statusCounts[p.status as keyof typeof statusCounts]++; });
+
+  return (
+    <>
+      <ProductFormModal
+        open={showForm} onClose={() => setShowForm(false)}
+        initial={editProduct} vendors={vendors} categories={categories}
+        token={token || ""} onSaved={onSaved}
+      />
+      {deleteProduct && (
+        <DeleteProductModal
+          product={deleteProduct} onClose={() => setDeleteProduct(null)}
+          onDeleted={onDeleted} token={token || ""}
+        />
+      )}
+
+      <div className="space-y-5">
+        {/* Toolbar */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex flex-wrap gap-2">
+            {(["all", "approved", "pending", "rejected", "draft"] as const).map(s => (
+              <button key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all border ${
+                  statusFilter === s
+                    ? "bg-indigo-600 border-indigo-500 text-white"
+                    : "bg-white/4 border-white/10 text-white/40 hover:bg-white/8"
+                }`}
+              >
+                {s} <span className="ml-1 opacity-70">({statusCounts[s]})</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-56">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…"
+                className="pl-9 h-9 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/30 text-sm" />
+            </div>
+            <Button onClick={openAdd}
+              className="h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 border-0 font-bold text-white text-sm flex-shrink-0">
+              <Plus className="w-4 h-4 mr-1.5" /> Add Product
+            </Button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px]">
+              <thead>
+                <tr className="border-b border-white/6">
+                  {["Product", "Category", "Price", "Stock", "MOQ", "Status", "Featured", "Actions"].map((h) => (
+                    <th key={h} className="text-left text-white/30 text-[10px] font-bold uppercase tracking-wider px-4 py-3 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading
+                  ? Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="border-b border-white/4">
+                      {Array.from({ length: 8 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}
+                    </tr>
+                  ))
+                  : filtered.map((p) => {
+                    const catName = categories.find(c => c.id === p.categoryId)?.name || "—";
+                    return (
+                      <tr key={p.id} className="border-b border-white/4 hover:bg-white/[0.025] transition-colors group">
+                        <td className="px-4 py-3 max-w-[220px]">
+                          <p className="text-white text-sm font-semibold truncate">{p.name}</p>
+                          <p className="text-white/30 text-[10px] font-mono">{p.sku || `ID #${p.id}`}</p>
+                        </td>
+                        <td className="px-4 py-3 text-white/50 text-sm whitespace-nowrap">{catName}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <p className="text-white font-bold text-sm">₹{Number(p.price).toLocaleString("en-IN")}</p>
+                          {p.comparePrice && <p className="text-white/30 text-[10px] line-through">₹{Number(p.comparePrice).toLocaleString("en-IN")}</p>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-sm font-bold ${p.stock > 100 ? "text-emerald-400" : p.stock > 0 ? "text-amber-400" : "text-red-400"}`}>
+                            {p.stock}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-white/50 text-sm">{p.moq} {p.unit}</td>
+                        <td className="px-4 py-3">
+                          <Badge className={`text-[10px] border capitalize ${PRODUCT_STATUS_COLORS[p.status] || "bg-white/5 text-white/40 border-white/10"}`}>
+                            {p.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          {p.isFeatured ? (
+                            <Star className="w-4 h-4 text-amber-400 fill-current" />
+                          ) : (
+                            <Star className="w-4 h-4 text-white/15" />
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => openEdit(p)}
+                              className="w-7 h-7 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/20 flex items-center justify-center transition-colors"
+                              title="Edit product"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-indigo-400" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteProduct(p)}
+                              className="w-7 h-7 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/20 flex items-center justify-center transition-colors"
+                              title="Delete product"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+          {!loading && filtered.length === 0 && (
+            <div className="text-center py-14">
+              <Package className="w-10 h-10 text-white/15 mx-auto mb-3" />
+              <p className="text-white/30 text-sm font-medium">No products found</p>
+              <p className="text-white/20 text-xs mt-1">Try adjusting your filters or add a new product</p>
+            </div>
+          )}
+        </div>
+
+        <p className="text-white/25 text-xs text-right">{filtered.length} of {products.length} products</p>
+      </div>
+    </>
   );
 }
 
