@@ -59,10 +59,16 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 
-      {/* Customer (Guards would normally go in a wrapper component, keeping simple for artifact) */}
+      {/* Customer */}
       <Route path="/customer-dashboard" component={CustomerDashboard} />
+      <Route path="/customer-dashboard/orders" component={CustomerOrders} />
+      <Route path="/customer-dashboard/wishlist" component={CustomerWishlist} />
       <Route path="/customer-dashboard/cart" component={Cart} />
-      {/* Fallback routing for uncreated subpages routes them to dashboard for demo */}
+      <Route path="/customer-dashboard/addresses" component={AddressBook} />
+      <Route path="/customer-dashboard/payments" component={PaymentHistory} />
+      <Route path="/customer-dashboard/notifications" component={CustomerNotifications} />
+      <Route path="/customer-dashboard/support" component={CustomerSupport} />
+      <Route path="/customer-dashboard/profile" component={CustomerProfile} />
       <Route path="/customer-dashboard/:rest*" component={CustomerDashboard} />
 
       {/* Vendor */}
