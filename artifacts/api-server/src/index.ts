@@ -1,3 +1,5 @@
+import http from "node:http";
+import { pool } from "@workspace/db";
 import app, { setupFrontend } from "./app";
 import { logger } from "./lib/logger";
 
@@ -15,8 +17,26 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-await setupFrontend();
+const httpServer = http.createServer(app);
 
-app.listen(port, "0.0.0.0", () => {
+await setupFrontend(httpServer);
+
+httpServer.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening on 0.0.0.0");
 });
+
+function shutdown(signal: string) {
+  logger.info({ signal }, "Shutdown requested");
+  void pool.end().catch(() => undefined);
+  httpServer.close((err) => {
+    if (err) logger.error({ err }, "HTTP server close error");
+    process.exit(err ? 1 : 0);
+  });
+  setTimeout(() => {
+    logger.error("Shutdown timed out; exiting");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once("SIGINT", () => shutdown("SIGINT"));

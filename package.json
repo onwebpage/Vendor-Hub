@@ -2,9 +2,16 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.6.0"
+  },
   "scripts": {
+    "predev": "kill-port 3000 || exit 0",
     "dev": "pnpm --filter @workspace/api-server run dev",
     "build": "pnpm -r --if-present run build",
+    "build:render": "pnpm --filter @workspace/vendorkart run build && pnpm --filter @workspace/api-server run build",
+    "start:render": "pnpm --filter @workspace/api-server start",
     "typecheck": "tsc --build && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
     "start": "pnpm --filter @workspace/api-server start"
   },
@@ -12,6 +19,7 @@
   "devDependencies": {
     "@rollup/rollup-win32-x64-msvc": "^4.60.0",
     "@tailwindcss/oxide-win32-x64-msvc": "^4.2.2",
+    "kill-port": "^2.0.1",
     "lightningcss-win32-x64-msvc": "^1.32.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"

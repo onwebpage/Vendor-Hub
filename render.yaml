@@ -1,0 +1,17 @@
+# Render Blueprint (optional): connect the repo and use "Apply blueprint", or create a Web Service manually
+# and paste the build/start commands from your Render dashboard.
+services:
+  - type: web
+    name: vendorkart
+    runtime: node
+    plan: starter
+    buildCommand: corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm install --frozen-lockfile && pnpm run build:render
+    startCommand: pnpm run start:render
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22.16.0"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
