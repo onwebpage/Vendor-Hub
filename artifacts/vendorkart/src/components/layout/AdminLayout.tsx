@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Store, Users, Package, ShoppingBag, Tags,
   CreditCard, FileText, Activity, Settings, LogOut, Menu, X,
   ShieldCheck, Bell, ChevronRight, BarChart3, MessageSquare,
-  Crown, Percent, Image, Mail
+  Crown, Percent, Image, Mail, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuthStore } from "@/lib/admin-auth-store";
@@ -21,6 +21,7 @@ const NAV = [
   { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: FileText, label: "Coupons", href: "/admin/coupons" },
   { icon: Crown, label: "Subscriptions", href: "/admin/subscriptions" },
+  { icon: Clock, label: "Sub Payments", href: "/admin/subscription-payments" },
   { icon: Percent, label: "Commission", href: "/admin/commission" },
   { icon: Image, label: "Banners", href: "/admin/banners" },
   { icon: Mail, label: "Emails", href: "/admin/emails" },

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
-  subscriptionPlansTable, commissionSettingsTable, activityLogsTable,
+  subscriptionPlansTable, vendorSubscriptionsTable, commissionSettingsTable, activityLogsTable,
   contactMessagesTable, bannersTable, emailLogsTable, paymentsTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql } from "drizzle-orm";
@@ -446,6 +446,89 @@ router.delete("/banners/:id", async (req, res) => {
     return res.json({ message: "Banner deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to delete banner" });
+  }
+});
+
+router.get("/subscription-payments", async (_req, res) => {
+  try {
+    const subs = await db.select().from(vendorSubscriptionsTable)
+      .orderBy(sql`${vendorSubscriptionsTable.createdAt} DESC`)
+      .limit(100);
+    const result = await Promise.all(subs.map(async (s) => {
+      const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, s.vendorId));
+      const [plan] = await db.select().from(subscriptionPlansTable).where(eq(subscriptionPlansTable.id, s.planId));
+      return { ...s, paidAmount: s.paidAmount ? Number(s.paidAmount) : null, vendor, plan: plan ? { ...plan, price: Number(plan.price) } : null };
+    }));
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch subscription payments" });
+  }
+});
+
+router.put("/subscription-payments/:id/verify", async (req, res) => {
+  try {
+    const subId = Number(req.params.id);
+    const { action, reason } = req.body;
+    if (!["approve", "reject"].includes(action)) {
+      return res.status(400).json({ message: "action must be approve or reject" });
+    }
+
+    const [sub] = await db.select().from(vendorSubscriptionsTable).where(eq(vendorSubscriptionsTable.id, subId));
+    if (!sub) return res.status(404).json({ message: "Subscription not found" });
+    if (sub.status !== "pending_verification") {
+      return res.status(400).json({ message: "Only pending_verification subscriptions can be reviewed" });
+    }
+
+    const [plan] = await db.select().from(subscriptionPlansTable).where(eq(subscriptionPlansTable.id, sub.planId));
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, sub.vendorId));
+
+    if (action === "approve") {
+      const endDate = new Date(sub.startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      await db.update(vendorSubscriptionsTable)
+        .set({ status: "active", endDate, autoRenew: true })
+        .where(eq(vendorSubscriptionsTable.id, subId));
+
+      if (vendor && plan) {
+        await db.update(vendorsTable)
+          .set({ subscriptionPlan: plan.slug as any, updatedAt: new Date() })
+          .where(eq(vendorsTable.id, vendor.id));
+
+        logEmail({
+          recipient: vendor.email ?? `vendor-${vendor.id}@vendorkart.in`,
+          recipientType: "vendor",
+          subject: `Subscription Activated – ${plan.name} Plan`,
+          body: `Your payment has been verified and your ${plan.name} plan is now active until ${endDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}. Enjoy your benefits!`,
+          type: "subscription_activated",
+          relatedId: sub.id,
+        });
+      }
+
+      logActivity({ action: "subscription_payment_approved", resource: "subscription", details: `Approved subscription payment for vendor #${sub.vendorId}, plan: ${plan?.name ?? sub.planId}` });
+    } else {
+      await db.update(vendorSubscriptionsTable)
+        .set({ status: "rejected", rejectionReason: reason ?? "Payment could not be verified" })
+        .where(eq(vendorSubscriptionsTable.id, subId));
+
+      if (vendor && plan) {
+        logEmail({
+          recipient: vendor.email ?? `vendor-${vendor.id}@vendorkart.in`,
+          recipientType: "vendor",
+          subject: `Payment Rejected – ${plan.name} Plan`,
+          body: `Unfortunately, your payment screenshot for the ${plan.name} plan could not be verified.${reason ? `\n\nReason: ${reason}` : ""}\n\nPlease contact support or submit a new payment.`,
+          type: "subscription_activated",
+          relatedId: sub.id,
+        });
+      }
+
+      logActivity({ action: "subscription_payment_rejected", resource: "subscription", details: `Rejected subscription payment for vendor #${sub.vendorId}, plan: ${plan?.name ?? sub.planId}` });
+    }
+
+    const [updated] = await db.select().from(vendorSubscriptionsTable).where(eq(vendorSubscriptionsTable.id, subId));
+    return res.json({ success: true, subscription: { ...updated, paidAmount: updated.paidAmount ? Number(updated.paidAmount) : null } });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to verify subscription payment" });
   }
 });
 

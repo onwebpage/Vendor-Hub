@@ -9,7 +9,7 @@ import {
   Tags, CreditCard, Activity, ShieldAlert, MessageSquare,
   Mail, Phone, User, BookOpen, Building2, HeadphonesIcon, ChevronDown, ChevronUp,
   Image, Globe, Trash2, Plus, Percent, BarChart3, FileText, Zap, Crown, PieChart,
-  X, ImageIcon
+  X, ImageIcon, Loader2
 } from "lucide-react";
 import { useRef } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -1457,6 +1457,185 @@ function ReportsPanel() {
   );
 }
 
+// ─── SUBSCRIPTION PAYMENTS ───────────────────────────────────────────────────
+function SubscriptionPaymentsPanel() {
+  const { data, loading } = useAdminFetch<any[]>("/api/admin/subscription-payments");
+  const { token } = useAdminAuthStore();
+  const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("pending_verification");
+  const [rejectModal, setRejectModal] = useState<{ id: number; businessName: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [processing, setProcessing] = useState<number | null>(null);
+
+  const list: any[] = data ?? [];
+  const filtered = statusFilter === "all" ? list : list.filter((s) => s.status === statusFilter);
+  const pendingCount = list.filter((s) => s.status === "pending_verification").length;
+
+  const handleVerify = async (id: number, action: "approve" | "reject", reason?: string) => {
+    setProcessing(id);
+    await fetch(`${BASE}/api/admin/subscription-payments/${id}/verify`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action, reason }),
+    });
+    setProcessing(null);
+    setRejectModal(null);
+    setRejectReason("");
+    window.location.reload();
+  };
+
+  const statusColor = (s: string) => ({
+    active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+    pending_verification: "bg-amber-500/15 text-amber-400 border-amber-500/25",
+    rejected: "bg-red-500/15 text-red-400 border-red-500/25",
+    expired: "bg-slate-500/15 text-slate-400 border-slate-500/25",
+  })[s] ?? "bg-white/10 text-white/40";
+
+  const statusLabel = (s: string) => ({
+    active: "Activated",
+    pending_verification: "Pending",
+    rejected: "Rejected",
+    expired: "Expired",
+  })[s] ?? s;
+
+  return (
+    <div className="space-y-5">
+      {screenshotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setScreenshotModal(null)}>
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <img src={screenshotModal} alt="Payment screenshot" className="w-full rounded-2xl border border-white/10 shadow-2xl object-contain max-h-[80vh]" />
+            <button onClick={() => setScreenshotModal(null)} className="absolute top-3 right-3 p-2 rounded-full bg-black/60 border border-white/20 hover:bg-black/80 transition-colors">
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {rejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#080c14] border border-white/10 rounded-2xl p-6 w-full max-w-md space-y-4">
+            <h3 className="text-white font-bold text-lg">Reject Payment</h3>
+            <p className="text-white/50 text-sm">Rejecting payment for <span className="text-white font-semibold">{rejectModal.businessName}</span>.</p>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Rejection Reason</label>
+              <Input value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="e.g. Screenshot unclear, amount mismatch"
+                className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="ghost" onClick={() => { setRejectModal(null); setRejectReason(""); }} className="rounded-xl text-white/50 h-9">Cancel</Button>
+              <Button onClick={() => handleVerify(rejectModal.id, "reject", rejectReason)} disabled={!!processing}
+                className="rounded-xl bg-red-600 hover:bg-red-700 h-9 text-white">
+                {processing === rejectModal.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Reject"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/8 border border-amber-500/20">
+          <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          <p className="text-amber-300 text-sm font-semibold">{pendingCount} subscription payment{pendingCount > 1 ? "s" : ""} awaiting verification</p>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {[
+          { key: "pending_verification", label: "Pending" },
+          { key: "active", label: "Approved" },
+          { key: "rejected", label: "Rejected" },
+          { key: "all", label: "All" },
+        ].map(f => (
+          <Button key={f.key} size="sm" variant={statusFilter === f.key ? "default" : "ghost"}
+            onClick={() => setStatusFilter(f.key)}
+            className={`rounded-xl text-xs h-9 ${statusFilter === f.key ? "bg-indigo-600 text-white" : "text-white/50 hover:text-white/80"}`}>
+            {f.label}
+            {f.key === "pending_verification" && pendingCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">{pendingCount}</span>
+            )}
+          </Button>
+        ))}
+      </div>
+
+      <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/6">
+              {["Vendor", "Plan", "UTR / Txn ID", "Amount Paid", "Screenshot", "Submitted", "Status", "Actions"].map(h => (
+                <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? Array.from({ length: 5 }).map((_, i) => (
+              <tr key={i} className="border-b border-white/4">
+                {Array.from({ length: 8 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}
+              </tr>
+            )) : filtered.map((s: any) => (
+              <tr key={s.id} className={`border-b border-white/4 hover:bg-white/2 transition-colors ${s.status === "pending_verification" ? "bg-amber-500/2" : ""}`}>
+                <td className="px-4 py-3">
+                  <p className="text-white text-sm font-semibold">{s.vendor?.businessName ?? `Vendor #${s.vendorId}`}</p>
+                  <p className="text-white/30 text-[10px]">{s.vendor?.email}</p>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-white/80 text-sm font-semibold capitalize">{s.plan?.name ?? `Plan #${s.planId}`}</span>
+                  <p className="text-white/30 text-[10px]">₹{Number(s.plan?.price ?? 0).toLocaleString("en-IN")}/mo</p>
+                </td>
+                <td className="px-4 py-3">
+                  {s.utrNumber ? (
+                    <span className="font-mono text-white/80 text-xs bg-white/5 px-2 py-1 rounded-lg">{s.utrNumber}</span>
+                  ) : <span className="text-white/20 text-xs">—</span>}
+                </td>
+                <td className="px-4 py-3">
+                  {s.paidAmount != null ? (
+                    <span className="text-emerald-400 font-bold text-sm">₹{Number(s.paidAmount).toLocaleString("en-IN")}</span>
+                  ) : <span className="text-white/20 text-xs">—</span>}
+                </td>
+                <td className="px-4 py-3">
+                  {s.paymentScreenshot ? (
+                    <button onClick={() => setScreenshotModal(s.paymentScreenshot)}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 text-[11px] font-semibold hover:bg-indigo-500/25 transition-colors">
+                      <Eye className="w-3 h-3" /> View
+                    </button>
+                  ) : <span className="text-white/20 text-xs">—</span>}
+                </td>
+                <td className="px-4 py-3 text-white/30 text-xs">
+                  {s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                </td>
+                <td className="px-4 py-3">
+                  <Badge className={`text-[10px] border capitalize ${statusColor(s.status)}`}>{statusLabel(s.status)}</Badge>
+                </td>
+                <td className="px-4 py-3">
+                  {s.status === "pending_verification" && (
+                    <div className="flex gap-1.5">
+                      <Button size="sm" disabled={processing === s.id}
+                        onClick={() => handleVerify(s.id, "approve")}
+                        className="h-7 px-3 text-[11px] rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/25">
+                        {processing === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Approve"}
+                      </Button>
+                      <Button size="sm" disabled={!!processing}
+                        onClick={() => setRejectModal({ id: s.id, businessName: s.vendor?.businessName ?? `Vendor #${s.vendorId}` })}
+                        className="h-7 px-3 text-[11px] rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20">
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+                  {s.status === "rejected" && s.rejectionReason && (
+                    <p className="text-white/30 text-[10px] max-w-[120px] truncate" title={s.rejectionReason}>{s.rejectionReason}</p>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!loading && filtered.length === 0 && (
+          <div className="text-center py-12 text-white/30">No subscription payments found</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const SECTIONS: Record<string, { title: string; component: React.ElementType }> = {
   "/admin": { title: "Dashboard Overview", component: Overview },
@@ -1469,6 +1648,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/payments": { title: "Payment Monitoring", component: PaymentsPanel },
   "/admin/coupons": { title: "Coupons", component: CouponsPanel },
   "/admin/subscriptions": { title: "Subscription Plans", component: SubscriptionPlansPanel },
+  "/admin/subscription-payments": { title: "Subscription Payments", component: SubscriptionPaymentsPanel },
   "/admin/commission": { title: "Commission Settings", component: CommissionPanel },
   "/admin/banners": { title: "Banner & Ads Management", component: BannersPanel },
   "/admin/emails": { title: "Email System", component: EmailLogsPanel },

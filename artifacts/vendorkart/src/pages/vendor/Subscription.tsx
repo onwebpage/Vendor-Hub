@@ -5,11 +5,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Crown, CheckCircle2, Zap, Sparkles, Package, Tag, ImageIcon,
   Star, Loader2, AlertCircle, CalendarCheck, RefreshCw,
-  X, ExternalLink, QrCode,
+  X, ExternalLink, QrCode, Clock, ShieldCheck,
 } from "lucide-react";
 
 const PAYMENT_LINK = "https://razorpay.me/@debabratabanerjee3358";
@@ -40,10 +41,12 @@ function QRPaymentModal({
 }: {
   plan: any;
   onClose: () => void;
-  onConfirm: (screenshot: string) => void;
+  onConfirm: (data: { utrNumber: string; paidAmount: string; paymentScreenshot: string }) => void;
   isLoading: boolean;
 }) {
   const [screenshot, setScreenshot] = React.useState<string | null>(null);
+  const [utrNumber, setUtrNumber] = React.useState("");
+  const [paidAmount, setPaidAmount] = React.useState(String(Number(plan.price)));
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,6 +56,8 @@ function QRPaymentModal({
     reader.onload = () => setScreenshot(reader.result as string);
     reader.readAsDataURL(file);
   };
+
+  const canSubmit = screenshot && utrNumber.trim().length >= 6 && Number(paidAmount) > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
@@ -69,6 +74,11 @@ function QRPaymentModal({
             <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted/50 transition-colors">
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
+          </div>
+
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/8 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
+            <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>Your plan will be activated only after admin verifies your payment. Do not close this page until you submit.</span>
           </div>
 
           <div className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/20 dark:to-muted/10 border border-blue-200 dark:border-blue-800/40">
@@ -90,47 +100,68 @@ function QRPaymentModal({
             </a>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">Upload Payment Screenshot</p>
-            <p className="text-xs text-muted-foreground">
-              After paying ₹{Number(plan.price).toLocaleString("en-IN")}, upload a screenshot to activate your plan.
-            </p>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">UTR / Transaction ID <span className="text-destructive">*</span></label>
+              <Input
+                value={utrNumber}
+                onChange={e => setUtrNumber(e.target.value)}
+                placeholder="e.g. 421234567890"
+                className="rounded-xl h-10"
+              />
+              <p className="text-xs text-muted-foreground">Find this in your UPI app under payment details</p>
+            </div>
 
-            {screenshot ? (
-              <div className="relative rounded-xl overflow-hidden border border-border">
-                <img src={screenshot} alt="Payment proof" className="w-full max-h-40 object-contain bg-muted/20" />
-                <button
-                  onClick={() => { setScreenshot(null); if (fileRef.current) fileRef.current.value = ""; }}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 border border-border hover:bg-destructive/10 transition-colors"
-                >
-                  <X className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Uploaded
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">Amount Paid (₹) <span className="text-destructive">*</span></label>
+              <Input
+                type="number"
+                value={paidAmount}
+                onChange={e => setPaidAmount(e.target.value)}
+                placeholder={String(Number(plan.price))}
+                className="rounded-xl h-10"
+                min="1"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold">Payment Screenshot <span className="text-destructive">*</span></label>
+              {screenshot ? (
+                <div className="relative rounded-xl overflow-hidden border border-border">
+                  <img src={screenshot} alt="Payment proof" className="w-full max-h-40 object-contain bg-muted/20" />
+                  <button
+                    onClick={() => { setScreenshot(null); if (fileRef.current) fileRef.current.value = ""; }}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 border border-border hover:bg-destructive/10 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                  <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Uploaded
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="w-full flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-all cursor-pointer"
-              >
-                <ImageIcon className="w-7 h-7 text-muted-foreground/40" />
-                <span className="text-sm text-muted-foreground">Click to upload screenshot</span>
-              </button>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="w-full flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-all cursor-pointer"
+                >
+                  <ImageIcon className="w-7 h-7 text-muted-foreground/40" />
+                  <span className="text-sm text-muted-foreground">Click to upload screenshot</span>
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            </div>
           </div>
 
           <Button
             className="w-full h-12 rounded-xl text-base font-semibold"
-            onClick={() => screenshot && onConfirm(screenshot)}
-            disabled={!screenshot || isLoading}
+            onClick={() => canSubmit && onConfirm({ utrNumber: utrNumber.trim(), paidAmount, paymentScreenshot: screenshot! })}
+            disabled={!canSubmit || isLoading}
           >
             {isLoading ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Activating Plan…</>
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</>
             ) : (
-              <><CheckCircle2 className="w-4 h-4 mr-2" /> Confirm & Activate Plan</>
+              <><Clock className="w-4 h-4 mr-2" /> Submit for Verification</>
             )}
           </Button>
         </div>
@@ -168,17 +199,17 @@ export default function VendorSubscription() {
     setSelectedPlan(plan);
   };
 
-  const handleConfirmPayment = async (screenshot: string) => {
+  const handleConfirmPayment = async (data: { utrNumber: string; paidAmount: string; paymentScreenshot: string }) => {
     if (!selectedPlan) return;
     try {
       setSubscribingPlanId(selectedPlan.id);
-      await subscribe({ data: { planId: selectedPlan.id } });
+      await subscribe({ data: { planId: selectedPlan.id, ...data } });
       await queryClient.invalidateQueries({ queryKey: ["/api/subscriptions/current"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/vendors/profile"] });
       setSelectedPlan(null);
-      toast({ title: "Plan Activated!", description: `You are now on the ${selectedPlan.name} plan. Payment verified.` });
+      toast({ title: "Payment Submitted!", description: "Your payment is pending admin verification. Your plan will be activated once approved." });
     } catch {
-      toast({ variant: "destructive", title: "Failed to activate plan. Please try again." });
+      toast({ variant: "destructive", title: "Failed to submit payment. Please try again." });
     } finally {
       setSubscribingPlanId(null);
     }
@@ -216,7 +247,33 @@ export default function VendorSubscription() {
           </p>
         </div>
 
-        {!subLoading && currentSub && (
+        {!subLoading && currentSub && currentSub.status === "pending_verification" && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+          >
+            <div className="p-3 bg-amber-500/10 rounded-xl">
+              <Clock className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-foreground">
+                Payment Pending Verification: <span className="text-amber-600 capitalize">{currentSub.plan?.name ?? "—"}</span>
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your payment screenshot has been submitted. Admin will verify and activate your plan within 24 hours.
+              </p>
+              {(currentSub as any).utrNumber && (
+                <p className="text-xs text-muted-foreground mt-1">UTR: <span className="font-mono font-semibold">{(currentSub as any).utrNumber}</span></p>
+              )}
+            </div>
+            <span className="text-xs font-semibold px-3 py-1 rounded-full border bg-amber-500/15 text-amber-700 border-amber-500/25">
+              Pending
+            </span>
+          </motion.div>
+        )}
+
+        {!subLoading && currentSub && currentSub.status === "active" && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -241,7 +298,7 @@ export default function VendorSubscription() {
               </div>
             </div>
             <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${planBadgeColors[currentSub.plan?.slug ?? "basic"] ?? planBadgeColors.basic}`}>
-              {currentSub.status === "active" ? "Active" : currentSub.status}
+              Active
             </span>
           </motion.div>
         )}

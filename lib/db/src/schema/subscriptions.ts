@@ -22,10 +22,14 @@ export const vendorSubscriptionsTable = pgTable("vendor_subscriptions", {
   id: serial("id").primaryKey(),
   vendorId: integer("vendor_id").notNull().references(() => vendorsTable.id),
   planId: integer("plan_id").notNull().references(() => subscriptionPlansTable.id),
-  status: text("status").notNull().default("active"),
+  status: text("status").notNull().default("pending_verification"),
   startDate: timestamp("start_date").notNull().defaultNow(),
   endDate: timestamp("end_date"),
   autoRenew: boolean("auto_renew").notNull().default(true),
+  utrNumber: text("utr_number"),
+  paidAmount: numeric("paid_amount", { precision: 10, scale: 2 }),
+  paymentScreenshot: text("payment_screenshot"),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
