@@ -8,7 +8,8 @@ import {
   Search, Eye, MoreHorizontal, ArrowUpRight, Filter,
   Tags, CreditCard, Activity, ShieldAlert, MessageSquare,
   Mail, Phone, User, BookOpen, Building2, HeadphonesIcon, ChevronDown, ChevronUp,
-  Image, Globe, Trash2, Plus, Percent, BarChart3, FileText, Zap, Crown, PieChart
+  Image, Globe, Trash2, Plus, Percent, BarChart3, FileText, Zap, Crown, PieChart,
+  X, ImageIcon
 } from "lucide-react";
 import { useRef } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -782,13 +783,29 @@ function PlaceholderSection({ icon: Icon, label }: { icon: any; label: string })
 }
 
 // ─── ORDERS ───────────────────────────────────────────────────────────────────
+function ScreenshotModal({ src, onClose }: { src: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="relative max-w-lg w-full mx-4" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute -top-3 -right-3 p-1.5 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-colors z-10">
+          <X className="w-4 h-4 text-white" />
+        </button>
+        <img src={src} alt="Payment screenshot" className="w-full rounded-2xl border border-white/10 shadow-2xl" />
+      </div>
+    </div>
+  );
+}
+
 function OrdersPanel() {
   const { data, loading } = useAdminFetch<any>("/api/admin/orders?limit=50");
   const { token } = useAdminAuthStore();
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("pending_payment");
+  const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState<number | null>(null);
   const orders: any[] = data?.orders ?? [];
   const filtered = orders.filter(o => statusFilter === "all" || o.status === statusFilter);
   const statusColors: Record<string, string> = {
+    pending_payment: "bg-orange-500/15 text-orange-400 border-orange-500/25",
     pending: "bg-amber-500/15 text-amber-400 border-amber-500/25",
     confirmed: "bg-blue-500/15 text-blue-400 border-blue-500/25",
     processing: "bg-violet-500/15 text-violet-400 border-violet-500/25",
@@ -804,20 +821,48 @@ function OrdersPanel() {
     });
     window.location.reload();
   };
+  const verifyPayment = async (id: number, action: "approve" | "reject") => {
+    setVerifying(id);
+    try {
+      await fetch(`${BASE}/api/admin/orders/${id}/verify-payment`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      window.location.reload();
+    } finally {
+      setVerifying(null);
+    }
+  };
+  const pendingPaymentCount = orders.filter(o => o.status === "pending_payment").length;
   return (
     <div className="space-y-5">
+      {screenshotModal && <ScreenshotModal src={screenshotModal} onClose={() => setScreenshotModal(null)} />}
+
+      {pendingPaymentCount > 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-orange-500/10 border border-orange-500/25">
+          <div className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-pulse flex-shrink-0" />
+          <p className="text-orange-300 text-sm font-medium">
+            {pendingPaymentCount} order{pendingPaymentCount > 1 ? "s" : ""} awaiting payment verification
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-2 flex-wrap">
-        {["all", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"].map(s => (
+        {["pending_payment", "all", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"].map(s => (
           <Button key={s} size="sm" onClick={() => setStatusFilter(s)}
             className={`rounded-xl text-xs capitalize h-9 ${statusFilter === s ? "bg-indigo-600 text-white" : "text-white/50 hover:text-white/80 bg-transparent border-white/10 border"}`}>
-            {s}
+            {s === "pending_payment" ? "⏳ Pending Payment" : s}
+            {s === "pending_payment" && pendingPaymentCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px] font-bold">{pendingPaymentCount}</span>
+            )}
           </Button>
         ))}
       </div>
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
         <table className="w-full">
           <thead><tr className="border-b border-white/6">
-            {["Order #", "Customer", "Items", "Total", "Payment", "Status", "Date", "Update Status"].map(h => (
+            {["Order #", "Customer", "Total", "Payment", "Status", "Screenshot", "Date", "Actions"].map(h => (
               <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
             ))}
           </tr></thead>
@@ -825,19 +870,49 @@ function OrdersPanel() {
             {loading ? Array.from({ length: 6 }).map((_, i) => (
               <tr key={i} className="border-b border-white/4">{Array.from({ length: 8 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}</tr>
             )) : filtered.map(o => (
-              <tr key={o.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
+              <tr key={o.id} className={`border-b border-white/4 hover:bg-white/2 transition-colors ${o.status === "pending_payment" ? "bg-orange-500/3" : ""}`}>
                 <td className="px-4 py-3 text-white text-sm font-mono">{o.orderNumber}</td>
                 <td className="px-4 py-3 text-white/50 text-sm">#{o.customerId}</td>
-                <td className="px-4 py-3 text-white/50 text-sm">{Array.isArray(o.items) ? o.items.length : "—"}</td>
                 <td className="px-4 py-3 text-white font-semibold text-sm">₹{Number(o.total).toLocaleString("en-IN")}</td>
-                <td className="px-4 py-3"><Badge className={`text-[10px] capitalize border ${o.paymentStatus === "paid" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-amber-500/15 text-amber-400 border-amber-500/25"}`}>{o.paymentStatus}</Badge></td>
-                <td className="px-4 py-3"><Badge className={`text-[10px] capitalize border ${statusColors[o.status] ?? "bg-white/10 text-white/40"}`}>{o.status}</Badge></td>
+                <td className="px-4 py-3"><Badge className={`text-[10px] capitalize border ${o.paymentStatus === "paid" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : o.paymentStatus === "failed" ? "bg-red-500/15 text-red-400 border-red-500/25" : "bg-amber-500/15 text-amber-400 border-amber-500/25"}`}>{o.paymentStatus}</Badge></td>
+                <td className="px-4 py-3"><Badge className={`text-[10px] capitalize border ${statusColors[o.status] ?? "bg-white/10 text-white/40"}`}>{o.status?.replace("_", " ")}</Badge></td>
+                <td className="px-4 py-3">
+                  {o.paymentScreenshot ? (
+                    <button
+                      onClick={() => setScreenshotModal(o.paymentScreenshot)}
+                      className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 transition-colors"
+                    >
+                      <ImageIcon className="w-3 h-3" /> View
+                    </button>
+                  ) : (
+                    <span className="text-white/20 text-xs">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-white/30 text-xs">{new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td>
                 <td className="px-4 py-3">
-                  <select onChange={e => updateStatus(o.id, e.target.value)} value={o.status}
-                    className="text-[11px] bg-white/5 border border-white/10 text-white/60 rounded-lg px-2 py-1 cursor-pointer">
-                    {["pending","confirmed","processing","shipped","delivered","cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  {o.status === "pending_payment" ? (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => verifyPayment(o.id, "approve")}
+                        disabled={verifying === o.id}
+                        className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-3 h-3" /> Approve
+                      </button>
+                      <button
+                        onClick={() => verifyPayment(o.id, "reject")}
+                        disabled={verifying === o.id}
+                        className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                      >
+                        <XCircle className="w-3 h-3" /> Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <select onChange={e => updateStatus(o.id, e.target.value)} value={o.status}
+                      className="text-[11px] bg-white/5 border border-white/10 text-white/60 rounded-lg px-2 py-1 cursor-pointer">
+                      {["pending","confirmed","processing","shipped","delivered","cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  )}
                 </td>
               </tr>
             ))}
@@ -868,9 +943,9 @@ function PaymentsPanel() {
           </div>
         ))}
       </div>
-      <div className="bg-indigo-500/8 border border-indigo-500/20 rounded-2xl p-4 flex items-center gap-3">
-        <CreditCard className="w-5 h-5 text-indigo-400 flex-shrink-0" />
-        <p className="text-indigo-300 text-sm"><strong>Razorpay Gateway:</strong> Integration is Under Development. Payments shown here are test/demo transactions.</p>
+      <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3">
+        <CreditCard className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+        <p className="text-emerald-300 text-sm"><strong>UPI QR Payment:</strong> Customers pay via UPI QR code and submit a screenshot. Go to <strong>Orders</strong> tab to verify and approve/reject pending payments.</p>
       </div>
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
         <table className="w-full">

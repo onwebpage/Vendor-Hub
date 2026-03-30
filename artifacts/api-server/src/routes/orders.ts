@@ -46,7 +46,11 @@ router.get("/:id", authenticate, async (req, res) => {
 router.post("/", authenticate, requireRole("customer"), async (req, res) => {
   try {
     const userId = (req as any).userId;
-    const { shippingAddressId, couponCode, notes } = req.body;
+    const { shippingAddressId, couponCode, notes, paymentScreenshot } = req.body;
+
+    if (!paymentScreenshot) {
+      return res.status(400).json({ message: "Payment screenshot is required to place an order" });
+    }
 
     const cartItems = await db.select().from(cartItemsTable).where(eq(cartItemsTable.userId, userId));
     if (cartItems.length === 0) return res.status(400).json({ message: "Cart is empty" });
@@ -85,8 +89,10 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
     const [order] = await db.insert(ordersTable).values({
       orderNumber,
       customerId: userId,
-      status: "pending",
+      status: "pending_payment",
       paymentStatus: "pending",
+      paymentMethod: "upi_qr",
+      paymentScreenshot,
       shippingAddress: {
         name: address.name || undefined,
         phone: address.phone || undefined,
@@ -112,8 +118,8 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
       logEmail({
         recipient: customer.email,
         recipientType: "customer",
-        subject: `Order Confirmed – ${order.orderNumber}`,
-        body: `Dear ${customer.name}, your order #${order.orderNumber} has been placed successfully. Total: ₹${Number(order.total).toLocaleString("en-IN")}. We will notify you when it is shipped.`,
+        subject: `Order Received – ${order.orderNumber} (Awaiting Payment Verification)`,
+        body: `Dear ${customer.name}, your order #${order.orderNumber} has been received. Total: ₹${Number(order.total).toLocaleString("en-IN")}. Your payment screenshot is under review. We will confirm your order once payment is verified.`,
         type: "order_confirmation",
         relatedId: order.id,
       });
@@ -122,15 +128,15 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
         logEmail({
           recipient: `vendor-${vendorId}@vendorkart.in`,
           recipientType: "vendor",
-          subject: `New Order Received – ${order.orderNumber}`,
-          body: `You have a new order #${order.orderNumber}. Items: ${orderItems.filter(i => i.vendorId === vendorId).map(i => `${i.productName} (x${i.quantity})`).join(", ")}. Total: ₹${Number(order.total).toLocaleString("en-IN")}.`,
+          subject: `New Order Received – ${order.orderNumber} (Pending Payment Verification)`,
+          body: `You have a new order #${order.orderNumber} awaiting payment verification. Items: ${orderItems.filter(i => i.vendorId === vendorId).map(i => `${i.productName} (x${i.quantity})`).join(", ")}. Total: ₹${Number(order.total).toLocaleString("en-IN")}.`,
           type: "new_order_alert",
           relatedId: order.id,
         });
       }
     }
 
-    logActivity({ userId, action: "order_placed", resource: "order", details: `Order ${order.orderNumber} placed. Total: ₹${Number(order.total).toLocaleString("en-IN")}` });
+    logActivity({ userId, action: "order_placed", resource: "order", details: `Order ${order.orderNumber} placed via UPI QR. Awaiting payment verification. Total: ₹${Number(order.total).toLocaleString("en-IN")}` });
 
     return res.status(201).json(order);
   } catch (err) {

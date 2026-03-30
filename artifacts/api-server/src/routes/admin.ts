@@ -209,6 +209,74 @@ router.get("/orders", async (req, res) => {
   }
 });
 
+router.put("/orders/:id/verify-payment", async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { action } = req.body;
+    if (!["approve", "reject"].includes(action)) {
+      return res.status(400).json({ message: "action must be approve or reject" });
+    }
+
+    const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    const isApprove = action === "approve";
+    const [updated] = await db.update(ordersTable)
+      .set({
+        paymentStatus: isApprove ? "paid" : "failed",
+        status: isApprove ? "confirmed" : "cancelled",
+        updatedAt: new Date(),
+      })
+      .where(eq(ordersTable.id, orderId))
+      .returning();
+
+    const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, order.customerId));
+    if (customer) {
+      if (isApprove) {
+        logEmail({
+          recipient: customer.email,
+          recipientType: "customer",
+          subject: `Payment Approved – Order ${order.orderNumber}`,
+          body: `Dear ${customer.name}, your payment for order #${order.orderNumber} has been verified and approved. Your order is now confirmed and will be processed shortly.`,
+          type: "order_confirmed",
+          relatedId: order.id,
+        });
+        createNotification({
+          userId: customer.id,
+          title: "Payment Approved",
+          message: `Your payment for order #${order.orderNumber} has been verified. Order is now confirmed.`,
+          type: "payment_approved",
+        });
+      } else {
+        logEmail({
+          recipient: customer.email,
+          recipientType: "customer",
+          subject: `Payment Rejected – Order ${order.orderNumber}`,
+          body: `Dear ${customer.name}, unfortunately your payment screenshot for order #${order.orderNumber} could not be verified. Please contact support or try placing a new order.`,
+          type: "order_cancelled",
+          relatedId: order.id,
+        });
+        createNotification({
+          userId: customer.id,
+          title: "Payment Rejected",
+          message: `Your payment screenshot for order #${order.orderNumber} was rejected. Please contact support.`,
+          type: "payment_rejected",
+        });
+      }
+    }
+
+    logActivity({
+      action: isApprove ? "payment_approved" : "payment_rejected",
+      resource: "order",
+      details: `Order ${order.orderNumber} payment ${isApprove ? "approved" : "rejected"} by admin`,
+    });
+
+    return res.json({ success: true, order: updated });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to verify payment" });
+  }
+});
+
 router.get("/coupons", async (_req, res) => {
   const coupons = await db.select().from(couponsTable);
   return res.json(coupons.map(c => ({ ...c, discountValue: Number(c.discountValue) })));

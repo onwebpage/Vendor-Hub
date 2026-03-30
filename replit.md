@@ -86,7 +86,13 @@ pnpm run start        # Run production server
 - `artifacts/api-server/src/lib/notify.ts` — creates in-app notifications in DB
 - `artifacts/api-server/src/lib/activity.ts` — writes to activity_logs table
 
-### Payment Gateway (Under Development)
-- Razorpay: subscription payment flow partially wired (`POST /api/subscriptions/create-order`)
-- UPI: vendor-controlled UPI ID + QR Code upload in Store Settings
-- Set RAZORPAY_KEY and RAZORPAY_SECRET env vars to enable live payments
+### Payment System (Manual QR — Live)
+- **Razorpay removed completely** — no Razorpay SDK calls anywhere
+- **UPI QR Code checkout**: customer Cart page shows Razorpay QR image + payment link (https://razorpay.me/@debabratabanerjee3358)
+- Customer uploads payment screenshot → order created with `status: "pending_payment"`, `paymentStatus: "pending"`, `paymentMethod: "upi_qr"`
+- QR image served from `/qr-payment.jpg` (copied to `artifacts/vendorkart/public/`)
+- Admin Orders panel (defaults to "Pending Payment" tab) shows screenshot thumbnail + Approve/Reject buttons
+  - Approve: sets `paymentStatus: "paid"`, `status: "confirmed"` → sends notification + email to customer
+  - Reject: sets `paymentStatus: "failed"`, `status: "cancelled"` → sends notification + email to customer
+- New admin API route: `PUT /api/admin/orders/:id/verify-payment` — body: `{ action: "approve" | "reject" }`
+- Schema: `ordersTable` now has `paymentScreenshot` (text) field; `orderStatusEnum` includes "pending_payment"

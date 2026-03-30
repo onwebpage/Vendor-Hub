@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useGetCart, useUpdateCartItem, useRemoveFromCart, useCreateOrder, useListAddresses } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, MapPin, ChevronDown, CheckCircle2 } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, MapPin, ChevronDown, CheckCircle2, Upload, ExternalLink, QrCode, X, ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { PaymentModal } from "@/components/shared/PaymentModal";
 import { useAuthStore } from "@/lib/auth-store";
+
+const PAYMENT_LINK = "https://razorpay.me/@debabratabanerjee3358";
 
 function getWholesaleDiscount(subtotal: number): { percent: number; label: string } {
   if (subtotal >= 500000) return { percent: 12, label: "Bulk (₹5L+) — 12% off" };
@@ -85,17 +86,129 @@ function AddressSelector({ addresses, selectedId, onChange }: {
   );
 }
 
+function QRPaymentPanel({
+  total,
+  screenshot,
+  onScreenshotChange,
+  onConfirm,
+  onBack,
+  isLoading,
+}: {
+  total: number;
+  screenshot: string | null;
+  onScreenshotChange: (base64: string | null) => void;
+  onConfirm: () => void;
+  onBack: () => void;
+  isLoading: boolean;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onScreenshotChange(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="p-2 rounded-xl hover:bg-muted/50 transition-colors">
+          <X className="w-4 h-4 text-muted-foreground" />
+        </button>
+        <div>
+          <h2 className="text-lg font-bold">Pay via UPI / QR</h2>
+          <p className="text-xs text-muted-foreground">Scan and pay ₹{total.toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/20 dark:to-muted/10 border border-blue-200 dark:border-blue-800/40">
+        <img
+          src="/qr-payment.jpg"
+          alt="UPI QR Code — Debabrata Banerjee"
+          className="w-52 h-auto rounded-xl shadow-md border border-white"
+        />
+        <p className="text-xs text-muted-foreground text-center">Scan with any UPI app · BHIM · GPay · PhonePe · Paytm</p>
+        <a
+          href={PAYMENT_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
+        >
+          <ExternalLink className="w-4 h-4" /> Pay via Razorpay Link
+        </a>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-foreground">Upload Payment Screenshot</p>
+        <p className="text-xs text-muted-foreground">After completing your payment, upload a screenshot as proof. Your order will be placed pending admin verification.</p>
+
+        {screenshot ? (
+          <div className="relative rounded-xl overflow-hidden border border-border">
+            <img src={screenshot} alt="Payment screenshot" className="w-full max-h-48 object-contain bg-muted/20" />
+            <button
+              onClick={() => { onScreenshotChange(null); if (fileRef.current) fileRef.current.value = ""; }}
+              className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 border border-border hover:bg-destructive/10 hover:border-destructive/40 transition-colors"
+            >
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+            <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Screenshot uploaded
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="w-full flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-all cursor-pointer"
+          >
+            <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
+            <span className="text-sm text-muted-foreground">Click to upload screenshot</span>
+            <span className="text-xs text-muted-foreground/60">PNG, JPG or WebP</span>
+          </button>
+        )}
+
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+      </div>
+
+      <Button
+        size="lg"
+        className="w-full h-14 text-lg rounded-xl shadow-lg shadow-primary/25"
+        onClick={onConfirm}
+        disabled={!screenshot || isLoading}
+      >
+        {isLoading ? (
+          <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Placing Order…</>
+        ) : (
+          <><CheckCircle2 className="w-5 h-5 mr-2" /> Confirm Order</>
+        )}
+      </Button>
+      <p className="text-xs text-center text-muted-foreground">
+        Your order will be confirmed once admin verifies your payment screenshot.
+      </p>
+    </div>
+  );
+}
+
 export default function Cart() {
   const { data: cart, isLoading, refetch } = useGetCart();
   const { data: addresses } = useListAddresses();
+  const { mutateAsync: createOrder } = useCreateOrder();
   const { mutate: updateItem } = useUpdateCartItem();
   const { mutate: removeItem } = useRemoveFromCart();
-  const { mutateAsync: createOrder } = useCreateOrder();
   const { toast } = useToast();
 
-  const [isPaymentOpen, setPaymentOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [paymentScreenshot, setPaymentScreenshot] = useState<string | null>(null);
 
   const addrList: any[] = (addresses as any[]) || [];
 
@@ -136,27 +249,28 @@ export default function Cart() {
       toast({ title: "Please select a shipping address", variant: "destructive" });
       return;
     }
-    setPaymentOpen(true);
+    setCheckoutOpen(true);
+    setPaymentScreenshot(null);
   };
 
-  const handlePaymentSuccess = async (txnId: string) => {
+  const handleConfirmOrder = async () => {
+    if (!paymentScreenshot) {
+      toast({ title: "Please upload your payment screenshot", variant: "destructive" });
+      return;
+    }
     try {
       setIsCreatingOrder(true);
-      const order = await createOrder({ data: { shippingAddressId: selectedAddressId!, notes: `Paid via TXN: ${txnId}` } });
-      if (order && (order as any).id) {
-        const token = useAuthStore.getState().token;
-        await fetch("/api/payments/confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ orderId: (order as any).id, sessionId: txnId }),
-        });
-      }
-      setPaymentOpen(false);
-      toast({ title: "Order Placed Successfully!", description: "Check your orders page for tracking." });
+      await createOrder({
+        data: {
+          shippingAddressId: selectedAddressId!,
+          paymentScreenshot,
+          notes: "UPI QR payment — screenshot submitted for verification",
+        } as any,
+      });
+      toast({ title: "Order Placed!", description: "Your order is pending payment verification by admin." });
       window.location.href = "/customer-dashboard/orders";
     } catch (error: any) {
       toast({ variant: "destructive", title: "Order failed", description: error.message });
-      setPaymentOpen(false);
     } finally {
       setIsCreatingOrder(false);
     }
@@ -244,85 +358,96 @@ export default function Cart() {
 
           <div className="w-full lg:w-[400px]">
             <div className="bg-card rounded-3xl border border-border shadow-sm p-6 sticky top-28 space-y-6">
-              <div>
-                <h2 className="text-xl font-bold mb-4">Shipping Address</h2>
-                <AddressSelector
-                  addresses={addrList}
-                  selectedId={selectedAddressId}
-                  onChange={setSelectedAddressId}
+              {checkoutOpen ? (
+                <QRPaymentPanel
+                  total={total}
+                  screenshot={paymentScreenshot}
+                  onScreenshotChange={setPaymentScreenshot}
+                  onConfirm={handleConfirmOrder}
+                  onBack={() => setCheckoutOpen(false)}
+                  isLoading={isCreatingOrder}
                 />
-                {addrList.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    <Link href="/customer-dashboard/addresses" className="hover:underline">Add a shipping address</Link> to proceed.
+              ) : (
+                <>
+                  <div>
+                    <h2 className="text-xl font-bold mb-4">Shipping Address</h2>
+                    <AddressSelector
+                      addresses={addrList}
+                      selectedId={selectedAddressId}
+                      onChange={setSelectedAddressId}
+                    />
+                    {addrList.length === 0 && (
+                      <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        <Link href="/customer-dashboard/addresses" className="hover:underline">Add a shipping address</Link> to proceed.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotal ({cart.itemCount} items)</span>
+                        <span className="font-semibold">₹{subtotal.toLocaleString()}</span>
+                      </div>
+
+                      {discount.percent > 0 ? (
+                        <div className="flex justify-between text-green-600">
+                          <span className="flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />{discount.label}
+                          </span>
+                          <span className="font-semibold">-₹{discountAmount.toLocaleString()}</span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Wholesale Discount</span>
+                          <span className="text-xs italic">Add ₹{(10000 - subtotal).toLocaleString()} more for 2% off</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">GST (18%)</span>
+                        <span className="font-semibold">₹{gst.toLocaleString()}</span>
+                      </div>
+
+                      <div className="pt-3 border-t border-border/50 flex justify-between items-center">
+                        <span className="font-bold text-lg text-foreground">Total Amount</span>
+                        <span className="font-display font-bold text-2xl text-primary">₹{total.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {discount.percent === 0 && subtotal > 0 && (
+                      <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-400">
+                        Reach ₹10,000 order value for wholesale discounts up to 12%!
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 flex items-center gap-2 text-xs text-blue-700 dark:text-blue-400">
+                    <QrCode className="w-4 h-4 flex-shrink-0" />
+                    Pay via UPI QR code. Upload your payment screenshot to confirm your order.
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full h-14 text-lg rounded-xl shadow-lg shadow-primary/25"
+                    onClick={handleCheckoutClick}
+                    disabled={!selectedAddressId || addrList.length === 0}
+                  >
+                    Proceed to Payment <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    UPI QR payment · Admin verified · Secure checkout
                   </p>
-                )}
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal ({cart.itemCount} items)</span>
-                    <span className="font-semibold">₹{subtotal.toLocaleString()}</span>
-                  </div>
-
-                  {discount.percent > 0 ? (
-                    <div className="flex justify-between text-green-600">
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />{discount.label}
-                      </span>
-                      <span className="font-semibold">-₹{discountAmount.toLocaleString()}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Wholesale Discount</span>
-                      <span className="text-xs italic">Add ₹{(10000 - subtotal).toLocaleString()} more for 2% off</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">GST (18%)</span>
-                    <span className="font-semibold">₹{gst.toLocaleString()}</span>
-                  </div>
-
-                  <div className="pt-3 border-t border-border/50 flex justify-between items-center">
-                    <span className="font-bold text-lg text-foreground">Total Amount</span>
-                    <span className="font-display font-bold text-2xl text-primary">₹{total.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {discount.percent === 0 && subtotal > 0 && (
-                  <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-400">
-                    Reach ₹10,000 order value for wholesale discounts up to 12%!
-                  </div>
-                )}
-              </div>
-
-              <Button
-                size="lg"
-                className="w-full h-14 text-lg rounded-xl shadow-lg shadow-primary/25"
-                onClick={handleCheckoutClick}
-                disabled={!selectedAddressId || addrList.length === 0}
-              >
-                Proceed to Checkout <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-
-              <p className="text-xs text-center text-muted-foreground">
-                Secure SSL encrypted payment. All prices include GST.
-              </p>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      <PaymentModal
-        isOpen={isPaymentOpen}
-        onClose={() => !isCreatingOrder && setPaymentOpen(false)}
-        amount={total}
-        onSuccess={handlePaymentSuccess}
-      />
     </DashboardLayout>
   );
 }
