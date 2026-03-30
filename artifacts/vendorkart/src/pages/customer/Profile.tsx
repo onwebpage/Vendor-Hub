@@ -1,12 +1,108 @@
 import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useGetMe } from "@workspace/api-client-react";
-import { User, Phone, Mail, Shield, Save, CheckCircle2 } from "lucide-react";
+import { User, Phone, Mail, Shield, Save, CheckCircle2, X, Eye, EyeOff, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth-store";
+
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const { toast } = useToast();
+  const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [show, setShow] = useState({ current: false, new: false, confirm: false });
+  const [saving, setSaving] = useState(false);
+
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const toggleShow = (k: "current" | "new" | "confirm") => setShow(p => ({ ...p, [k]: !p[k] }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.currentPassword || !form.newPassword || !form.confirmPassword) {
+      toast({ title: "All fields are required", variant: "destructive" });
+      return;
+    }
+    if (form.newPassword.length < 6) {
+      toast({ title: "New password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    if (form.newPassword !== form.confirmPassword) {
+      toast({ title: "New passwords do not match", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const token = useAuthStore.getState().token;
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ currentPassword: form.currentPassword, newPassword: form.newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed");
+      toast({ title: "Password changed successfully!" });
+      onClose();
+    } catch (err: any) {
+      toast({ title: err.message || "Failed to change password", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-card rounded-3xl border border-border shadow-2xl w-full max-w-md p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold">Change Password</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Keep your account secure</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {(["current", "new", "confirm"] as const).map((field) => {
+            const labels = { current: "Current Password", new: "New Password", confirm: "Confirm New Password" };
+            const keys = { current: "currentPassword", new: "newPassword", confirm: "confirmPassword" };
+            return (
+              <div key={field} className="space-y-1.5">
+                <Label>{labels[field]}</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type={show[field] ? "text" : "password"}
+                    value={(form as any)[keys[field]]}
+                    onChange={e => set(keys[field], e.target.value)}
+                    placeholder="••••••••"
+                    className="h-12 rounded-xl pl-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleShow(field)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {show[field] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" className="flex-1 rounded-xl h-11" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="flex-1 rounded-xl h-11 gap-2">
+              {saving ? "Saving..." : <><Shield className="w-4 h-4" />Update Password</>}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function CustomerProfile() {
   const { data: me, isLoading, refetch } = useGetMe();
@@ -17,6 +113,7 @@ export default function CustomerProfile() {
   const [phone, setPhone] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
     if (me) {
@@ -62,7 +159,6 @@ export default function CustomerProfile() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Avatar Card */}
         <div className="bg-card border border-border/50 rounded-3xl p-8 flex flex-col items-center text-center shadow-sm">
           <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-primary/20 flex items-center justify-center text-primary font-bold text-3xl mb-4">
             {initials}
@@ -91,7 +187,6 @@ export default function CustomerProfile() {
           </div>
         </div>
 
-        {/* Edit Form */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-card border border-border/50 rounded-3xl p-8 shadow-sm">
             <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
@@ -152,7 +247,6 @@ export default function CustomerProfile() {
             )}
           </div>
 
-          {/* Security Section */}
           <div className="bg-card border border-border/50 rounded-3xl p-8 shadow-sm">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />Account Security
@@ -160,15 +254,21 @@ export default function CustomerProfile() {
             <div className="flex items-center justify-between p-4 rounded-2xl border border-border bg-muted/20">
               <div>
                 <p className="font-semibold text-sm">Password</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Last updated: Unknown</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Use a strong password to keep your account safe</p>
               </div>
-              <Button variant="outline" className="rounded-xl text-xs h-9" onClick={() => alert("Password change flow — coming soon!")}>
-                Change Password
+              <Button
+                variant="outline"
+                className="rounded-xl text-xs h-9 gap-2"
+                onClick={() => setShowPasswordModal(true)}
+              >
+                <Lock className="w-3.5 h-3.5" />Change Password
               </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
     </DashboardLayout>
   );
 }

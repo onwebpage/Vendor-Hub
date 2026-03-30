@@ -100,4 +100,29 @@ router.put("/me", authenticate, async (req, res) => {
   }
 });
 
+router.post("/change-password", authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password are required" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.password !== hashPassword(currentPassword)) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+    await db.update(usersTable)
+      .set({ password: hashPassword(newPassword), updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
+    return res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    req.log.error({ err }, "Change password error");
+    return res.status(500).json({ message: "Failed to change password" });
+  }
+});
+
 export default router;

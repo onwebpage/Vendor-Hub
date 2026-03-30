@@ -1,6 +1,6 @@
 import React from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useGetMe, useListOrders, useGetCart } from "@workspace/api-client-react";
+import { useGetMe, useListOrders, useGetCart, useGetWishlist } from "@workspace/api-client-react";
 import { Package, ShoppingBag, Clock, Heart, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,13 @@ export default function CustomerDashboard() {
   const { data: user } = useGetMe();
   const { data: ordersData } = useListOrders({ limit: 5 });
   const { data: cart } = useGetCart();
+  const { data: wishlist } = useGetWishlist();
 
   const stats = [
     { label: "Total Orders", value: ordersData?.total || 0, icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
     { label: "Pending Deliveries", value: ordersData?.orders.filter(o => o.status === 'processing' || o.status === 'shipped').length || 0, icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" },
     { label: "Items in Cart", value: cart?.itemCount || 0, icon: ShoppingBag, color: "text-green-500", bg: "bg-green-500/10" },
-    { label: "Saved Items", value: 0, icon: Heart, color: "text-rose-500", bg: "bg-rose-500/10" }, // Mocked wishlist count
+    { label: "Saved Items", value: (wishlist as any[])?.length || 0, icon: Heart, color: "text-rose-500", bg: "bg-rose-500/10" },
   ];
 
   return (
