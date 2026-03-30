@@ -83,4 +83,21 @@ router.get("/me", authenticate, async (req, res) => {
   }
 });
 
+router.put("/me", authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { name, phone } = req.body;
+    const [user] = await db.update(usersTable)
+      .set({ name, phone, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId))
+      .returning();
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const { password: _, ...userOut } = user;
+    return res.json(userOut);
+  } catch (err) {
+    req.log.error({ err }, "Update me error");
+    return res.status(500).json({ message: "Failed to update profile" });
+  }
+});
+
 export default router;

@@ -4,7 +4,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { motion } from "framer-motion";
 import { 
   LayoutDashboard, ShoppingBag, Package, Users, Settings, 
-  CreditCard, Bell, LifeBuoy, LogOut, Store, Menu, Tag, Tags, FileText, Heart, Activity
+  CreditCard, Bell, LifeBuoy, LogOut, Store, Menu, Tag, Tags, FileText, Heart, Activity, MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -28,12 +28,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     switch (user.role) {
       case "customer":
         return [
-          { icon: LayoutDashboard, label: "Overview", href: "/customer-dashboard" },
-          { icon: ShoppingBag, label: "My Orders", href: "/customer-dashboard/orders" },
-          { icon: Heart, label: "Wishlist", href: "/customer-dashboard/wishlist" },
-          { icon: Store, label: "Saved Addresses", href: "/customer-dashboard/addresses" },
-          { icon: Bell, label: "Notifications", href: "/customer-dashboard/notifications" },
-          { icon: Settings, label: "Profile", href: "/customer-dashboard/profile" },
+          { icon: LayoutDashboard, label: "Overview",         href: "/customer-dashboard" },
+          { icon: Package,          label: "My Orders",        href: "/customer-dashboard/orders" },
+          { icon: Heart,            label: "Wishlist",         href: "/customer-dashboard/wishlist" },
+          { icon: ShoppingBag,      label: "Cart",             href: "/customer-dashboard/cart" },
+          { icon: MapPin,           label: "Address Book",     href: "/customer-dashboard/addresses" },
+          { icon: CreditCard,       label: "Payment History",  href: "/customer-dashboard/payments" },
+          { icon: Bell,             label: "Notifications",    href: "/customer-dashboard/notifications" },
+          { icon: LifeBuoy,         label: "Support",          href: "/customer-dashboard/support" },
+          { icon: Settings,         label: "Profile",          href: "/customer-dashboard/profile" },
         ];
       case "vendor":
         return [
