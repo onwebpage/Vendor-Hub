@@ -100,6 +100,29 @@ export const activityLogsTable = pgTable("activity_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const bannersTable = pgTable("banners", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  imageUrl: text("image_url"),
+  linkUrl: text("link_url"),
+  position: text("position").notNull().default("home_top"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const emailLogsTable = pgTable("email_logs", {
+  id: serial("id").primaryKey(),
+  recipient: text("recipient").notNull(),
+  recipientType: text("recipient_type").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body"),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("sent"),
+  relatedId: integer("related_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const contactMessagesTable = pgTable("contact_messages", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -123,3 +146,5 @@ export type Notification = typeof notificationsTable.$inferSelect;
 export type SupportTicket = typeof supportTicketsTable.$inferSelect;
 export type Coupon = typeof couponsTable.$inferSelect;
 export type ContactMessage = typeof contactMessagesTable.$inferSelect;
+export type Banner = typeof bannersTable.$inferSelect;
+export type EmailLog = typeof emailLogsTable.$inferSelect;

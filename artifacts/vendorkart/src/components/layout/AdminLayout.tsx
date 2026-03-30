@@ -4,13 +4,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Store, Users, Package, ShoppingBag, Tags,
   CreditCard, FileText, Activity, Settings, LogOut, Menu, X,
-  ShieldCheck, Bell, ChevronRight, BarChart3, MessageSquare
+  ShieldCheck, Bell, ChevronRight, BarChart3, MessageSquare,
+  Crown, Percent, Image, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuthStore } from "@/lib/admin-auth-store";
 
 const NAV = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+  { icon: BarChart3, label: "Reports", href: "/admin/reports" },
   { icon: Store, label: "Vendors", href: "/admin/vendors" },
   { icon: Users, label: "Customers", href: "/admin/customers" },
   { icon: Package, label: "Products", href: "/admin/products" },
@@ -18,6 +20,10 @@ const NAV = [
   { icon: Tags, label: "Categories", href: "/admin/categories" },
   { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: FileText, label: "Coupons", href: "/admin/coupons" },
+  { icon: Crown, label: "Subscriptions", href: "/admin/subscriptions" },
+  { icon: Percent, label: "Commission", href: "/admin/commission" },
+  { icon: Image, label: "Banners", href: "/admin/banners" },
+  { icon: Mail, label: "Emails", href: "/admin/emails" },
   { icon: MessageSquare, label: "Contact", href: "/admin/contact" },
   { icon: Activity, label: "Activity", href: "/admin/activity" },
 ];

@@ -74,59 +74,11 @@ export default function VendorSubscription() {
       return;
     }
 
-    const loaded = await loadRazorpay();
-    if (!loaded) {
-      toast({ variant: "destructive", title: "Payment failed", description: "Could not load payment gateway." });
-      return;
-    }
-
-    try {
-      setSubscribingPlanId(planId);
-      const token = localStorage.getItem("vendorkart_token");
-      const res = await fetch(`${API}/api/subscriptions/create-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ planId, amount: price * 100 }),
-      });
-      if (!res.ok) throw new Error("Failed to create payment order");
-      const order = await res.json();
-
-      const options = {
-        key: order.key,
-        amount: order.amount,
-        currency: "INR",
-        name: "Vendorkart",
-        description: `${planName} Plan – Monthly Subscription`,
-        order_id: order.orderId,
-        handler: async () => {
-          try {
-            await subscribe({ data: { planId } });
-            await queryClient.invalidateQueries({ queryKey: ["/api/subscriptions/current"] });
-            await queryClient.invalidateQueries({ queryKey: ["/api/vendors/profile"] });
-            toast({ title: "Payment successful!", description: `You are now on the ${planName} plan.` });
-          } catch {
-            toast({ variant: "destructive", title: "Subscription activation failed", description: "Payment was received but subscription activation failed. Contact support." });
-          } finally {
-            setSubscribingPlanId(null);
-          }
-        },
-        modal: {
-          ondismiss: () => setSubscribingPlanId(null),
-        },
-        prefill: {
-          name: vendorProfile?.businessName ?? "",
-          email: vendorProfile?.email ?? "",
-          contact: vendorProfile?.phone ?? "",
-        },
-        theme: { color: "#6366f1" },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch {
-      toast({ variant: "destructive", title: "Payment failed", description: "Could not initiate payment. Try again." });
-      setSubscribingPlanId(null);
-    }
+    toast({
+      title: "Payment Gateway — Under Development",
+      description: "Razorpay integration is coming soon. Please contact support to upgrade manually.",
+      variant: "destructive",
+    });
   };
 
   const isLoading = plansLoading || subLoading;

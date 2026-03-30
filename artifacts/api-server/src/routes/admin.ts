@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, commissionSettingsTable, activityLogsTable,
-  contactMessagesTable,
+  contactMessagesTable, bannersTable, emailLogsTable, paymentsTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
@@ -234,6 +234,127 @@ router.put("/contact-messages/:id/read", async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ message: "Failed to update message" });
+  }
+});
+
+router.get("/payments", async (_req, res) => {
+  try {
+    const payments = await db.select().from(paymentsTable)
+      .orderBy(sql`${paymentsTable.createdAt} DESC`).limit(100);
+    return res.json(payments.map(p => ({ ...p, amount: Number(p.amount) })));
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch payments" });
+  }
+});
+
+router.delete("/products/:id", async (req, res) => {
+  try {
+    await db.delete(productsTable).where(eq(productsTable.id, Number(req.params.id)));
+    return res.json({ message: "Product deleted" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete product" });
+  }
+});
+
+router.delete("/coupons/:id", async (req, res) => {
+  try {
+    await db.delete(couponsTable).where(eq(couponsTable.id, Number(req.params.id)));
+    return res.json({ message: "Coupon deleted" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete coupon" });
+  }
+});
+
+router.put("/subscription-plans/:id", async (req, res) => {
+  try {
+    const { name, price, billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, isActive, features } = req.body;
+    const [plan] = await db.update(subscriptionPlansTable)
+      .set({ name, price: String(price), billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, isActive, features })
+      .where(eq(subscriptionPlansTable.id, Number(req.params.id)))
+      .returning();
+    return res.json({ ...plan, price: Number(plan.price) });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update plan" });
+  }
+});
+
+router.get("/banners", async (_req, res) => {
+  try {
+    const banners = await db.select().from(bannersTable).orderBy(sql`${bannersTable.createdAt} DESC`);
+    return res.json(banners);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch banners" });
+  }
+});
+
+router.post("/banners", async (req, res) => {
+  try {
+    const { title, subtitle, imageUrl, linkUrl, position, isActive } = req.body;
+    const [banner] = await db.insert(bannersTable).values({
+      title, subtitle, imageUrl, linkUrl, position: position || "home_top", isActive: isActive ?? true,
+    }).returning();
+    return res.status(201).json(banner);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to create banner" });
+  }
+});
+
+router.put("/banners/:id", async (req, res) => {
+  try {
+    const { title, subtitle, imageUrl, linkUrl, position, isActive } = req.body;
+    const [banner] = await db.update(bannersTable)
+      .set({ title, subtitle, imageUrl, linkUrl, position, isActive })
+      .where(eq(bannersTable.id, Number(req.params.id)))
+      .returning();
+    return res.json(banner);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update banner" });
+  }
+});
+
+router.delete("/banners/:id", async (req, res) => {
+  try {
+    await db.delete(bannersTable).where(eq(bannersTable.id, Number(req.params.id)));
+    return res.json({ message: "Banner deleted" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete banner" });
+  }
+});
+
+router.get("/email-logs", async (_req, res) => {
+  try {
+    const logs = await db.select().from(emailLogsTable)
+      .orderBy(sql`${emailLogsTable.createdAt} DESC`).limit(200);
+    return res.json(logs);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch email logs" });
+  }
+});
+
+router.get("/reports", async (_req, res) => {
+  try {
+    const [{ totalVendors }] = await db.select({ totalVendors: count() }).from(vendorsTable);
+    const [{ totalCustomers }] = await db.select({ totalCustomers: count() }).from(usersTable).where(eq(usersTable.role, "customer"));
+    const [{ totalProducts }] = await db.select({ totalProducts: count() }).from(productsTable);
+    const [{ totalOrders }] = await db.select({ totalOrders: count() }).from(ordersTable);
+    const [{ totalRevenue }] = await db.select({ totalRevenue: sum(ordersTable.total) }).from(ordersTable).where(eq(ordersTable.paymentStatus, "paid"));
+    const [{ pendingOrders }] = await db.select({ pendingOrders: count() }).from(ordersTable).where(eq(ordersTable.status, "pending"));
+    const [{ approvedVendors }] = await db.select({ approvedVendors: count() }).from(vendorsTable).where(eq(vendorsTable.status, "approved"));
+    const [{ totalPayments }] = await db.select({ totalPayments: count() }).from(paymentsTable);
+    const topVendors = await db.select({ id: vendorsTable.id, businessName: vendorsTable.businessName, totalSales: vendorsTable.totalSales, productCount: vendorsTable.productCount }).from(vendorsTable).where(eq(vendorsTable.status, "approved")).orderBy(sql`${vendorsTable.totalSales} DESC`).limit(5);
+    return res.json({
+      totalVendors: Number(totalVendors),
+      totalCustomers: Number(totalCustomers),
+      totalProducts: Number(totalProducts),
+      totalOrders: Number(totalOrders),
+      pendingOrders: Number(pendingOrders),
+      approvedVendors: Number(approvedVendors),
+      totalPayments: Number(totalPayments),
+      totalRevenue: Number(totalRevenue) || 0,
+      topVendors,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch reports" });
   }
 });
 

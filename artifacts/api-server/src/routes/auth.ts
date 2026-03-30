@@ -4,6 +4,7 @@ import { usersTable, vendorsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword, generateToken, authenticate } from "../lib/auth.js";
 import { uniqueSlug } from "../lib/slugify.js";
+import { logEmail } from "../lib/email-log.js";
 
 const router = Router();
 
@@ -37,6 +38,26 @@ router.post("/register", async (req, res) => {
 
     const token = generateToken(user.id, user.role);
     const { password: _, ...userOut } = user;
+
+    if (role === "vendor") {
+      logEmail({
+        recipient: email,
+        recipientType: "vendor",
+        subject: "Welcome to Vendorkart – Registration Received",
+        body: `Dear ${name}, thank you for registering as a vendor on Vendorkart. Your account is under review. You'll be notified once approved.`,
+        type: "vendor_registered",
+        relatedId: user.id,
+      });
+      logEmail({
+        recipient: "admin@vendorkart.in",
+        recipientType: "admin",
+        subject: `New Vendor Registration – ${businessName || name}`,
+        body: `A new vendor "${businessName || name}" (${email}) has registered and is pending approval.`,
+        type: "new_vendor_registration",
+        relatedId: user.id,
+      });
+    }
+
     return res.status(201).json({ user: userOut, token, message: "Registered successfully" });
   } catch (err) {
     req.log.error({ err }, "Register error");

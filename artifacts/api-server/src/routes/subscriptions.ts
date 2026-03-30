@@ -4,6 +4,7 @@ import { subscriptionPlansTable, vendorSubscriptionsTable, vendorsTable } from "
 import { eq } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 import Razorpay from "razorpay";
+import { logEmail } from "../lib/email-log.js";
 
 const router = Router();
 
@@ -88,6 +89,15 @@ router.post("/subscribe", authenticate, requireRole("vendor"), async (req, res) 
     await db.update(vendorsTable)
       .set({ subscriptionPlan: plan.slug as any, updatedAt: new Date() })
       .where(eq(vendorsTable.id, vendor.id));
+
+    logEmail({
+      recipient: vendor.email ?? `vendor-${vendor.id}@vendorkart.in`,
+      recipientType: "vendor",
+      subject: `Subscription Activated – ${plan.name} Plan`,
+      body: `Your ${plan.name} plan is now active until ${endDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}. Enjoy your benefits!`,
+      type: "subscription_activated",
+      relatedId: sub.id,
+    });
 
     return res.json({ ...sub, plan: { ...plan, price: Number(plan.price) } });
   } catch (err) {

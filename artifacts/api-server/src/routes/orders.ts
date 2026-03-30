@@ -4,6 +4,7 @@ import { ordersTable, cartItemsTable, addressesTable, usersTable } from "@worksp
 import { eq, and, desc } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 import { generateOrderNumber } from "../lib/slugify.js";
+import { logEmail } from "../lib/email-log.js";
 
 const router = Router();
 
@@ -103,6 +104,29 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
     }).returning();
 
     await db.delete(cartItemsTable).where(eq(cartItemsTable.userId, userId));
+
+    const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (customer) {
+      logEmail({
+        recipient: customer.email,
+        recipientType: "customer",
+        subject: `Order Confirmed – ${order.orderNumber}`,
+        body: `Dear ${customer.name}, your order #${order.orderNumber} has been placed successfully. Total: ₹${Number(order.total).toLocaleString("en-IN")}. We will notify you when it is shipped.`,
+        type: "order_confirmation",
+        relatedId: order.id,
+      });
+      const uniqueVendors = [...new Set(orderItems.map(i => i.vendorId))];
+      for (const vendorId of uniqueVendors) {
+        logEmail({
+          recipient: `vendor-${vendorId}@vendorkart.in`,
+          recipientType: "vendor",
+          subject: `New Order Received – ${order.orderNumber}`,
+          body: `You have a new order #${order.orderNumber}. Items: ${orderItems.filter(i => i.vendorId === vendorId).map(i => `${i.productName} (x${i.quantity})`).join(", ")}. Total: ₹${Number(order.total).toLocaleString("en-IN")}.`,
+          type: "new_order_alert",
+          relatedId: order.id,
+        });
+      }
+    }
 
     return res.status(201).json(order);
   } catch (err) {
