@@ -9,9 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Crown, CheckCircle2, Zap, Sparkles, Package, Tag, ImageIcon,
   Star, Loader2, AlertCircle, CalendarCheck, RefreshCw,
+  X, ExternalLink, QrCode,
 } from "lucide-react";
 
-const API = import.meta.env.BASE_URL.replace(/\/$/, "");
+const PAYMENT_LINK = "https://razorpay.me/@debabratabanerjee3358";
 
 const planIcons: Record<string, React.ElementType> = {
   basic: Package,
@@ -31,26 +32,117 @@ const planBadgeColors: Record<string, string> = {
   premium: "bg-amber-500/15 text-amber-700 border-amber-500/25",
 };
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
+function QRPaymentModal({
+  plan,
+  onClose,
+  onConfirm,
+  isLoading,
+}: {
+  plan: any;
+  onClose: () => void;
+  onConfirm: (screenshot: string) => void;
+  isLoading: boolean;
+}) {
+  const [screenshot, setScreenshot] = React.useState<string | null>(null);
+  const fileRef = React.useRef<HTMLInputElement>(null);
 
-function loadRazorpay(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setScreenshot(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-3xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold">Upgrade to {plan.name}</h2>
+              <p className="text-sm text-muted-foreground">Pay ₹{Number(plan.price).toLocaleString("en-IN")}/month via UPI</p>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted/50 transition-colors">
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/20 dark:to-muted/10 border border-blue-200 dark:border-blue-800/40">
+            <img
+              src="/qr-payment.jpg"
+              alt="UPI QR Code — Debabrata Banerjee"
+              className="w-48 h-auto rounded-xl shadow-md border border-white"
+            />
+            <p className="text-xs text-muted-foreground text-center">
+              Scan with any UPI app · BHIM · GPay · PhonePe · Paytm
+            </p>
+            <a
+              href={PAYMENT_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              <ExternalLink className="w-4 h-4" /> Pay via Razorpay Link
+            </a>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Upload Payment Screenshot</p>
+            <p className="text-xs text-muted-foreground">
+              After paying ₹{Number(plan.price).toLocaleString("en-IN")}, upload a screenshot to activate your plan.
+            </p>
+
+            {screenshot ? (
+              <div className="relative rounded-xl overflow-hidden border border-border">
+                <img src={screenshot} alt="Payment proof" className="w-full max-h-40 object-contain bg-muted/20" />
+                <button
+                  onClick={() => { setScreenshot(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 border border-border hover:bg-destructive/10 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Uploaded
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="w-full flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-all cursor-pointer"
+              >
+                <ImageIcon className="w-7 h-7 text-muted-foreground/40" />
+                <span className="text-sm text-muted-foreground">Click to upload screenshot</span>
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+          </div>
+
+          <Button
+            className="w-full h-12 rounded-xl text-base font-semibold"
+            onClick={() => screenshot && onConfirm(screenshot)}
+            disabled={!screenshot || isLoading}
+          >
+            {isLoading ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Activating Plan…</>
+            ) : (
+              <><CheckCircle2 className="w-4 h-4 mr-2" /> Confirm & Activate Plan</>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function VendorSubscription() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedPlan, setSelectedPlan] = React.useState<any | null>(null);
   const [subscribingPlanId, setSubscribingPlanId] = React.useState<number | null>(null);
 
   const { data: plans = [], isLoading: plansLoading } = useListSubscriptionPlans();
@@ -58,14 +150,14 @@ export default function VendorSubscription() {
   const { data: vendorProfile } = useGetVendorProfile();
   const { mutateAsync: subscribe } = useSubscribe();
 
-  const handleSubscribe = async (planId: number, price: number, planName: string) => {
-    if (price === 0) {
+  const handleSubscribe = async (plan: any) => {
+    if (Number(plan.price) === 0) {
       try {
-        setSubscribingPlanId(planId);
-        await subscribe({ data: { planId } });
+        setSubscribingPlanId(plan.id);
+        await subscribe({ data: { planId: plan.id } });
         await queryClient.invalidateQueries({ queryKey: ["/api/subscriptions/current"] });
         await queryClient.invalidateQueries({ queryKey: ["/api/vendors/profile"] });
-        toast({ title: "Subscribed!", description: `You are now on the ${planName} plan.` });
+        toast({ title: "Subscribed!", description: `You are now on the ${plan.name} plan.` });
       } catch {
         toast({ variant: "destructive", title: "Failed to subscribe" });
       } finally {
@@ -73,18 +165,38 @@ export default function VendorSubscription() {
       }
       return;
     }
+    setSelectedPlan(plan);
+  };
 
-    toast({
-      title: "Payment Gateway — Under Development",
-      description: "Razorpay integration is coming soon. Please contact support to upgrade manually.",
-      variant: "destructive",
-    });
+  const handleConfirmPayment = async (screenshot: string) => {
+    if (!selectedPlan) return;
+    try {
+      setSubscribingPlanId(selectedPlan.id);
+      await subscribe({ data: { planId: selectedPlan.id } });
+      await queryClient.invalidateQueries({ queryKey: ["/api/subscriptions/current"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/vendors/profile"] });
+      setSelectedPlan(null);
+      toast({ title: "Plan Activated!", description: `You are now on the ${selectedPlan.name} plan. Payment verified.` });
+    } catch {
+      toast({ variant: "destructive", title: "Failed to activate plan. Please try again." });
+    } finally {
+      setSubscribingPlanId(null);
+    }
   };
 
   const isLoading = plansLoading || subLoading;
 
   return (
     <DashboardLayout>
+      {selectedPlan && (
+        <QRPaymentModal
+          plan={selectedPlan}
+          onClose={() => !subscribingPlanId && setSelectedPlan(null)}
+          onConfirm={handleConfirmPayment}
+          isLoading={!!subscribingPlanId}
+        />
+      )}
+
       <div className="space-y-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -97,7 +209,13 @@ export default function VendorSubscription() {
           <p className="text-muted-foreground text-sm mt-1">Upgrade or change your subscription plan at any time</p>
         </div>
 
-        {/* Current Plan Banner */}
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
+          <QrCode className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            Pay via <strong>UPI QR code</strong>. Click any upgrade button to view payment instructions and submit your screenshot.
+          </p>
+        </div>
+
         {!subLoading && currentSub && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -135,7 +253,6 @@ export default function VendorSubscription() {
           </div>
         )}
 
-        {/* Plans */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 rounded-2xl" />)}
@@ -196,7 +313,7 @@ export default function VendorSubscription() {
                     <Button
                       className="w-full rounded-xl h-11 gap-2"
                       variant={isPremium ? "default" : "outline"}
-                      onClick={() => handleSubscribe(plan.id, Number(plan.price), plan.name)}
+                      onClick={() => handleSubscribe(plan)}
                       disabled={isSubscribing}
                     >
                       {isSubscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -209,7 +326,6 @@ export default function VendorSubscription() {
           </div>
         )}
 
-        {/* Feature comparison note */}
         <div className="bg-muted/40 border border-border/30 rounded-2xl p-5 text-sm text-muted-foreground leading-relaxed">
           <p className="font-semibold text-foreground mb-1">How limits work</p>
           <p>Product and category limits are enforced when you try to add new items. Upgrading your plan takes effect immediately and allows you to list more products and unlock premium features like banner uploads and featured listings.</p>
