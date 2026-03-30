@@ -5,7 +5,7 @@ import {
   Store, Package, ShoppingBag, IndianRupee, Clock,
   Plus, Lock, ArrowRight, CheckCircle2, XCircle, Star, MapPin,
   AlertTriangle, Zap, BarChart3, Users, Shield,
-  Bell, ChevronRight, Sparkles, Building2, Phone, Mail
+  Bell, ChevronRight, Sparkles, Building2, Phone, Mail, Link2, Copy, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -14,10 +14,50 @@ import { motion } from "framer-motion";
 
 const fadeIn = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35 } };
 
-function StatusBanner({ status, rejectionReason }: { status: string; rejectionReason?: string | null }) {
+function StoreUrlBar({ slug }: { slug: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const storeUrl = `${window.location.origin}${base}/vendors/${slug}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(storeUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-3 p-2.5 rounded-xl bg-primary/5 border border-primary/15">
+      <Link2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+      <span className="text-xs text-primary font-mono flex-1 truncate">{storeUrl}</span>
+      <button
+        onClick={handleCopy}
+        className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:bg-primary/15 px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
+        title="Copy store URL"
+      >
+        <Copy className="w-3 h-3" />
+        {copied ? "Copied!" : "Copy"}
+      </button>
+      <a
+        href={storeUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
+        title="Open store in new tab"
+      >
+        <ExternalLink className="w-3 h-3" />
+        Visit
+      </a>
+    </div>
+  );
+}
+
+function StatusBanner({ status, rejectionReason, slug }: { status: string; rejectionReason?: string | null; slug?: string }) {
   if (status === "approved") {
+    const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+    const storeUrl = slug ? `${window.location.origin}${base}/vendors/${slug}` : null;
     return (
-      <motion.div {...fadeIn} className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 to-emerald-400/5 p-5 mb-8 flex items-center gap-4">
+      <motion.div {...fadeIn} className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 to-emerald-400/5 p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="p-2.5 rounded-xl bg-emerald-500/15 flex-shrink-0">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
         </div>
@@ -25,11 +65,20 @@ function StatusBanner({ status, rejectionReason }: { status: string; rejectionRe
           <p className="font-semibold text-emerald-700 dark:text-emerald-400">Your store is live and verified</p>
           <p className="text-sm text-emerald-700/70 dark:text-emerald-400/70 mt-0.5">Buyers can discover your store and products across the marketplace.</p>
         </div>
-        <Link href="/vendor-dashboard/add-product">
-          <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl border-0 gap-1.5 flex-shrink-0">
-            <Plus className="w-4 h-4" /> Add Product
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {storeUrl && (
+            <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline" className="rounded-xl gap-1.5 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10">
+                <ExternalLink className="w-3.5 h-3.5" /> View Store
+              </Button>
+            </a>
+          )}
+          <Link href="/vendor-dashboard/add-product">
+            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl border-0 gap-1.5">
+              <Plus className="w-4 h-4" /> Add Product
+            </Button>
+          </Link>
+        </div>
       </motion.div>
     );
   }
@@ -264,7 +313,7 @@ export default function VendorDashboard() {
         </motion.div>
 
         {/* Status Banner */}
-        <StatusBanner status={profile?.status ?? "pending"} rejectionReason={profile?.rejectionReason} />
+        <StatusBanner status={profile?.status ?? "pending"} rejectionReason={profile?.rejectionReason} slug={(profile as any)?.slug} />
 
         {/* Store Profile Card */}
         <motion.div {...fadeIn} className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
@@ -342,6 +391,11 @@ export default function VendorDashboard() {
 
               {profile?.description && (
                 <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{profile.description}</p>
+              )}
+
+              {/* Store URL */}
+              {(profile as any)?.slug && (
+                <StoreUrlBar slug={(profile as any).slug} />
               )}
             </div>
           </div>

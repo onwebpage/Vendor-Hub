@@ -4,7 +4,7 @@ import { useGetVendorProfile, useUpdateVendorProfile } from "@workspace/api-clie
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Store, Loader2, Save, AlertCircle, MapPin, Phone, Wallet, Lock } from "lucide-react";
+import { Store, Loader2, Save, AlertCircle, MapPin, Phone, Wallet, Lock, Link2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,8 +50,21 @@ export default function StoreSettings() {
   const { data: profile, isLoading, isError } = useGetVendorProfile();
   const { mutateAsync: updateProfile, isPending } = useUpdateVendorProfile();
   const [saved, setSaved] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
   const canUploadBanner = (profile as any)?.subscriptionPlan === "standard" || (profile as any)?.subscriptionPlan === "premium";
+
+  const slug = (profile as any)?.slug;
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const storeUrl = slug ? `${window.location.origin}${base}/vendors/${slug}` : null;
+
+  const handleCopyUrl = () => {
+    if (!storeUrl) return;
+    navigator.clipboard.writeText(storeUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -126,6 +139,30 @@ export default function StoreSettings() {
 
   return (
     <DashboardLayout>
+      {/* Store URL Banner */}
+      {storeUrl && (
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+          <div className="p-2 bg-primary/10 rounded-xl flex-shrink-0">
+            <Link2 className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-muted-foreground mb-0.5">Your Public Store URL</p>
+            <p className="text-sm font-mono text-primary truncate">{storeUrl}</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5 h-8" onClick={handleCopyUrl}>
+              <Copy className="w-3.5 h-3.5" />
+              {copied ? "Copied!" : "Copy URL"}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="rounded-xl gap-1.5 h-8" asChild>
+              <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-3.5 h-3.5" /> Visit Store
+              </a>
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="flex items-center justify-between">
