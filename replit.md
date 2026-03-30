@@ -66,4 +66,27 @@ pnpm run start        # Run production server
 - Banner upload gated behind Standard/Premium plan; product limits enforced based on plan's maxProducts
 
 ### Admin Panel (Complete)
-- Vendor management (approve/reject/suspend), product moderation, customer management, orders, categories, subscriptions, coupons, activity logs
+- Dashboard with live activity feed (real activity logs from DB)
+- Vendor management (approve/reject/suspend) — triggers emails + in-app notifications to vendors
+- Product moderation (approve/delete), customer management, orders management
+- Categories management — real CRUD from database (add/edit/delete categories)
+- Activity Logs — real panel showing all admin actions (vendor_approved, product_deleted, order_placed, etc.)
+- Commission settings, subscription plans CRUD, banner & ads management
+- Email system log viewer, contact messages, reports & analytics
+- Payment monitoring (demo mode while Razorpay integration is under development)
+
+### Notification System (Active)
+- In-app notifications for: vendor approval/rejection/suspension, order status updates
+- Email logging for: vendor registration, vendor approval/rejection, order confirmation, order status updates, subscription activation
+- Email sending via SMTP: configure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM env vars to enable real email delivery (falls back to log-only if not configured)
+
+### Helper Libs (Backend)
+- `artifacts/api-server/src/lib/email.ts` — nodemailer SMTP email sender (graceful fallback)
+- `artifacts/api-server/src/lib/email-log.ts` — logs email + calls SMTP sender
+- `artifacts/api-server/src/lib/notify.ts` — creates in-app notifications in DB
+- `artifacts/api-server/src/lib/activity.ts` — writes to activity_logs table
+
+### Payment Gateway (Under Development)
+- Razorpay: subscription payment flow partially wired (`POST /api/subscriptions/create-order`)
+- UPI: vendor-controlled UPI ID + QR Code upload in Store Settings
+- Set RAZORPAY_KEY and RAZORPAY_SECRET env vars to enable live payments

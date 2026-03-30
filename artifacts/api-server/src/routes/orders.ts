@@ -5,6 +5,8 @@ import { eq, and, desc } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 import { generateOrderNumber } from "../lib/slugify.js";
 import { logEmail } from "../lib/email-log.js";
+import { createNotification } from "../lib/notify.js";
+import { logActivity } from "../lib/activity.js";
 
 const router = Router();
 
@@ -128,6 +130,8 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
       }
     }
 
+    logActivity({ userId, action: "order_placed", resource: "order", details: `Order ${order.orderNumber} placed. Total: ₹${Number(order.total).toLocaleString("en-IN")}` });
+
     return res.status(201).json(order);
   } catch (err) {
     req.log.error({ err }, "Create order error");
@@ -138,10 +142,41 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
 router.put("/:id", authenticate, async (req, res) => {
   try {
     const { status } = req.body;
+    const orderId = Number(req.params.id);
     const [order] = await db.update(ordersTable)
       .set({ status, updatedAt: new Date() })
-      .where(eq(ordersTable.id, Number(req.params.id)))
+      .where(eq(ordersTable.id, orderId))
       .returning();
+
+    const statusLabels: Record<string, string> = {
+      confirmed: "Confirmed",
+      processing: "Processing",
+      shipped: "Shipped",
+      delivered: "Delivered",
+      cancelled: "Cancelled",
+    };
+    const statusLabel = statusLabels[status] ?? status;
+
+    const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, order.customerId));
+    if (customer) {
+      logEmail({
+        recipient: customer.email,
+        recipientType: "customer",
+        subject: `Order ${statusLabel} – ${order.orderNumber}`,
+        body: `Dear ${customer.name}, your order #${order.orderNumber} has been updated to: ${statusLabel}.${status === "shipped" ? " Your order is on its way!" : ""}${status === "delivered" ? " Thank you for shopping on Vendorkart!" : ""}`,
+        type: `order_${status}`,
+        relatedId: order.id,
+      });
+      createNotification({
+        userId: customer.id,
+        title: `Order ${statusLabel}`,
+        message: `Your order #${order.orderNumber} is now ${statusLabel.toLowerCase()}.`,
+        type: `order_${status}`,
+      });
+    }
+
+    logActivity({ action: "order_status_updated", resource: "order", details: `Order ${order.orderNumber} status changed to: ${status}` });
+
     return res.json(order);
   } catch (err) {
     return res.status(500).json({ message: "Failed to update order" });

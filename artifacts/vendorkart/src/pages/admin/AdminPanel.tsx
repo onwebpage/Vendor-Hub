@@ -63,7 +63,25 @@ function StatCard({ label, value, icon: Icon, color, change, changeUp }: any) {
 function Overview() {
   const { data: stats, loading } = useAdminFetch<any>("/api/admin/stats");
   const { data: vendorsData, loading: vLoading } = useAdminFetch<any>("/api/admin/vendors?status=pending&limit=5");
+  const { data: activityLogs, loading: aLoading } = useAdminFetch<any[]>("/api/admin/activity-logs");
   const { token } = useAdminAuthStore();
+
+  const relativeTime = (ts: string) => {
+    const diff = Date.now() - new Date(ts).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  };
+
+  const activityColor = (action: string) => {
+    if (action.includes("approved") || action.includes("placed") || action.includes("restored")) return "bg-emerald-400";
+    if (action.includes("rejected") || action.includes("deleted") || action.includes("suspended")) return "bg-red-400";
+    if (action.includes("updated")) return "bg-indigo-400";
+    return "bg-blue-400";
+  };
 
   const handleApprove = async (id: number) => {
     await fetch(`${BASE}/api/admin/vendors/${id}/approve`, {
@@ -166,20 +184,18 @@ function Overview() {
       <div className="bg-white/3 rounded-3xl border border-white/8 p-6">
         <h3 className="text-white font-bold text-lg mb-5">Recent System Activity</h3>
         <div className="space-y-3">
-          {[
-            { action: "New vendor registered", detail: "TechCorp India applied for approval", time: "2m ago", type: "info" },
-            { action: "Product approved", detail: "ESP32 IoT Module approved by system", time: "15m ago", type: "success" },
-            { action: "Large order placed", detail: "₹4,80,000 order via escrow — TechCorp India", time: "1h ago", type: "success" },
-            { action: "Vendor approved", detail: "MedEquip Traders account activated", time: "3h ago", type: "success" },
-            { action: "Support ticket opened", detail: "FashionBulk Hub: Payment dispute #1023", time: "5h ago", type: "warning" },
-          ].map((a, i) => (
-            <div key={i} className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
-              <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.type === "success" ? "bg-emerald-400" : a.type === "warning" ? "bg-amber-400" : "bg-blue-400"}`} />
+          {aLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-xl bg-white/5" />)
+          ) : (activityLogs || []).length === 0 ? (
+            <p className="text-white/30 text-sm text-center py-4">No activity yet. Actions will appear here.</p>
+          ) : (activityLogs || []).slice(0, 8).map((log: any) => (
+            <div key={log.id} className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
+              <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${activityColor(log.action)}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-white/80 text-sm font-semibold">{a.action}</p>
-                <p className="text-white/35 text-xs mt-0.5 truncate">{a.detail}</p>
+                <p className="text-white/80 text-sm font-semibold capitalize">{log.action.replace(/_/g, " ")}</p>
+                {log.details && <p className="text-white/35 text-xs mt-0.5 truncate">{log.details}</p>}
               </div>
-              <span className="text-white/25 text-xs flex-shrink-0">{a.time}</span>
+              <span className="text-white/25 text-xs flex-shrink-0">{relativeTime(log.createdAt)}</span>
             </div>
           ))}
         </div>
@@ -448,28 +464,171 @@ function CustomersPanel() {
 
 // ─── CATEGORIES ───────────────────────────────────────────────────────────────
 function CategoriesPanel() {
-  const cats = [
-    { name: "Electronics & Tech", icon: "💻", products: 3, vendors: 1 },
-    { name: "Industrial Machinery", icon: "⚙️", products: 3, vendors: 1 },
-    { name: "Fashion & Apparel", icon: "👗", products: 2, vendors: 1 },
-    { name: "Agriculture & Farm", icon: "🌾", products: 2, vendors: 1 },
-    { name: "Medical & Pharma", icon: "🏥", products: 2, vendors: 1 },
-    { name: "Home & Decor", icon: "🏠", products: 2, vendors: 1 },
-    { name: "Automotive Parts", icon: "🚗", products: 0, vendors: 0 },
-    { name: "Food & Beverages", icon: "🍱", products: 0, vendors: 0 },
-  ];
+  const { data: cats, loading } = useAdminFetch<any[]>("/api/categories");
+  const { token } = useAdminAuthStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState<any | null>(null);
+  const [form, setForm] = useState({ name: "", description: "", icon: "" });
+  const [saving, setSaving] = useState(false);
+
+  const openAdd = () => { setForm({ name: "", description: "", icon: "" }); setEditItem(null); setShowForm(true); };
+  const openEdit = (c: any) => { setForm({ name: c.name, description: c.description || "", icon: c.icon || "" }); setEditItem(c); setShowForm(true); };
+
+  const save = async () => {
+    setSaving(true);
+    const url = editItem ? `/api/categories/${editItem.id}` : "/api/categories";
+    const method = editItem ? "PUT" : "POST";
+    await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
+    setShowForm(false);
+    window.location.reload();
+  };
+
+  const del = async (id: number) => {
+    if (!confirm("Delete this category?")) return;
+    await fetch(`/api/categories/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    window.location.reload();
+  };
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-      {cats.map((c) => (
-        <div key={c.name} className="bg-white/3 rounded-3xl border border-white/8 p-5 hover:border-indigo-500/25 transition-all">
-          <div className="text-3xl mb-3">{c.icon}</div>
-          <h3 className="text-white font-bold text-sm mb-2">{c.name}</h3>
-          <div className="flex gap-4 text-xs text-white/40">
-            <span>{c.products} products</span>
-            <span>{c.vendors} vendors</span>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-white/40 text-sm">{cats?.length ?? 0} categories</p>
+        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-sm font-semibold hover:bg-indigo-500/30 transition-all">
+          <Plus className="w-4 h-4" /> Add Category
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white/4 rounded-2xl border border-white/10 p-6 space-y-4">
+          <h3 className="text-white font-bold text-sm">{editItem ? "Edit Category" : "New Category"}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Name *</label>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500/50" placeholder="Electronics" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Icon (emoji)</label>
+              <input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500/50" placeholder="💻" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Description</label>
+              <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500/50" placeholder="Optional description" />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={save} disabled={saving || !form.name} className="px-5 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold hover:bg-indigo-600 transition-all disabled:opacity-50">{saving ? "Saving…" : "Save"}</button>
+            <button onClick={() => setShowForm(false)} className="px-5 py-2 rounded-xl bg-white/5 text-white/60 text-sm font-semibold hover:bg-white/10 transition-all">Cancel</button>
           </div>
         </div>
-      ))}
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl bg-white/5" />)}
+        </div>
+      ) : cats && cats.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+          {cats.map((c: any) => (
+            <div key={c.id} className="bg-white/3 rounded-3xl border border-white/8 p-5 hover:border-indigo-500/25 transition-all group relative">
+              <div className="text-3xl mb-3">{c.icon || "📦"}</div>
+              <h3 className="text-white font-bold text-sm mb-2 truncate">{c.name}</h3>
+              <div className="flex gap-4 text-xs text-white/40">
+                <span>{c.productCount ?? 0} products</span>
+              </div>
+              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg bg-white/8 text-white/50 hover:text-white text-xs">✏️</button>
+                <button onClick={() => del(c.id)} className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs">🗑️</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 bg-white/3 rounded-3xl border border-white/8">
+          <Tags className="w-10 h-10 text-white/15 mb-3" />
+          <p className="text-white/40 text-sm">No categories yet</p>
+          <button onClick={openAdd} className="mt-3 text-indigo-400 text-sm hover:text-indigo-300">Add your first category</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ACTIVITY LOGS ────────────────────────────────────────────────────────────
+const ACTION_META: Record<string, { label: string; color: string }> = {
+  vendor_approved:       { label: "Vendor Approved",       color: "bg-emerald-400" },
+  vendor_rejected:       { label: "Vendor Rejected",        color: "bg-red-400" },
+  vendor_suspended:      { label: "Vendor Suspended",       color: "bg-amber-400" },
+  vendor_restored:       { label: "Vendor Restored",        color: "bg-blue-400" },
+  product_approved:      { label: "Product Approved",       color: "bg-emerald-400" },
+  product_deleted:       { label: "Product Deleted",        color: "bg-red-400" },
+  order_placed:          { label: "Order Placed",           color: "bg-blue-400" },
+  order_status_updated:  { label: "Order Updated",          color: "bg-indigo-400" },
+};
+
+function ActivityLogsPanel() {
+  const { data: logs, loading } = useAdminFetch<any[]>("/api/admin/activity-logs");
+  const [filter, setFilter] = useState("all");
+
+  const filtered = (logs || []).filter((l: any) => filter === "all" || l.action.includes(filter));
+  const filterOptions = [
+    { key: "all", label: "All" },
+    { key: "vendor", label: "Vendors" },
+    { key: "product", label: "Products" },
+    { key: "order", label: "Orders" },
+  ];
+
+  const relativeTime = (ts: string) => {
+    const diff = Date.now() - new Date(ts).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        {filterOptions.map(opt => (
+          <button key={opt.key} onClick={() => setFilter(opt.key)}
+            className={`px-4 py-1.5 rounded-xl text-sm font-semibold capitalize transition-all ${filter === opt.key ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : "text-white/40 hover:text-white/60 border border-transparent"}`}>
+            {opt.label}
+          </button>
+        ))}
+        <span className="ml-auto text-white/30 text-xs">{filtered.length} events</span>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl bg-white/5" />)}</div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 bg-white/3 rounded-3xl border border-white/8">
+          <Activity className="w-10 h-10 text-white/15 mb-3" />
+          <p className="text-white/40 text-sm">No activity logs yet</p>
+        </div>
+      ) : (
+        <div className="bg-white/3 rounded-3xl border border-white/8 divide-y divide-white/5">
+          {filtered.map((log: any) => {
+            const meta = ACTION_META[log.action] || { label: log.action.replace(/_/g, " "), color: "bg-white/30" };
+            return (
+              <div key={log.id} className="flex items-start gap-4 px-5 py-4">
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${meta.color}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/80 text-sm font-semibold capitalize">{meta.label}</p>
+                  {log.details && <p className="text-white/35 text-xs mt-0.5 truncate">{log.details}</p>}
+                  {log.resource && <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 text-white/30 uppercase tracking-wider">{log.resource}</span>}
+                </div>
+                <span className="text-white/25 text-xs flex-shrink-0 mt-1">{relativeTime(log.createdAt)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1239,7 +1398,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/banners": { title: "Banner & Ads Management", component: BannersPanel },
   "/admin/emails": { title: "Email System", component: EmailLogsPanel },
   "/admin/contact": { title: "Contact Messages", component: ContactMessagesPanel },
-  "/admin/activity": { title: "Activity Logs", component: () => <PlaceholderSection icon={Activity} label="Activity" /> },
+  "/admin/activity": { title: "Activity Logs", component: ActivityLogsPanel },
 };
 
 export default function AdminPanel() {

@@ -8,6 +8,9 @@ import {
 import { eq, count, sum, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 import { slugify } from "../lib/slugify.js";
+import { logActivity } from "../lib/activity.js";
+import { logEmail } from "../lib/email-log.js";
+import { createNotification } from "../lib/notify.js";
 
 const router = Router();
 router.use(authenticate, requireRole("admin"));
@@ -73,9 +76,25 @@ router.get("/vendors", async (req, res) => {
 
 router.put("/vendors/:id/approve", async (req, res) => {
   try {
+    const vendorId = Number(req.params.id);
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, vendorId));
     await db.update(vendorsTable)
       .set({ status: "approved", updatedAt: new Date() })
-      .where(eq(vendorsTable.id, Number(req.params.id)));
+      .where(eq(vendorsTable.id, vendorId));
+    if (vendor) {
+      logActivity({ action: "vendor_approved", resource: "vendor", details: `Approved vendor: ${vendor.businessName || vendor.email}` });
+      logEmail({
+        recipient: vendor.email ?? `vendor-${vendor.id}@vendorkart.in`,
+        recipientType: "vendor",
+        subject: "Your Vendorkart Account Has Been Approved!",
+        body: `Congratulations! Your vendor account (${vendor.businessName || vendor.email}) on Vendorkart has been approved. You can now start listing products and accepting orders.`,
+        type: "vendor_approved",
+        relatedId: vendor.id,
+      });
+      if (vendor.userId) {
+        createNotification({ userId: vendor.userId, title: "Account Approved", message: "Your vendor account has been approved! You can now start listing products.", type: "vendor_approved" });
+      }
+    }
     return res.json({ message: "Vendor approved" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to approve vendor" });
@@ -84,10 +103,26 @@ router.put("/vendors/:id/approve", async (req, res) => {
 
 router.put("/vendors/:id/reject", async (req, res) => {
   try {
+    const vendorId = Number(req.params.id);
     const { reason } = req.body;
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, vendorId));
     await db.update(vendorsTable)
       .set({ status: "rejected", rejectionReason: reason, updatedAt: new Date() })
-      .where(eq(vendorsTable.id, Number(req.params.id)));
+      .where(eq(vendorsTable.id, vendorId));
+    if (vendor) {
+      logActivity({ action: "vendor_rejected", resource: "vendor", details: `Rejected vendor: ${vendor.businessName || vendor.email}. Reason: ${reason || "Not specified"}` });
+      logEmail({
+        recipient: vendor.email ?? `vendor-${vendor.id}@vendorkart.in`,
+        recipientType: "vendor",
+        subject: "Vendorkart Account Application Update",
+        body: `Dear ${vendor.businessName || "Vendor"}, unfortunately your application to join Vendorkart as a vendor has not been approved at this time.${reason ? `\n\nReason: ${reason}` : ""}\n\nPlease contact support if you have any questions.`,
+        type: "vendor_rejected",
+        relatedId: vendor.id,
+      });
+      if (vendor.userId) {
+        createNotification({ userId: vendor.userId, title: "Account Application Update", message: `Your vendor application was not approved.${reason ? ` Reason: ${reason}` : ""}`, type: "vendor_rejected" });
+      }
+    }
     return res.json({ message: "Vendor rejected" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to reject vendor" });
@@ -96,12 +131,27 @@ router.put("/vendors/:id/reject", async (req, res) => {
 
 router.put("/vendors/:id/suspend", async (req, res) => {
   try {
+    const vendorId = Number(req.params.id);
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, vendorId));
+    const isCurrentlySuspended = vendor?.status === "suspended";
     await db.update(vendorsTable)
-      .set({ status: "suspended" as any, updatedAt: new Date() })
-      .where(eq(vendorsTable.id, Number(req.params.id)));
-    return res.json({ message: "Vendor suspended" });
+      .set({ status: isCurrentlySuspended ? "approved" as any : "suspended" as any, updatedAt: new Date() })
+      .where(eq(vendorsTable.id, vendorId));
+    if (vendor) {
+      const action = isCurrentlySuspended ? "vendor_restored" : "vendor_suspended";
+      logActivity({ action, resource: "vendor", details: `${isCurrentlySuspended ? "Restored" : "Suspended"} vendor: ${vendor.businessName || vendor.email}` });
+      if (vendor.userId) {
+        createNotification({
+          userId: vendor.userId,
+          title: isCurrentlySuspended ? "Account Restored" : "Account Suspended",
+          message: isCurrentlySuspended ? "Your vendor account has been restored. You can now access the platform." : "Your vendor account has been suspended. Please contact support for assistance.",
+          type: action,
+        });
+      }
+    }
+    return res.json({ message: isCurrentlySuspended ? "Vendor restored" : "Vendor suspended" });
   } catch (err) {
-    return res.status(500).json({ message: "Failed to suspend vendor" });
+    return res.status(500).json({ message: "Failed to update vendor status" });
   }
 });
 
@@ -122,9 +172,14 @@ router.get("/products", async (req, res) => {
 
 router.put("/products/:id/approve", async (req, res) => {
   try {
+    const productId = Number(req.params.id);
+    const [product] = await db.select().from(productsTable).where(eq(productsTable.id, productId));
     await db.update(productsTable)
       .set({ status: "approved", updatedAt: new Date() })
-      .where(eq(productsTable.id, Number(req.params.id)));
+      .where(eq(productsTable.id, productId));
+    if (product) {
+      logActivity({ action: "product_approved", resource: "product", details: `Approved product: ${product.name}` });
+    }
     return res.json({ message: "Product approved" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to approve product" });
@@ -249,7 +304,12 @@ router.get("/payments", async (_req, res) => {
 
 router.delete("/products/:id", async (req, res) => {
   try {
-    await db.delete(productsTable).where(eq(productsTable.id, Number(req.params.id)));
+    const productId = Number(req.params.id);
+    const [product] = await db.select().from(productsTable).where(eq(productsTable.id, productId));
+    await db.delete(productsTable).where(eq(productsTable.id, productId));
+    if (product) {
+      logActivity({ action: "product_deleted", resource: "product", details: `Deleted product: ${product.name}` });
+    }
     return res.json({ message: "Product deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to delete product" });
