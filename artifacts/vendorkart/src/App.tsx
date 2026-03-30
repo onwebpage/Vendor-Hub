@@ -26,6 +26,8 @@ import VendorCategories from "@/pages/vendor/Categories";
 import VendorPayments from "@/pages/vendor/Payments";
 import StoreSettings from "@/pages/vendor/StoreSettings";
 import VendorNotifications from "@/pages/vendor/Notifications";
+import VendorSubscription from "@/pages/vendor/Subscription";
+import VendorSupport from "@/pages/vendor/Support";
 import AdminPanel from "@/pages/admin/AdminPanel";
 import AdminLogin from "@/pages/admin/Login";
 import Vendors from "@/pages/public/Vendors";
@@ -72,6 +74,8 @@ function Router() {
       <Route path="/vendor-dashboard/payments" component={VendorPayments} />
       <Route path="/vendor-dashboard/store-settings" component={StoreSettings} />
       <Route path="/vendor-dashboard/notifications" component={VendorNotifications} />
+      <Route path="/vendor-dashboard/subscription" component={VendorSubscription} />
+      <Route path="/vendor-dashboard/support" component={VendorSupport} />
       <Route path="/vendor-dashboard/:rest*" component={VendorDashboard} />
 
       {/* Admin */}

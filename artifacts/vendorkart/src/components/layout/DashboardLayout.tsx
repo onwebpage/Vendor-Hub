@@ -4,7 +4,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { motion } from "framer-motion";
 import { 
   LayoutDashboard, ShoppingBag, Package, Users, Settings, 
-  CreditCard, Bell, LifeBuoy, LogOut, Store, Menu, Tag, Tags, FileText, Heart, Activity, MapPin
+  CreditCard, Bell, LifeBuoy, LogOut, Store, Menu, Tag, Tags, FileText, Heart, Activity, MapPin, Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -47,6 +47,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           { icon: CreditCard, label: "Payments", href: "/vendor-dashboard/payments" },
           { icon: Store, label: "Store Settings", href: "/vendor-dashboard/store-settings" },
           { icon: Bell, label: "Notifications", href: "/vendor-dashboard/notifications" },
+          { icon: Crown, label: "Subscription", href: "/vendor-dashboard/subscription" },
+          { icon: LifeBuoy, label: "Support", href: "/vendor-dashboard/support" },
         ];
       case "admin":
         return [

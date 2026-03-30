@@ -3,8 +3,13 @@ import { db } from "@workspace/db";
 import { subscriptionPlansTable, vendorSubscriptionsTable, vendorsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
+import Razorpay from "razorpay";
 
 const router = Router();
+
+const razorpay = process.env.RAZORPAY_KEY && process.env.RAZORPAY_SECRET
+  ? new Razorpay({ key_id: process.env.RAZORPAY_KEY, key_secret: process.env.RAZORPAY_SECRET })
+  : null;
 
 router.get("/plans", async (_req, res) => {
   try {
@@ -30,6 +35,27 @@ router.get("/current", authenticate, requireRole("vendor"), async (req, res) => 
     return res.json({ ...activeSub, plan: { ...plan, price: Number(plan.price) } });
   } catch (err) {
     return res.status(500).json({ message: "Failed to get subscription" });
+  }
+});
+
+router.post("/create-order", authenticate, requireRole("vendor"), async (req, res) => {
+  try {
+    const { amount, planId } = req.body;
+    if (!amount || !planId) return res.status(400).json({ message: "amount and planId are required" });
+
+    if (!razorpay) {
+      return res.json({ key: process.env.RAZORPAY_KEY ?? "rzp_test_demo", orderId: `order_demo_${Date.now()}`, amount });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: Number(amount),
+      currency: "INR",
+      receipt: `sub_plan_${planId}_${Date.now()}`,
+    });
+
+    return res.json({ key: process.env.RAZORPAY_KEY, orderId: order.id, amount: order.amount });
+  } catch (err: any) {
+    return res.status(500).json({ message: err?.message ?? "Failed to create payment order" });
   }
 });
 

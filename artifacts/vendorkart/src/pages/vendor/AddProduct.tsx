@@ -3,13 +3,13 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateProduct, useListCategories, useGetVendorProfile } from "@workspace/api-client-react";
+import { useCreateProduct, useListCategories, useGetVendorProfile, useListSubscriptionPlans, useGetCurrentSubscription } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock } from "lucide-react";
+import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock, AlertCircle } from "lucide-react";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
 } from "@/components/ui/form";
@@ -39,12 +39,33 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
+const API = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+async function fetchMyProductCount() {
+  const token = localStorage.getItem("vendorkart_token");
+  const res = await fetch(`${API}/api/vendors/my-products`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return Array.isArray(data) ? data.length : 0;
+}
+
 export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: categories } = useListCategories();
   const { data: vendorProfile, isLoading: profileLoading, isError: profileError } = useGetVendorProfile();
+  const { data: currentSub } = useGetCurrentSubscription({ query: { retry: false } });
   const { mutateAsync: createProduct, isPending } = useCreateProduct();
+
+  const [productCount, setProductCount] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    fetchMyProductCount().then(setProductCount);
+  }, []);
+
+  const maxProducts: number = (currentSub as any)?.plan?.maxProducts ?? 50;
+  const isAtLimit = maxProducts !== -1 && productCount !== null && productCount >= maxProducts;
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -159,6 +180,33 @@ export default function AddProduct() {
           <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
             Back to Dashboard
           </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isAtLimit) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto mt-16 text-center">
+          <div className="inline-flex p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 mb-6">
+            <AlertCircle className="w-12 h-12 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Product Limit Reached</h2>
+          <p className="text-muted-foreground mb-2 leading-relaxed">
+            Your current plan allows up to <strong>{maxProducts} products</strong>. You have {productCount} products listed.
+          </p>
+          <p className="text-muted-foreground mb-6 leading-relaxed">
+            Upgrade to a higher subscription plan to list more products.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button variant="outline" onClick={() => setLocation("/vendor-dashboard/products")}>
+              View Products
+            </Button>
+            <Button onClick={() => setLocation("/vendor-dashboard/subscription")}>
+              Upgrade Plan
+            </Button>
+          </div>
         </div>
       </DashboardLayout>
     );

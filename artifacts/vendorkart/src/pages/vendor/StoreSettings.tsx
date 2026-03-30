@@ -4,7 +4,7 @@ import { useGetVendorProfile, useUpdateVendorProfile } from "@workspace/api-clie
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Store, Loader2, Save, AlertCircle, MapPin, Phone } from "lucide-react";
+import { Store, Loader2, Save, AlertCircle, MapPin, Phone, Wallet, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +25,8 @@ const settingsSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   pincode: z.string().optional(),
+  upiId: z.string().optional(),
+  upiQrImage: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -48,6 +50,8 @@ export default function StoreSettings() {
   const { data: profile, isLoading, isError } = useGetVendorProfile();
   const { mutateAsync: updateProfile, isPending } = useUpdateVendorProfile();
   const [saved, setSaved] = React.useState(false);
+
+  const canUploadBanner = (profile as any)?.subscriptionPlan === "standard" || (profile as any)?.subscriptionPlan === "premium";
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -80,6 +84,8 @@ export default function StoreSettings() {
         city: (profile as any).city ?? "",
         state: (profile as any).state ?? "",
         pincode: (profile as any).pincode ?? "",
+        upiId: (profile as any).upiId ?? "",
+        upiQrImage: (profile as any).upiQrImage ?? "",
       });
     }
   }, [profile]);
@@ -162,9 +168,25 @@ export default function StoreSettings() {
               )} />
               <FormField control={form.control} name="banner" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Banner Image URL</FormLabel>
-                  <FormControl><Input {...field} placeholder="https://..." className="rounded-xl" /></FormControl>
-                  <FormDescription>Direct link to your store banner</FormDescription>
+                  <FormLabel className="flex items-center gap-2">
+                    Banner Image URL
+                    {!canUploadBanner && (
+                      <span className="flex items-center gap-1 text-[11px] font-normal text-amber-600 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                        <Lock className="w-2.5 h-2.5" /> Standard+ plan
+                      </span>
+                    )}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder={canUploadBanner ? "https://..." : "Upgrade to Standard or Premium to set a banner"}
+                      className="rounded-xl"
+                      disabled={!canUploadBanner}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {canUploadBanner ? "Direct link to your store banner image" : "Banner upload requires Standard or Premium subscription"}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -224,6 +246,30 @@ export default function StoreSettings() {
                 <FormItem>
                   <FormLabel>Pincode</FormLabel>
                   <FormControl><Input {...field} placeholder="400001" className="rounded-xl" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+          </Section>
+
+          <Section icon={Wallet} title="UPI Payment Setup">
+            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+              Add your UPI details so buyers can make direct payments to your store. This information will be visible on your store page.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <FormField control={form.control} name="upiId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>UPI ID</FormLabel>
+                  <FormControl><Input {...field} placeholder="yourname@upi" className="rounded-xl" /></FormControl>
+                  <FormDescription>Your registered UPI ID (e.g. vendor@okaxis)</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="upiQrImage" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>UPI QR Code Image URL</FormLabel>
+                  <FormControl><Input {...field} placeholder="https://..." className="rounded-xl" /></FormControl>
+                  <FormDescription>URL of your UPI QR code image for buyers to scan</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />

@@ -52,3 +52,18 @@ pnpm run start        # Run production server
 - Target: autoscale
 - Build: `pnpm run build`
 - Run: `pnpm run start`
+
+## Feature Status
+
+### Customer Panel (Complete)
+- Dashboard, Cart with address selector, tiered wholesale discounts (2–12%), Order placement, Wishlist, Payment History, Profile, Address Book, Notifications, Support
+
+### Vendor Panel (Complete)
+- Dashboard, Products (CRUD with grid/list view), Orders (with timeline), Categories, Payments (earnings chart), Store Settings with UPI payment setup (upiId + upiQrImage fields) and banner gating by subscription plan, Add Product with plan-based product limit enforcement
+- **Subscription page** (`/vendor-dashboard/subscription`): View all plans, current plan status, upgrade via Razorpay payments
+- **Support page** (`/vendor-dashboard/support`): Submit support tickets, FAQ accordion
+- `razorpay` npm package installed in api-server; `POST /api/subscriptions/create-order` endpoint creates Razorpay orders (falls back to demo if RAZORPAY_SECRET is not set)
+- Banner upload gated behind Standard/Premium plan; product limits enforced based on plan's maxProducts
+
+### Admin Panel (Complete)
+- Vendor management (approve/reject/suspend), product moderation, customer management, orders, categories, subscriptions, coupons, activity logs
