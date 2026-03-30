@@ -5,8 +5,9 @@ services:
     name: vendorkart
     runtime: node
     plan: starter
-    buildCommand: corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm install --frozen-lockfile && pnpm run build:render
-    startCommand: pnpm run start:render
+    # Do not use `corepack enable` on Render — the image has a read-only /usr/bin (EROFS on pnpm symlink).
+    buildCommand: npx pnpm@10.33.0 install --frozen-lockfile && npx pnpm@10.33.0 run build:render
+    startCommand: npm run start:render
     healthCheckPath: /api/healthz
     envVars:
       - key: NODE_VERSION
