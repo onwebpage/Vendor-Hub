@@ -75,7 +75,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex">
+    <div className="min-h-screen bg-muted/30">
       {/* Sidebar */}
       <motion.aside 
         initial={false}
@@ -127,7 +127,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </motion.aside>
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'pl-[280px]' : 'pl-[80px]'}`}>
+      <div className={`transition-all duration-300 ${isSidebarOpen ? 'pl-[280px]' : 'pl-[80px]'}`}>
         {/* Header */}
         <header className="h-20 bg-card/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 px-8 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-4">
@@ -151,7 +151,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-8">
+        <main className="p-8">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
