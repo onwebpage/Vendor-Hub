@@ -21,16 +21,18 @@ import {
 
 const categoryItems = [
   { name: "Electronics", href: "/products?category=Electronics", icon: Cpu, color: "text-blue-400" },
-  { name: "Clothing & Apparel", href: "/products?category=Apparel", icon: Shirt, color: "text-violet-400" },
+  { name: "Clothing", href: "/products?category=Apparel", icon: Shirt, color: "text-violet-400" },
   { name: "Home Decor", href: "/products?category=Home+Decor", icon: HomeIcon, color: "text-amber-400" },
   { name: "Industrial", href: "/products?category=Industrial", icon: Factory, color: "text-slate-400" },
-  { name: "All Categories", href: "/categories", icon: Grid3X3, color: "text-emerald-400" },
+  { name: "More...", href: "/categories", icon: Grid3X3, color: "text-emerald-400" },
 ];
 
+// Order: Home · Categories(dropdown) · All Vendors · Product Listing · Product Details · Search+Filters · About Us · Contact Us · Login/Register
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "All Vendors", href: "/vendors" },
   { label: "Product Listing", href: "/products" },
+  { label: "Product Details", href: "/products" },
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" },
 ];
@@ -101,25 +103,21 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Desktop Nav */}
-            <div className="hidden lg:flex items-center gap-1 text-sm font-medium text-muted-foreground">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-3 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all ${location === link.href ? "text-foreground bg-secondary/60" : ""}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            {/* Desktop Nav — exact order: Home · Categories · All Vendors · Product Listing · Product Details · Search+Filters · About Us · Contact Us */}
+            <div className="hidden lg:flex items-center gap-0.5 text-sm font-medium text-muted-foreground">
 
-              {/* Categories Dropdown */}
+              {/* 1. Home */}
+              <Link href="/" className={`px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap ${location === "/" ? "text-foreground bg-secondary/60" : ""}`}>
+                Home
+              </Link>
+
+              {/* 2. Categories dropdown */}
               <div
                 className="relative"
                 onMouseEnter={() => setIsCategoryOpen(true)}
                 onMouseLeave={() => setIsCategoryOpen(false)}
               >
-                <button className="flex items-center gap-1 px-3 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all">
+                <button className="flex items-center gap-1 px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap">
                   Categories <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCategoryOpen ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence>
@@ -129,7 +127,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 mt-1 w-56 rounded-2xl border border-border bg-card shadow-xl overflow-hidden"
+                      className="absolute top-full left-0 mt-1 w-56 rounded-2xl border border-border bg-card shadow-xl overflow-hidden z-50"
                     >
                       <div className="p-2">
                         {categoryItems.map((cat) => (
@@ -141,7 +139,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                           >
                             <cat.icon className={`w-4 h-4 ${cat.color}`} />
                             <span className="text-sm font-medium text-foreground">{cat.name}</span>
-                            {cat.name === "All Categories" && (
+                            {cat.name === "More..." && (
                               <ArrowRight className="w-3.5 h-3.5 ml-auto text-muted-foreground group-hover:text-foreground transition-colors" />
                             )}
                           </Link>
@@ -152,12 +150,34 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 </AnimatePresence>
               </div>
 
-              {/* Search + Filters link */}
-              <Link
-                href="/products"
-                className={`px-3 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all ${location === "/products" ? "text-foreground bg-secondary/60" : ""}`}
-              >
+              {/* 3. All Vendors */}
+              <Link href="/vendors" className={`px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap ${location === "/vendors" ? "text-foreground bg-secondary/60" : ""}`}>
+                All Vendors
+              </Link>
+
+              {/* 4. Product Listing */}
+              <Link href="/products" className={`px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap ${location === "/products" ? "text-foreground bg-secondary/60" : ""}`}>
+                Product Listing
+              </Link>
+
+              {/* 5. Product Details (links to a product from the listing) */}
+              <Link href="/products" className="px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap">
+                Product Details
+              </Link>
+
+              {/* 6. Search + Filters */}
+              <Link href="/products" className="px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap">
                 Search + Filters
+              </Link>
+
+              {/* 7. About Us */}
+              <Link href="/about" className={`px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap ${location === "/about" ? "text-foreground bg-secondary/60" : ""}`}>
+                About Us
+              </Link>
+
+              {/* 8. Contact Us */}
+              <Link href="/contact" className={`px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap ${location === "/contact" ? "text-foreground bg-secondary/60" : ""}`}>
+                Contact Us
               </Link>
             </div>
 
@@ -262,19 +282,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 />
               </div>
 
-              {/* Nav Links */}
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === link.href ? "bg-secondary/60 text-primary" : ""}`}
-                  onClick={closeAll}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {/* 1. Home */}
+              <Link href="/" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>Home</Link>
 
-              {/* Categories Expandable */}
+              {/* 2. Categories Expandable */}
               <button
                 onClick={() => setIsMobileCategoryOpen(!isMobileCategoryOpen)}
                 className="flex items-center justify-between w-full p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors"
@@ -304,6 +315,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* 3–8. Remaining nav links */}
+              <Link href="/vendors" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/vendors" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>All Vendors</Link>
+              <Link href="/products" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/products" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>Product Listing</Link>
+              <Link href="/products" className="flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors" onClick={closeAll}>Product Details</Link>
+              <Link href="/products" className="flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors" onClick={closeAll}>Search + Filters</Link>
+              <Link href="/about" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/about" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>About Us</Link>
+              <Link href="/contact" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/contact" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>Contact Us</Link>
 
               <div className="h-px bg-border w-full my-3" />
 
