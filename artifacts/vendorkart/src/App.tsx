@@ -23,6 +23,8 @@ import AdminPanel from "@/pages/admin/AdminPanel";
 import AdminLogin from "@/pages/admin/Login";
 import Vendors from "@/pages/public/Vendors";
 import VendorStore from "@/pages/public/VendorStore";
+import About from "@/pages/public/About";
+import Contact from "@/pages/public/Contact";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -43,6 +45,8 @@ function Router() {
       <Route path="/products/:id" component={ProductDetail} />
       <Route path="/vendors" component={Vendors} />
       <Route path="/vendors/:slug" component={VendorStore} />
+      <Route path="/about" component={About} />
+      <Route path="/contact" component={Contact} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 

@@ -1,0 +1,103 @@
+Update and enhance my website with the following requirements. Follow modern UI/UX practices and keep the design clean, premium, and responsive.
+
+1. NAVBAR UPDATE
+- Remove the existing navbar completely.
+- Create a new structured navbar with the following menu:
+
+Home  
+Categories (Dropdown)
+  - Electronics
+  - Clothing
+  - Home Decor
+  - Industrial
+  - More...
+All Vendors  
+Product Listing  
+Product Details  
+Search + Filters (Bulk / MOQ / Price)  
+About Us  
+Contact Us  
+Login / Register  
+
+- Make the navbar sticky and responsive.
+- Add hover effects and dropdown animations.
+
+--------------------------------------------------
+
+2. ADVANCED SEARCH & FILTERS
+- Implement a powerful search system with filters:
+  - Bulk quantity
+  - MOQ (Minimum Order Quantity)
+  - Price range
+- Filters should update results dynamically without page reload (if possible).
+- Add sorting options (price low-high, high-low, newest).
+
+--------------------------------------------------
+
+3. USER AUTHENTICATION + ADMIN SYNC
+- When a user signs up or logs in:
+  - Store all user details in the database.
+  - Automatically send/store user details in the admin panel.
+- Admin panel should display:
+  - User list
+  - User activity
+
+--------------------------------------------------
+
+4. ADMIN PANEL FEATURES
+- Build a complete admin dashboard including:
+  - Website monitoring (users, activity, products)
+  - Order management system:
+      - When a new order is placed:
+          - Show instantly in admin panel
+          - Display customer details
+          - Show order status (pending, shipped, delivered)
+  - Add option to update order status
+
+- Automatically generate and send invoice to customer:
+  - Include customer details
+  - Order summary
+  - Pricing breakdown
+  - Invoice ID
+
+--------------------------------------------------
+
+5. VENDOR STORE PAGE
+Create a detailed vendor page with:
+
+- Banner / Cover Image
+- Company Logo
+- About Business section
+- Product Categories
+- Product Listings
+- Contact / Inquiry Button
+- Ratings & Reviews system
+
+--------------------------------------------------
+
+6. HERO SECTION (HOMEPAGE IMPROVEMENT)
+- Redesign the hero section to look premium and modern:
+  - Add high-quality visuals
+  - Strong headline + CTA buttons
+  - Smooth animations
+  - Highlight key features (bulk buying, trusted vendors, etc.)
+
+- Improve overall homepage UI/UX:
+  - Use modern layout (cards, spacing, typography)
+  - Add sections like:
+      - Featured products
+      - Top vendors
+      - Categories preview
+
+--------------------------------------------------
+
+7. GENERAL REQUIREMENTS
+- Make everything fully responsive (mobile + tablet + desktop)
+- Use clean, reusable components
+- Optimize performance
+- Follow modern UI/UX design standards
+- Keep code structured and maintainable
+
+--------------------------------------------------
+
+Deliver complete working code with proper integration.
