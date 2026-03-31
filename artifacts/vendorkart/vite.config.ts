@@ -22,11 +22,13 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 3000,
-    host: "localhost",
+    port: 5000,
+    host: "0.0.0.0",
+    allowedHosts: true,
   },
   preview: {
-    port: 3000,
-    host: "localhost",
+    port: 5000,
+    host: "0.0.0.0",
+    allowedHosts: true,
   },
 });
