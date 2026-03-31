@@ -1,8 +1,20 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { contactMessagesTable } from "@workspace/db/schema";
+import { contactMessagesTable, contactInfoTable } from "@workspace/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 const router = Router();
+
+router.get("/info", async (_req, res) => {
+  try {
+    const items = await db.select().from(contactInfoTable)
+      .where(eq(contactInfoTable.isActive, true))
+      .orderBy(sql`${contactInfoTable.sortOrder} ASC`);
+    return res.json(items);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch contact info" });
+  }
+});
 
 router.post("/", async (req, res) => {
   try {

@@ -1582,6 +1582,177 @@ function CommissionPanel() {
   );
 }
 
+// ─── CONTACT INFO ─────────────────────────────────────────────────────────────
+const ICON_OPTIONS = [
+  { value: "phone", label: "Phone" },
+  { value: "mail", label: "Mail" },
+  { value: "mapPin", label: "Map Pin" },
+  { value: "clock", label: "Clock" },
+  { value: "building2", label: "Building" },
+  { value: "messageSquare", label: "Message" },
+];
+const COLOR_OPTIONS = [
+  { value: "from-blue-500 to-indigo-600", label: "Blue / Indigo" },
+  { value: "from-violet-500 to-purple-600", label: "Violet / Purple" },
+  { value: "from-emerald-500 to-teal-600", label: "Emerald / Teal" },
+  { value: "from-amber-500 to-orange-500", label: "Amber / Orange" },
+  { value: "from-rose-500 to-pink-600", label: "Rose / Pink" },
+  { value: "from-cyan-500 to-blue-600", label: "Cyan / Blue" },
+];
+
+const BLANK_FORM = { iconType: "phone", title: "", line1: "", line2: "", sub: "", color: "from-blue-500 to-indigo-600", sortOrder: 0, isActive: true };
+
+function ContactInfoPanel() {
+  const { data: items, loading } = useAdminFetch<any[]>("/api/admin/contact-info");
+  const { token } = useAdminAuthStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState<typeof BLANK_FORM>({ ...BLANK_FORM });
+  const setF = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const openCreate = () => { setEditing(null); setForm({ ...BLANK_FORM }); setShowForm(true); };
+  const openEdit = (item: any) => {
+    setEditing(item);
+    setForm({ iconType: item.iconType, title: item.title, line1: item.line1, line2: item.line2 ?? "", sub: item.sub ?? "", color: item.color, sortOrder: item.sortOrder, isActive: item.isActive });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = { ...form, line2: form.line2 || null, sub: form.sub || null };
+    if (editing) {
+      await fetch(`${BASE}/api/admin/contact-info/${editing.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await fetch(`${BASE}/api/admin/contact-info`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    setShowForm(false);
+    setEditing(null);
+    window.location.reload();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this contact card?")) return;
+    await fetch(`${BASE}/api/admin/contact-info/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    window.location.reload();
+  };
+
+  const handleToggle = async (item: any) => {
+    await fetch(`${BASE}/api/admin/contact-info/${item.id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ...item, isActive: !item.isActive }),
+    });
+    window.location.reload();
+  };
+
+  const list = items ?? [];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-between items-center">
+        <p className="text-white/60 text-sm">Manage the contact info cards shown on the public Contact page.</p>
+        <Button onClick={openCreate} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9">
+          <Plus className="w-4 h-4" /> Add Card
+        </Button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-white/3 rounded-2xl border border-indigo-500/25 p-6 space-y-4">
+          <h3 className="text-white font-bold">{editing ? "Edit Card" : "New Contact Card"}</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Icon</label>
+              <select value={form.iconType} onChange={e => setF("iconType", e.target.value)} className="w-full h-9 rounded-xl bg-white/5 border border-white/10 text-white px-3 text-sm">
+                {ICON_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Color</label>
+              <select value={form.color} onChange={e => setF("color", e.target.value)} className="w-full h-9 rounded-xl bg-white/5 border border-white/10 text-white px-3 text-sm">
+                {COLOR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="text-white/50 text-xs mb-1 block">Title *</label>
+              <Input value={form.title} onChange={e => setF("title", e.target.value)} placeholder="Call Us" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Line 1 *</label>
+              <Input value={form.line1} onChange={e => setF("line1", e.target.value)} placeholder="+91 98765 43210" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Line 2 (optional)</label>
+              <Input value={form.line2} onChange={e => setF("line2", e.target.value)} placeholder="+91 80000 12345" className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Subtitle (optional)</label>
+              <Input value={form.sub} onChange={e => setF("sub", e.target.value)} placeholder="Mon–Sat, 9 AM – 7 PM" className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Sort Order</label>
+              <Input type="number" value={form.sortOrder} onChange={e => setF("sortOrder", Number(e.target.value))} className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="ciActive" checked={form.isActive} onChange={e => setF("isActive", e.target.checked)} className="w-4 h-4" />
+            <label htmlFor="ciActive" className="text-white/60 text-sm cursor-pointer">Active (visible on site)</label>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button type="button" variant="ghost" onClick={() => { setShowForm(false); setEditing(null); }} className="rounded-xl text-white/50 h-9">Cancel</Button>
+            <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">{editing ? "Save Changes" : "Create Card"}</Button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl bg-white/5" />)}</div>
+      ) : list.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 bg-white/3 rounded-3xl border border-white/8">
+          <Phone className="w-10 h-10 text-white/15 mb-3" />
+          <p className="text-white/40 text-sm">No contact cards yet. Add your first one.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {list.map((item: any) => (
+            <div key={item.id} className={`bg-white/3 rounded-2xl border p-5 flex items-center gap-4 ${item.isActive ? "border-indigo-500/20" : "border-white/8"}`}>
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center flex-shrink-0`}>
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-bold text-sm truncate">{item.title}</p>
+                  <Badge className={`text-[10px] border flex-shrink-0 ${item.isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-white/5 text-white/30 border-white/10"}`}>{item.isActive ? "Live" : "Hidden"}</Badge>
+                </div>
+                <p className="text-white/60 text-xs mt-0.5">{item.line1}{item.line2 ? ` · ${item.line2}` : ""}</p>
+                {item.sub && <p className="text-white/30 text-xs mt-0.5">{item.sub}</p>}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button size="sm" onClick={() => openEdit(item)} className="h-7 px-2 text-[11px] rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20">
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button size="sm" onClick={() => handleToggle(item)} className={`h-7 px-3 text-[11px] rounded-lg border ${item.isActive ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20"}`}>
+                  {item.isActive ? "Hide" : "Show"}
+                </Button>
+                <Button size="sm" onClick={() => handleDelete(item.id)} className="h-7 px-2 text-[11px] rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── BANNERS ──────────────────────────────────────────────────────────────────
 function BannersPanel() {
   const { data: banners, loading } = useAdminFetch<any[]>("/api/admin/banners");
@@ -2020,6 +2191,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/subscription-payments": { title: "Subscription Payments", component: SubscriptionPaymentsPanel },
   "/admin/commission": { title: "Commission Settings", component: CommissionPanel },
   "/admin/banners": { title: "Banner & Ads Management", component: BannersPanel },
+  "/admin/contact-info": { title: "Contact Info Cards", component: ContactInfoPanel },
   "/admin/emails": { title: "Email System", component: EmailLogsPanel },
   "/admin/contact": { title: "Contact Messages", component: ContactMessagesPanel },
   "/admin/activity": { title: "Activity Logs", component: ActivityLogsPanel },

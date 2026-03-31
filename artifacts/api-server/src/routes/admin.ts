@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, vendorSubscriptionsTable, commissionSettingsTable, activityLogsTable,
-  contactMessagesTable, bannersTable, emailLogsTable, paymentsTable, categoriesTable,
+  contactMessagesTable, bannersTable, emailLogsTable, paymentsTable, categoriesTable, contactInfoTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
@@ -607,6 +607,68 @@ router.put("/subscription-payments/:id/verify", async (req, res) => {
     return res.json({ success: true, subscription: { ...updated, paidAmount: updated.paidAmount ? Number(updated.paidAmount) : null } });
   } catch (err) {
     return res.status(500).json({ message: "Failed to verify subscription payment" });
+  }
+});
+
+router.get("/contact-info", async (_req, res) => {
+  try {
+    const items = await db.select().from(contactInfoTable).orderBy(sql`${contactInfoTable.sortOrder} ASC`);
+    return res.json(items);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch contact info" });
+  }
+});
+
+router.post("/contact-info", async (req, res) => {
+  try {
+    const { iconType, title, line1, line2, sub, color, sortOrder, isActive } = req.body;
+    const [item] = await db.insert(contactInfoTable).values({
+      iconType: iconType ?? "phone",
+      title,
+      line1,
+      line2: line2 || null,
+      sub: sub || null,
+      color: color ?? "from-blue-500 to-indigo-600",
+      sortOrder: sortOrder ?? 0,
+      isActive: isActive ?? true,
+    }).returning();
+    logActivity({ action: "contact_info_created", resource: "contact_info", details: `Created contact card: ${title}` });
+    return res.json(item);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to create contact info" });
+  }
+});
+
+router.put("/contact-info/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { iconType, title, line1, line2, sub, color, sortOrder, isActive } = req.body;
+    const [item] = await db.update(contactInfoTable).set({
+      iconType,
+      title,
+      line1,
+      line2: line2 || null,
+      sub: sub || null,
+      color,
+      sortOrder,
+      isActive,
+      updatedAt: new Date(),
+    }).where(eq(contactInfoTable.id, id)).returning();
+    logActivity({ action: "contact_info_updated", resource: "contact_info", details: `Updated contact card #${id}: ${title}` });
+    return res.json(item);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update contact info" });
+  }
+});
+
+router.delete("/contact-info/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    await db.delete(contactInfoTable).where(eq(contactInfoTable.id, id));
+    logActivity({ action: "contact_info_deleted", resource: "contact_info", details: `Deleted contact card #${id}` });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete contact info" });
   }
 });
 

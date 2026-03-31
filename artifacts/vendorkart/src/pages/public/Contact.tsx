@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Mail, Phone, MapPin, Clock, MessageSquare,
   Building2, HeadphonesIcon, Send, CheckCircle2,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,36 +14,37 @@ import {
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { useToast } from "@/hooks/use-toast";
 
-const contactInfo = [
-  {
-    icon: Phone,
-    title: "Call Us",
-    lines: ["+91 98765 43210", "+91 80000 12345"],
-    sub: "Mon–Sat, 9 AM – 7 PM",
-    color: "from-blue-500 to-indigo-600",
-  },
-  {
-    icon: Mail,
-    title: "Email Us",
-    lines: ["support@vendorkart.in", "vendors@vendorkart.in"],
-    sub: "Reply within 24 hours",
-    color: "from-violet-500 to-purple-600",
-  },
-  {
-    icon: MapPin,
-    title: "Head Office",
-    lines: ["Level 8, Platina Building,", "Bandra Kurla Complex, Mumbai 400051"],
-    sub: "Maharashtra, India",
-    color: "from-emerald-500 to-teal-600",
-  },
-  {
-    icon: Clock,
-    title: "Business Hours",
-    lines: ["Mon – Fri: 9:00 AM – 8:00 PM", "Saturday: 10:00 AM – 6:00 PM"],
-    sub: "Sunday: Closed",
-    color: "from-amber-500 to-orange-500",
-  },
-];
+const ICON_MAP: Record<string, LucideIcon> = {
+  phone: Phone,
+  mail: Mail,
+  mapPin: MapPin,
+  clock: Clock,
+  building2: Building2,
+  messageSquare: MessageSquare,
+};
+
+interface ContactInfoItem {
+  id: number;
+  iconType: string;
+  title: string;
+  line1: string;
+  line2: string | null;
+  sub: string | null;
+  color: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+function useContactInfo() {
+  const [items, setItems] = useState<ContactInfoItem[]>([]);
+  useEffect(() => {
+    fetch("/api/contact/info")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setItems(d); })
+      .catch(() => {});
+  }, []);
+  return items;
+}
 
 const supportTypes = [
   { icon: MessageSquare, title: "General Inquiry", desc: "Questions about Vendorkart, pricing, or features", color: "text-blue-400" },
@@ -52,6 +54,7 @@ const supportTypes = [
 
 export default function Contact() {
   const { toast } = useToast();
+  const contactInfoItems = useContactInfo();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -143,25 +146,27 @@ export default function Contact() {
               <p className="text-muted-foreground mb-8">Reach out through any of these channels and we'll get back to you promptly.</p>
 
               <div className="grid sm:grid-cols-2 gap-4 mb-10">
-                {contactInfo.map((info, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.08 }}
-                    className="bg-card rounded-2xl border border-border p-5"
-                  >
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${info.color} flex items-center justify-center mb-4`}>
-                      <info.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="font-bold text-sm text-foreground mb-2">{info.title}</h3>
-                    {info.lines.map((line, j) => (
-                      <p key={j} className="text-sm text-foreground">{line}</p>
-                    ))}
-                    <p className="text-xs text-muted-foreground mt-1">{info.sub}</p>
-                  </motion.div>
-                ))}
+                {contactInfoItems.map((info, i) => {
+                  const IconComponent = ICON_MAP[info.iconType] ?? Phone;
+                  return (
+                    <motion.div
+                      key={info.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.08 }}
+                      className="bg-card rounded-2xl border border-border p-5"
+                    >
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${info.color} flex items-center justify-center mb-4`}>
+                        <IconComponent className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-bold text-sm text-foreground mb-2">{info.title}</h3>
+                      <p className="text-sm text-foreground">{info.line1}</p>
+                      {info.line2 && <p className="text-sm text-foreground">{info.line2}</p>}
+                      {info.sub && <p className="text-xs text-muted-foreground mt-1">{info.sub}</p>}
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {/* Map placeholder */}

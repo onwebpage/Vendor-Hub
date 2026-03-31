@@ -123,6 +123,20 @@ export const emailLogsTable = pgTable("email_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const contactInfoTable = pgTable("contact_info", {
+  id: serial("id").primaryKey(),
+  iconType: text("icon_type").notNull().default("phone"),
+  title: text("title").notNull(),
+  line1: text("line1").notNull(),
+  line2: text("line2"),
+  sub: text("sub"),
+  color: text("color").notNull().default("from-blue-500 to-indigo-600"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const contactMessagesTable = pgTable("contact_messages", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -145,6 +159,7 @@ export type Address = typeof addressesTable.$inferSelect;
 export type Notification = typeof notificationsTable.$inferSelect;
 export type SupportTicket = typeof supportTicketsTable.$inferSelect;
 export type Coupon = typeof couponsTable.$inferSelect;
+export type ContactInfo = typeof contactInfoTable.$inferSelect;
 export type ContactMessage = typeof contactMessagesTable.$inferSelect;
 export type Banner = typeof bannersTable.$inferSelect;
 export type EmailLog = typeof emailLogsTable.$inferSelect;
