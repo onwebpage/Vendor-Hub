@@ -43,6 +43,7 @@ import Vendors from "@/pages/public/Vendors";
 import VendorStore from "@/pages/public/VendorStore";
 import About from "@/pages/public/About";
 import Contact from "@/pages/public/Contact";
+import Pricing from "@/pages/public/Pricing";
 import NotFound from "@/pages/not-found";
 import ChatBot from "@/components/ChatBot";
 
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/vendors/:slug" component={VendorStore} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/pricing" component={Pricing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 

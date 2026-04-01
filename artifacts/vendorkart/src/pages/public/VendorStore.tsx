@@ -6,6 +6,7 @@ import {
   Store, ShoppingBag, Mail, MessageSquare, Globe, X,
   Building2, Tag, Calendar, Award,
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { useGetVendorBySlug } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/shared/ProductCard";
@@ -247,7 +248,22 @@ export default function VendorStore() {
               </div>
             </div>
 
-            <div className="sm:ml-auto flex items-center gap-3 flex-shrink-0">
+            <div className="sm:ml-auto flex items-center gap-3 flex-shrink-0 flex-wrap">
+              {vendor.phone && (
+                <Button
+                  variant="outline"
+                  className="rounded-xl gap-2 border-green-500/40 text-green-600 hover:bg-green-500/10 hover:text-green-600"
+                  asChild
+                >
+                  <a
+                    href={`https://wa.me/${vendor.phone.replace(/[^0-9]/g, "")}?text=Hi%20${encodeURIComponent(vendor.businessName)}%2C%20I%20found%20your%20store%20on%20Vendorkart%20and%20would%20like%20to%20make%20a%20general%20enquiry.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FaWhatsapp className="w-4 h-4" /> WhatsApp
+                  </a>
+                </Button>
+              )}
               <Button variant="outline" className="rounded-xl gap-2" onClick={() => setShowInquiry(true)}>
                 <MessageSquare className="w-4 h-4" /> Send Inquiry
               </Button>
@@ -316,14 +332,29 @@ export default function VendorStore() {
             </div>
 
             {/* Contact / Inquiry CTA */}
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-6">
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-6 space-y-3">
               <h2 className="font-bold text-foreground text-base mb-2">Get a Quote</h2>
               <p className="text-muted-foreground text-xs mb-5 leading-relaxed">
-                Interested in bulk orders? Send a direct inquiry to {vendor.businessName} for custom pricing.
+                Interested in bulk orders? Contact {vendor.businessName} directly for custom pricing.
               </p>
               <Button className="w-full rounded-xl gap-2" onClick={() => setShowInquiry(true)}>
-                <MessageSquare className="w-4 h-4" /> Contact Vendor
+                <MessageSquare className="w-4 h-4" /> Send Inquiry
               </Button>
+              {vendor.phone && (
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl gap-2 border-green-500/40 text-green-600 hover:bg-green-500/10 hover:text-green-600"
+                  asChild
+                >
+                  <a
+                    href={`https://wa.me/${vendor.phone.replace(/[^0-9]/g, "")}?text=Hi%20${encodeURIComponent(vendor.businessName)}%2C%20I%20found%20your%20store%20on%20Vendorkart%20and%20would%20like%20a%20bulk%20order%20quote.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FaWhatsapp className="w-4 h-4" /> WhatsApp Enquiry
+                  </a>
+                </Button>
+              )}
             </div>
 
             {/* Product Categories */}

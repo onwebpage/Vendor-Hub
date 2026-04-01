@@ -344,8 +344,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background">
       {/* Top Banner */}
       <div className="bg-primary text-primary-foreground py-2 text-center text-xs font-medium tracking-wide">
-        B2B Wholesale Marketplace: Get 10% off your first bulk order with code{" "}
-        <span className="font-bold">WELCOME10</span>
+        India's #1 B2B Marketplace — GST-Verified Vendors, Escrow Payments &amp; Pan-India Delivery.{" "}
+        <Link href="/pricing" className="font-bold underline underline-offset-2 hover:opacity-80 transition-opacity">
+          View Plans
+        </Link>
       </div>
 
       {/* Main Navigation */}
@@ -434,10 +436,13 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 </kbd>
               </button>
 
-              {/* 7. About Us */}
+              {/* 7. Pricing */}
+              <Link href="/pricing" className={nl("/pricing")}>Pricing</Link>
+
+              {/* 8. About Us */}
               <Link href="/about" className={nl("/about")}>About Us</Link>
 
-              {/* 8. Contact Us */}
+              {/* 9. Contact Us */}
               <Link href="/contact" className={nl("/contact")}>Contact Us</Link>
             </nav>
 

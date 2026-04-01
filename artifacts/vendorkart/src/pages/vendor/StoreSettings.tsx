@@ -18,8 +18,8 @@ const settingsSchema = z.object({
   description: z.string().max(1000, "Max 1000 characters").optional(),
   phone: z.string().optional(),
   email: z.string().email("Enter a valid email").optional().or(z.literal("")),
-  logo: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  banner: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  logo: z.string().optional().or(z.literal("")),
+  banner: z.string().optional().or(z.literal("")),
   gstNumber: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -52,17 +52,24 @@ export default function StoreSettings() {
   const [saved, setSaved] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const qrFileInputRef = React.useRef<HTMLInputElement>(null);
+  const logoFileInputRef = React.useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleQrImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      form.setValue("upiQrImage", reader.result as string, { shouldDirty: true, shouldValidate: true });
+  const makeImageUploadHandler = (field: "upiQrImage" | "logo" | "banner") =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        form.setValue(field, reader.result as string, { shouldDirty: true, shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+      e.target.value = "";
     };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
+
+  const handleQrImageUpload = makeImageUploadHandler("upiQrImage");
+  const handleLogoUpload = makeImageUploadHandler("logo");
+  const handleBannerUpload = makeImageUploadHandler("banner");
 
   const canUploadBanner = (profile as any)?.subscriptionPlan === "standard" || (profile as any)?.subscriptionPlan === "premium";
 
@@ -209,32 +216,60 @@ export default function StoreSettings() {
               )} />
               <FormField control={form.control} name="logo" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Logo URL</FormLabel>
-                  <FormControl><Input {...field} placeholder="https://..." className="rounded-xl" /></FormControl>
-                  <FormDescription>Direct link to your logo image</FormDescription>
+                  <FormLabel>Store Logo</FormLabel>
+                  <div className="flex gap-2 items-start">
+                    <FormControl>
+                      <Input {...field} placeholder="https://... or upload an image" className="rounded-xl" />
+                    </FormControl>
+                    <input ref={logoFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    <Button type="button" variant="outline" className="rounded-xl shrink-0 gap-2" onClick={() => logoFileInputRef.current?.click()}>
+                      <Upload className="w-4 h-4" /> Upload
+                    </Button>
+                  </div>
+                  {field.value && (
+                    <div className="mt-2">
+                      <img src={field.value} alt="Logo preview" className="w-14 h-14 rounded-xl object-cover border border-border/50" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                  )}
+                  <FormDescription>Your store logo — paste a URL or click Upload to choose a file</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="banner" render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
-                    Banner Image URL
+                    Store Banner
                     {!canUploadBanner && (
                       <span className="flex items-center gap-1 text-[11px] font-normal text-amber-600 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
                         <Lock className="w-2.5 h-2.5" /> Standard+ plan
                       </span>
                     )}
                   </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder={canUploadBanner ? "https://..." : "Upgrade to Standard or Premium to set a banner"}
-                      className="rounded-xl"
-                      disabled={!canUploadBanner}
-                    />
-                  </FormControl>
+                  <div className="flex gap-2 items-start">
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder={canUploadBanner ? "https://... or upload an image" : "Upgrade to Standard or Premium to set a banner"}
+                        className="rounded-xl"
+                        disabled={!canUploadBanner}
+                      />
+                    </FormControl>
+                    {canUploadBanner && (
+                      <>
+                        <input ref={bannerFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+                        <Button type="button" variant="outline" className="rounded-xl shrink-0 gap-2" onClick={() => bannerFileInputRef.current?.click()}>
+                          <Upload className="w-4 h-4" /> Upload
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  {field.value && canUploadBanner && (
+                    <div className="mt-2">
+                      <img src={field.value} alt="Banner preview" className="w-full h-24 rounded-xl object-cover border border-border/50" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                  )}
                   <FormDescription>
-                    {canUploadBanner ? "Direct link to your store banner image" : "Banner upload requires Standard or Premium subscription"}
+                    {canUploadBanner ? "Your store banner — paste a URL or click Upload to choose a file" : "Banner upload requires Standard or Premium subscription"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

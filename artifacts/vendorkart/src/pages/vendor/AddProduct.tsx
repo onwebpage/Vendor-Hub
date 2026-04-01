@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock, AlertCircle, Images } from "lucide-react";
+import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock, AlertCircle, Images, Upload } from "lucide-react";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
 } from "@/components/ui/form";
@@ -72,7 +72,7 @@ export default function AddProduct() {
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: "", price: 0, moq: 1, unit: "pieces", stock: 100,
-      imageUrls: [{ url: "" }],
+      imageUrls: [{ url: "" }, { url: "" }, { url: "" }],
       bulkPricing: [{ minQty: 10, price: 0 }]
     }
   });
@@ -81,6 +81,19 @@ export default function AddProduct() {
     name: "imageUrls",
     control: form.control
   });
+
+  const imageFileInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleImageFileUpload = (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      form.setValue(`imageUrls.${index}.url`, reader.result as string, { shouldDirty: true });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   const { fields, append, remove } = useFieldArray({
     name: "bulkPricing",
@@ -300,7 +313,7 @@ export default function AddProduct() {
                 </div>
                 <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
                   <Images className="w-3.5 h-3.5" />
-                  Your plan allows up to {maxImages} image{maxImages !== 1 ? "s" : ""} per product. Paste image URLs below.
+                  Your plan allows up to {maxImages} image{maxImages !== 1 ? "s" : ""} per product. Paste URLs or click Upload.
                 </p>
                 <div className="space-y-3">
                   {imageFields.map((imgField, index) => (
@@ -320,11 +333,28 @@ export default function AddProduct() {
                                 )}
                               </div>
                               <Input
-                                placeholder={`Image ${index + 1} URL — https://...`}
+                                placeholder={`Image ${index + 1} — paste URL or click Upload`}
                                 className="h-11 rounded-xl flex-1"
                                 {...field}
                               />
-                              {imageFields.length > 1 && (
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                ref={el => { imageFileInputRefs.current[index] = el; }}
+                                onChange={handleImageFileUpload(index)}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-10 rounded-xl shrink-0"
+                                title="Upload image"
+                                onClick={() => imageFileInputRefs.current[index]?.click()}
+                              >
+                                <Upload className="w-4 h-4" />
+                              </Button>
+                              {imageFields.length > 3 && (
                                 <Button
                                   type="button"
                                   variant="ghost"
