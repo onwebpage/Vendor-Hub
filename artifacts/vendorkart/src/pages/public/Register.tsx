@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ShoppingBag, Loader2, Store, User } from "lucide-react";
+import { ShoppingBag, Loader2, Store, User, MapPin } from "lucide-react";
 import { useRegister } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useToast } from "@/hooks/use-toast";
@@ -28,15 +28,16 @@ const registerSchema = z.object({
   phone: z.string().optional(),
   businessName: z.string().optional(),
   businessDescription: z.string().optional(),
-}).refine(data => {
-  // If role isn't accessible here, we check it in the component submit
-  return true; 
+  addressLine1: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  pincode: z.string().optional(),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function Register() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const initialRole = (searchParams.get('role') as 'customer' | 'vendor') || 'customer';
   
@@ -48,7 +49,11 @@ export default function Register() {
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "", phone: "", businessName: "", businessDescription: "" },
+    defaultValues: {
+      name: "", email: "", password: "", phone: "",
+      businessName: "", businessDescription: "",
+      addressLine1: "", city: "", state: "", pincode: "",
+    },
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
@@ -58,16 +63,33 @@ export default function Register() {
     }
 
     try {
-      const requestData = {
-        ...data,
-        role: role as any, // Using generated type
-      };
-      
-      const response = await registerMutation({ data: requestData });
-      
+      const response = await registerMutation({ data: { ...data, role: role as any } });
       login(response.user, response.token);
+
+      if (role === 'customer' && (data.addressLine1 || data.city || data.pincode)) {
+        try {
+          await fetch('/api/addresses', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${response.token}`,
+            },
+            body: JSON.stringify({
+              name: data.name,
+              phone: data.phone || '',
+              addressLine1: data.addressLine1 || '',
+              city: data.city || '',
+              state: data.state || '',
+              pincode: data.pincode || '',
+              country: 'India',
+              isDefault: true,
+            }),
+          });
+        } catch {
+        }
+      }
+
       toast({ title: "Account created!", description: "Welcome to Vendorkart." });
-      
       if (response.user.role === 'vendor') setLocation('/vendor-dashboard');
       else setLocation('/customer-dashboard');
       
@@ -167,6 +189,62 @@ export default function Register() {
                       <FormItem>
                         <FormLabel>Business Description</FormLabel>
                         <FormControl><Textarea placeholder="What do you manufacture or sell?" className="rounded-xl resize-none" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+              )}
+
+              {role === 'customer' && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
+                  <div className="flex items-center gap-2 pt-2 pb-1">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Delivery Address</span>
+                    <span className="text-xs text-muted-foreground">(optional)</span>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="addressLine1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Street / Area</FormLabel>
+                        <FormControl><Input placeholder="123, MG Road, Koramangala" className="h-12 rounded-xl" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl><Input placeholder="Bengaluru" className="h-12 rounded-xl" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl><Input placeholder="Karnataka" className="h-12 rounded-xl" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="pincode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pincode</FormLabel>
+                        <FormControl><Input placeholder="560001" className="h-12 rounded-xl" maxLength={6} {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

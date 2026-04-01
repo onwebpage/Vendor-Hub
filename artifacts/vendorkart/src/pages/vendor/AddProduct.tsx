@@ -3,13 +3,13 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateProduct, useListCategories, useGetVendorProfile, useListSubscriptionPlans, useGetCurrentSubscription } from "@workspace/api-client-react";
+import { useCreateProduct, useListCategories, useGetVendorProfile, useGetCurrentSubscription } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock, AlertCircle } from "lucide-react";
+import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock, AlertCircle, Images } from "lucide-react";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
 } from "@/components/ui/form";
@@ -17,6 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name required"),
@@ -29,8 +30,7 @@ const productSchema = z.object({
   sku: z.string().optional(),
   shortDescription: z.string().max(200, "Keep it under 200 characters").optional(),
   description: z.string().optional(),
-  // Simplifying image upload for dummy UI - just taking a URL string
-  imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  imageUrls: z.array(z.object({ url: z.string() })).optional(),
   bulkPricing: z.array(z.object({
     minQty: z.coerce.number(),
     price: z.coerce.number()
@@ -65,14 +65,21 @@ export default function AddProduct() {
   }, []);
 
   const maxProducts: number = (currentSub as any)?.plan?.maxProducts ?? 50;
+  const maxImages: number = (currentSub as any)?.plan?.maxImages ?? 5;
   const isAtLimit = maxProducts !== -1 && productCount !== null && productCount >= maxProducts;
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      name: "", price: 0, moq: 1, unit: "pieces", stock: 100, 
+      name: "", price: 0, moq: 1, unit: "pieces", stock: 100,
+      imageUrls: [{ url: "" }],
       bulkPricing: [{ minQty: 10, price: 0 }]
     }
+  });
+
+  const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
+    name: "imageUrls",
+    control: form.control
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -82,9 +89,10 @@ export default function AddProduct() {
 
   const onSubmit = async (data: ProductFormValues) => {
     try {
+      const images = (data.imageUrls || []).map(i => i.url).filter(u => u && u.trim().length > 0);
       const apiData = {
         ...data,
-        images: data.imageUrl ? [data.imageUrl] : [],
+        images,
         bulkPricing: data.bulkPricing?.filter(b => b.minQty > 0 && b.price > 0)
       };
       
@@ -135,7 +143,7 @@ export default function AddProduct() {
           </div>
           <h2 className="text-2xl font-bold mb-3">Approval Pending</h2>
           <p className="text-muted-foreground mb-6 leading-relaxed">
-            Your vendor account is still under review by the admin. You will be able to add products once your account is approved. Your store will also not be visible to buyers until then.
+            Your vendor account is still under review by the admin. You will be able to add products once your account is approved.
           </p>
           <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
             Back to Dashboard
@@ -268,19 +276,89 @@ export default function AddProduct() {
                   <FormMessage />
                 </FormItem>
               )} />
-              
-              <FormField control={form.control} name="imageUrl" render={({ field }) => (
+
+              {/* Multi-image upload section */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <FormLabel className="mb-0">Product Images</FormLabel>
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {imageFields.length} / {maxImages} images
+                    </Badge>
+                  </div>
+                  {imageFields.length < maxImages && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => appendImage({ url: "" })}
+                    >
+                      <Plus className="w-4 h-4 mr-1.5" /> Add Image
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Images className="w-3.5 h-3.5" />
+                  Your plan allows up to {maxImages} image{maxImages !== 1 ? "s" : ""} per product. Paste image URLs below.
+                </p>
+                <div className="space-y-3">
+                  {imageFields.map((imgField, index) => (
+                    <FormField
+                      key={imgField.id}
+                      control={form.control}
+                      name={`imageUrls.${index}.url`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <div className="flex gap-3 items-center">
+                              <div className="w-10 h-10 rounded-lg border border-dashed border-border flex items-center justify-center bg-muted/50 shrink-0 overflow-hidden">
+                                {field.value ? (
+                                  <img src={field.value} alt="" className="w-full h-full object-cover rounded-lg" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                ) : (
+                                  <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                              <Input
+                                placeholder={`Image ${index + 1} URL — https://...`}
+                                className="h-11 rounded-xl flex-1"
+                                {...field}
+                              />
+                              {imageFields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 text-destructive hover:bg-destructive/10 shrink-0"
+                                  onClick={() => removeImage(index)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
+                {imageFields.length >= maxImages && (
+                  <p className="text-xs text-amber-600 mt-2 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Image limit reached for your plan. Upgrade to add more images.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="bg-card p-5 sm:p-6 md:p-8 rounded-3xl border border-border shadow-sm space-y-5">
+              <h2 className="text-lg md:text-xl font-bold border-b border-border/50 pb-3 md:pb-4">Full Description</h2>
+              <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
-                  <FormDescription>For demo purposes, paste an image URL</FormDescription>
-                  <FormControl>
-                    <div className="flex gap-4">
-                      <div className="w-12 h-12 rounded-xl border border-dashed border-border flex items-center justify-center bg-muted/50 shrink-0">
-                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                      <Input placeholder="https://..." className="h-12 rounded-xl flex-1" {...field} />
-                    </div>
-                  </FormControl>
+                  <FormLabel>Detailed Product Description</FormLabel>
+                  <FormControl><Textarea placeholder="Include specifications, materials, certifications, use cases..." className="rounded-xl resize-none min-h-[120px]" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -293,7 +371,7 @@ export default function AddProduct() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Base Base Price (₹) *</FormLabel>
+                    <FormLabel>Base Price (₹) *</FormLabel>
                     <FormControl><Input type="number" className="h-12 rounded-xl" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>

@@ -10,6 +10,7 @@ export const subscriptionPlansTable = pgTable("subscription_plans", {
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   billingCycle: text("billing_cycle").notNull().default("monthly"),
   maxProducts: integer("max_products").default(-1),
+  maxImages: integer("max_images").default(5),
   maxCategories: integer("max_categories").default(-1),
   canUploadBanner: boolean("can_upload_banner").notNull().default(false),
   isFeatured: boolean("is_featured").notNull().default(false),

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, ChevronDown, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, ChevronDown, Sparkles, MessageSquare } from "lucide-react";
 
 interface Message {
   id: number;
@@ -127,8 +127,15 @@ export default function ChatBot() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [waHref, setWaHref] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/contact/social-links").then(r => r.json()).then(d => {
+      if (d?.whatsapp) setWaHref(d.whatsapp);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -168,10 +175,10 @@ export default function ChatBot() {
     <>
       {/* Floating buttons */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-center gap-3">
-        {/* WhatsApp button */}
-        {!open && (
+        {/* WhatsApp button — only if admin has configured a WhatsApp URL */}
+        {!open && waHref && (
           <a
-            href="https://wa.me/918927621385"
+            href={waHref}
             target="_blank"
             rel="noopener noreferrer"
             className="w-14 h-14 rounded-full bg-[#25D366] text-white shadow-xl shadow-green-500/40 hover:shadow-green-500/60 hover:scale-105 transition-all flex items-center justify-center"
@@ -183,14 +190,15 @@ export default function ChatBot() {
           </a>
         )}
 
-        {/* Chatbot button */}
+        {/* General Enquiry / Chat button */}
         {!open && (
           <button
             onClick={() => setOpen(true)}
             className="relative w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-500/40 hover:shadow-indigo-500/60 hover:scale-105 transition-all flex items-center justify-center group"
-            aria-label="Open chat"
+            aria-label="General Enquiry"
+            title="General Enquiry"
           >
-            <MessageCircle className="w-6 h-6" />
+            <MessageSquare className="w-6 h-6" />
             {unread > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
                 {unread}
@@ -211,8 +219,8 @@ export default function ChatBot() {
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-indigo-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm">Vendorkart Assistant</p>
-                <p className="text-[11px] text-white/70 flex items-center gap-1"><Sparkles className="w-2.5 h-2.5" />Smart guide · Always online</p>
+                <p className="font-bold text-sm">General Enquiry</p>
+                <p className="text-[11px] text-white/70 flex items-center gap-1"><Sparkles className="w-2.5 h-2.5" />Vendorkart Support · Always online</p>
               </div>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-xl hover:bg-white/20 transition-colors">
                 <ChevronDown className="w-4 h-4" />

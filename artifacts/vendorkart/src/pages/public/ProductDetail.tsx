@@ -2,12 +2,20 @@ import React, { useState } from "react";
 import { useRoute } from "wouter";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { useGetProduct, useAddToCart } from "@workspace/api-client-react";
-import { Store, Star, ShieldCheck, Truck, Plus, Minus, ShoppingCart, Info, Loader2 } from "lucide-react";
+import { Store, Star, ShieldCheck, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth-store";
+
+function WaIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white shrink-0" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  );
+}
 
 export default function ProductDetail() {
   const [, params] = useRoute("/products/:id");
@@ -18,8 +26,8 @@ export default function ProductDetail() {
   const { isAuthenticated, user } = useAuthStore();
   
   const [quantity, setQuantity] = useState<number>(0);
+  const [activeImage, setActiveImage] = useState<number>(0);
   
-  // Set initial quantity to MOQ when data loads
   React.useEffect(() => {
     if (data?.product && quantity === 0) {
       setQuantity(data.product.moq || 1);
@@ -53,12 +61,10 @@ export default function ProductDetail() {
   const { product, vendor } = data;
   const moq = product.moq || 1;
 
-  // Calculate dynamic price based on bulk tiers
   let currentPrice = product.price;
   let activeTierIndex = -1;
   
   if (product.bulkPricing && product.bulkPricing.length > 0) {
-    // Sort tiers by minQty descending to find the highest applicable tier
     const sortedTiers = [...product.bulkPricing].sort((a, b) => b.minQty - a.minQty);
     const applicableTier = sortedTiers.find(t => quantity >= t.minQty);
     if (applicableTier) {
@@ -86,26 +92,32 @@ export default function ProductDetail() {
     );
   };
 
+  const images = product.images && product.images.length > 0 ? product.images : ["https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1000"];
+  const vendorPhone = (vendor as any)?.phone;
+  const vendorWaHref = vendorPhone ? `https://wa.me/${vendorPhone.replace(/[^0-9]/g, "")}?text=Hi%2C%20I%27m%20interested%20in%20your%20product%3A%20${encodeURIComponent(product.name)}` : null;
+
   return (
     <PublicLayout>
       <div className="bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-          {/* Breadcrumb could go here */}
-          
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
             {/* Left: Images */}
             <div className="w-full lg:w-1/2 space-y-4">
               <div className="aspect-square bg-white rounded-3xl border border-border shadow-sm overflow-hidden flex items-center justify-center p-4">
                 <img 
-                  src={product.images?.[0] || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1000"} 
+                  src={images[activeImage]} 
                   alt={product.name} 
                   className="max-w-full max-h-full object-contain mix-blend-multiply"
                 />
               </div>
-              {product.images && product.images.length > 1 && (
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                  {product.images.map((img, idx) => (
-                    <div key={idx} className="w-24 h-24 rounded-xl border border-border bg-white p-2 shrink-0 cursor-pointer hover:border-primary">
+              {images.length > 1 && (
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setActiveImage(idx)}
+                      className={`w-20 h-20 rounded-xl border-2 bg-white p-1.5 shrink-0 cursor-pointer transition-all ${activeImage === idx ? "border-primary shadow-md shadow-primary/20" : "border-border hover:border-primary/50"}`}
+                    >
                       <img src={img} alt="" className="w-full h-full object-contain" />
                     </div>
                   ))}
@@ -144,7 +156,6 @@ export default function ProductDetail() {
                   )}
                 </div>
                 
-                {/* Bulk Pricing Tiers */}
                 {product.bulkPricing && product.bulkPricing.length > 0 && (
                   <div className="mt-6 bg-secondary/50 rounded-2xl p-4 border border-border">
                     <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
@@ -218,7 +229,7 @@ export default function ProductDetail() {
                 <div className="w-12 h-12 bg-white rounded-full border border-border flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                   {vendor?.logo ? <img src={vendor.logo} className="w-full h-full object-cover" /> : <Store className="w-6 h-6 text-muted-foreground" />}
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="text-sm text-muted-foreground mb-1">Sold by</div>
                   <h3 className="font-bold text-lg leading-none mb-2">{vendor?.businessName}</h3>
                   <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
@@ -226,6 +237,17 @@ export default function ProductDetail() {
                     <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-500" /> {vendor?.rating?.toFixed(1) || 'New'}</span>
                   </div>
                 </div>
+                {vendorWaHref && (
+                  <a
+                    href={vendorWaHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1ebe5c] transition-colors shrink-0"
+                  >
+                    <WaIcon />
+                    WhatsApp Vendor
+                  </a>
+                )}
               </div>
 
               {/* Description */}
@@ -239,6 +261,20 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
+
+      {/* Vendor WhatsApp Floating Button */}
+      {vendorWaHref && (
+        <a
+          href={vendorWaHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-28 left-6 z-[9998] flex items-center gap-2 px-4 py-3 rounded-full bg-[#25D366] text-white text-sm font-semibold shadow-xl shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105 transition-all"
+          aria-label="WhatsApp Vendor"
+        >
+          <WaIcon />
+          <span className="hidden sm:inline">Chat with Vendor</span>
+        </a>
+      )}
     </PublicLayout>
   );
 }
