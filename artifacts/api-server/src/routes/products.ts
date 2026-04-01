@@ -97,7 +97,7 @@ router.post("/", authenticate, requireRole("vendor"), async (req, res) => {
       stock: stock || 0,
       sku,
       bulkPricing: bulkPricing || [],
-      status: "pending",
+      status: vendor.status === "approved" ? "approved" : "pending",
     }).returning();
 
     await db.update(vendorsTable)
