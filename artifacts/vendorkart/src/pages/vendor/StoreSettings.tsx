@@ -4,7 +4,7 @@ import { useGetVendorProfile, useUpdateVendorProfile } from "@workspace/api-clie
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Store, Loader2, Save, AlertCircle, MapPin, Phone, Wallet, Lock, Link2, Copy, ExternalLink } from "lucide-react";
+import { Store, Loader2, Save, AlertCircle, MapPin, Phone, Wallet, Lock, Link2, Copy, ExternalLink, Upload, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,7 +26,7 @@ const settingsSchema = z.object({
   state: z.string().optional(),
   pincode: z.string().optional(),
   upiId: z.string().optional(),
-  upiQrImage: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  upiQrImage: z.string().optional().or(z.literal("")),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -51,6 +51,18 @@ export default function StoreSettings() {
   const { mutateAsync: updateProfile, isPending } = useUpdateVendorProfile();
   const [saved, setSaved] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const qrFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleQrImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      form.setValue("upiQrImage", reader.result as string, { shouldDirty: true, shouldValidate: true });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   const canUploadBanner = (profile as any)?.subscriptionPlan === "standard" || (profile as any)?.subscriptionPlan === "premium";
 
@@ -304,9 +316,49 @@ export default function StoreSettings() {
               )} />
               <FormField control={form.control} name="upiQrImage" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>UPI QR Code Image URL</FormLabel>
-                  <FormControl><Input {...field} placeholder="https://..." className="rounded-xl" /></FormControl>
-                  <FormDescription>URL of your UPI QR code image for buyers to scan</FormDescription>
+                  <FormLabel>UPI QR Code Image</FormLabel>
+                  <div className="flex gap-2 items-start">
+                    <FormControl>
+                      <Input {...field} placeholder="https://... or upload an image" className="rounded-xl" />
+                    </FormControl>
+                    <input
+                      ref={qrFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleQrImageUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-xl shrink-0 gap-2"
+                      onClick={() => qrFileInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload
+                    </Button>
+                  </div>
+                  {field.value && (
+                    <div className="mt-2 flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border/50">
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border/50 bg-white flex items-center justify-center shrink-0">
+                        <img
+                          src={field.value}
+                          alt="QR Code preview"
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+                          }}
+                        />
+                        <QrCode className="w-8 h-8 text-muted-foreground hidden" />
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <p className="font-medium text-foreground">QR code set</p>
+                        <p>Buyers will see this on your store page</p>
+                      </div>
+                    </div>
+                  )}
+                  <FormDescription>Upload a QR code image or paste a URL — buyers will scan this to pay you directly</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
