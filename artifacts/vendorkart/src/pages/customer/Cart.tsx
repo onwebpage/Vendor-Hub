@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useGetCart, useUpdateCartItem, useRemoveFromCart, useCreateOrder, useListAddresses } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, MapPin, ChevronDown, CheckCircle2, Upload, ExternalLink, QrCode, X, ImageIcon, Loader2 } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, MapPin, ChevronDown, CheckCircle2, Upload, ExternalLink, QrCode, X, ImageIcon, Loader2, Tag, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -209,6 +209,10 @@ export default function Cart() {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [paymentScreenshot, setPaymentScreenshot] = useState<string | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; label: string } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const addrList: any[] = (addresses as any[]) || [];
 
@@ -222,8 +226,10 @@ export default function Cart() {
   const subtotal = cart?.subtotal || 0;
   const discount = useMemo(() => getWholesaleDiscount(subtotal), [subtotal]);
   const discountAmount = Math.round(subtotal * discount.percent / 100);
-  const gst = Math.round((subtotal - discountAmount) * 0.18);
-  const total = subtotal - discountAmount + gst;
+  const couponDiscount = appliedCoupon?.discount ?? 0;
+  const afterDiscounts = subtotal - discountAmount - couponDiscount;
+  const gst = Math.round(afterDiscounts * 0.18);
+  const total = afterDiscounts + gst;
 
   const handleUpdateQuantity = (itemId: number, newQty: number) => {
     updateItem(
@@ -242,6 +248,39 @@ export default function Cart() {
         }
       }
     );
+  };
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const res = await fetch(`/api/coupons/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, orderAmount: subtotal - discountAmount }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponError(data.message || "Invalid coupon code");
+        setAppliedCoupon(null);
+      } else {
+        setAppliedCoupon({ code, discount: data.discountAmount, label: data.label || code });
+        setCouponInput("");
+        toast({ title: "Coupon applied!", description: `You saved ₹${data.discountAmount.toLocaleString("en-IN")}` });
+      }
+    } catch {
+      setCouponError("Could not validate coupon. Please try again.");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+    setCouponInput("");
   };
 
   const handleCheckoutClick = () => {
@@ -264,6 +303,7 @@ export default function Cart() {
         data: {
           shippingAddressId: selectedAddressId!,
           paymentScreenshot,
+          couponCode: appliedCoupon?.code ?? undefined,
           notes: "UPI QR payment — screenshot submitted for verification",
         } as any,
       });
@@ -384,6 +424,52 @@ export default function Cart() {
                     )}
                   </div>
 
+                  {/* Coupon Code Section */}
+                  <div>
+                    <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-primary" /> Have a Coupon?
+                    </h2>
+                    {appliedCoupon ? (
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{appliedCoupon.code}</p>
+                          <p className="text-xs text-emerald-600 dark:text-emerald-500">Saving ₹{appliedCoupon.discount.toLocaleString("en-IN")}</p>
+                        </div>
+                        <button onClick={handleRemoveCoupon} className="p-1 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors">
+                          <XCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={couponInput}
+                            onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(null); }}
+                            onKeyDown={e => { if (e.key === "Enter") handleApplyCoupon(); }}
+                            placeholder="Enter coupon code"
+                            className="flex-1 h-10 px-3 rounded-xl text-sm border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleApplyCoupon}
+                            disabled={!couponInput.trim() || couponLoading}
+                            className="h-10 px-4 rounded-xl"
+                          >
+                            {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                          </Button>
+                        </div>
+                        {couponError && (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <XCircle className="w-3 h-3" />{couponError}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <h2 className="text-xl font-bold mb-4">Order Summary</h2>
 
@@ -404,6 +490,15 @@ export default function Cart() {
                         <div className="flex justify-between text-muted-foreground">
                           <span>Wholesale Discount</span>
                           <span className="text-xs italic">Add ₹{(10000 - subtotal).toLocaleString()} more for 2% off</span>
+                        </div>
+                      )}
+
+                      {appliedCoupon && (
+                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                          <span className="flex items-center gap-1">
+                            <Tag className="w-3.5 h-3.5" />Coupon: {appliedCoupon.code}
+                          </span>
+                          <span className="font-semibold">-₹{couponDiscount.toLocaleString()}</span>
                         </div>
                       )}
 

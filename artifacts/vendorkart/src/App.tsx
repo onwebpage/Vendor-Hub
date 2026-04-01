@@ -44,6 +44,7 @@ import VendorStore from "@/pages/public/VendorStore";
 import About from "@/pages/public/About";
 import Contact from "@/pages/public/Contact";
 import NotFound from "@/pages/not-found";
+import ChatBot from "@/components/ChatBot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,6 +113,7 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
+          <ChatBot />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

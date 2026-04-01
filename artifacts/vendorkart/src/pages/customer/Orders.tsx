@@ -49,39 +49,17 @@ function TrackingBar({ status }: { status: string }) {
 
 function handleDownloadInvoice(order: any) {
   const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
-  const items = (order.items || []).map((i: any) =>
-    `  ${i.productName} × ${i.quantity} @ ${fmt(i.price)} = ${fmt(i.subtotal)}`
-  ).join("\n");
-
-  const content = [
-    "=".repeat(54),
-    `       VENDORKART — TAX INVOICE`,
-    "=".repeat(54),
-    `Invoice No  : INV-${order.orderNumber}`,
-    `Date        : ${new Date(order.createdAt || "").toLocaleDateString("en-IN")}`,
-    `Order No    : ${order.orderNumber}`,
-    "-".repeat(54),
-    "ITEMS:",
-    items,
-    "-".repeat(54),
-    `Subtotal    : ${fmt(order.subtotal)}`,
-    `Discount    : - ${fmt(order.discount || 0)}`,
-    `TOTAL       : ${fmt(order.total)}`,
-    "-".repeat(54),
-    `Payment     : ${order.paymentStatus?.toUpperCase()}`,
-    `Status      : ${order.status?.toUpperCase()}`,
-    "=".repeat(54),
-    "Thank you for your business!",
-    "Vendorkart — India's #1 B2B Marketplace",
-  ].join("\n");
-
-  const blob = new Blob([content], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Invoice-${order.orderNumber}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const itemRows = (order.items || []).map((i: any) =>
+    `<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0">${i.productName || "Product"}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right">${fmt(i.price)}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:700">${fmt(i.subtotal || i.price * i.quantity)}</td></tr>`
+  ).join("");
+  const addr = order.shippingAddress;
+  const addrStr = addr ? `${addr.name ? addr.name + "<br>" : ""}${addr.addressLine1}<br>${addr.city}, ${addr.state} — ${addr.pincode}` : "—";
+  const subtotal = Number(order.subtotal || 0);
+  const disc = Number(order.discount || 0);
+  const total = Number(order.total || 0);
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice – ${order.orderNumber}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f6fa;padding:32px;color:#1a1a2e}@media print{body{background:#fff;padding:0}}.card{max-width:760px;margin:auto;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.10);overflow:hidden}.header{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);padding:36px 44px;color:#fff;display:flex;justify-content:space-between;align-items:flex-start}.brand h1{font-size:26px;font-weight:800;letter-spacing:-0.5px}.brand p{font-size:13px;opacity:.75;margin-top:3px}.inv-info{text-align:right}.inv-info .num{font-size:18px;font-weight:700}.inv-info p{font-size:12px;opacity:.75;margin-top:2px}.body{padding:36px 44px}.meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:32px}.meta-blk h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#9ca3af;margin-bottom:6px}.meta-blk p{font-size:13px;font-weight:600;color:#111;line-height:1.6}.table-wrap{border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:28px}table{width:100%;border-collapse:collapse}thead{background:#f9fafb}thead th{padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;text-align:left}thead th:nth-child(n+2){text-align:center}thead th:last-child{text-align:right}.sum{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.sum-row{display:flex;justify-content:space-between;width:260px;font-size:13px;color:#374151;padding:3px 0}.sum-row.coupon{color:#059669}.sum-row.grand{border-top:2px solid #e5e7eb;margin-top:6px;padding-top:10px;font-size:16px;font-weight:800;color:#1a1a2e}.badge{display:inline-flex;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700}.paid{background:#d1fae5;color:#065f46}.pending{background:#fef3c7;color:#92400e}.footer{text-align:center;padding:20px 44px;background:#f9fafb;border-top:1px solid #f0f0f0;font-size:11px;color:#9ca3af}</style></head><body><div class="card"><div class="header"><div class="brand"><h1>Vendorkart</h1><p>India's #1 B2B Wholesale Marketplace</p></div><div class="inv-info"><div class="num">INV-${order.orderNumber}</div><p>Date: ${new Date(order.createdAt || "").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}</p><p>Order: #${order.orderNumber}</p></div></div><div class="body"><div class="meta"><div class="meta-blk"><h3>Bill To</h3><p>${addrStr}</p></div><div class="meta-blk"><h3>Payment</h3><span class="badge ${order.paymentStatus === "paid" ? "paid" : "pending"}">${(order.paymentStatus || "Pending").toUpperCase()}</span>${order.couponCode ? `<p style="margin-top:8px;font-size:11px;color:#6b7280">Coupon: <strong>${order.couponCode}</strong></p>` : ""}</div><div class="meta-blk"><h3>Order Status</h3><p>${(order.status || "").replace(/_/g," ").toUpperCase()}</p></div></div><div class="table-wrap"><table><thead><tr><th>Product</th><th>Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Subtotal</th></tr></thead><tbody>${itemRows}</tbody></table></div><div class="sum"><div class="sum-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>${disc > 0 ? `<div class="sum-row coupon"><span>Discount${order.couponCode ? " (" + order.couponCode + ")" : ""}</span><span>- ${fmt(disc)}</span></div>` : ""}<div class="sum-row grand"><span>Total Amount</span><span>${fmt(total)}</span></div></div></div><div class="footer"><p>Thank you for your order! · Vendorkart · support@vendorkart.in · All prices inclusive of applicable taxes.</p></div></div><script>window.onload=function(){window.print()}</script></body></html>`;
+  const win = window.open("", "_blank");
+  if (win) { win.document.write(html); win.document.close(); }
 }
 
 function OrderCard({ order }: { order: any }) {
