@@ -1,16 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useGetVendorProfile } from "@workspace/api-client-react";
 import {
   Store, Package, ShoppingBag, IndianRupee, Clock,
   Plus, Lock, ArrowRight, CheckCircle2, XCircle, Star, MapPin,
-  AlertTriangle, Zap, BarChart3, Users, Shield,
-  Bell, ChevronRight, Sparkles, Building2, Phone, Mail, Link2, Copy, ExternalLink
+  AlertTriangle, Zap, BarChart3, Users, Shield, TrendingUp,
+  Bell, ChevronRight, Sparkles, Building2, Phone, Mail, Link2, Copy, ExternalLink,
+  CalendarDays, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { customFetch } from "@workspace/api-client-react";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell
+} from "recharts";
 
 const fadeIn = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35 } };
 
@@ -185,6 +192,211 @@ function StatCard({
       <div className="text-sm font-medium text-muted-foreground mt-1">{label}</div>
       {subtext && <div className="text-xs text-muted-foreground/60 mt-0.5">{subtext}</div>}
       <div className={`absolute -right-4 -bottom-4 w-20 h-20 rounded-full ${bg} opacity-30`} />
+    </motion.div>
+  );
+}
+
+type AnalyticsData = {
+  totalRevenue: number;
+  vendorEarnings: number;
+  pendingOrders: number;
+  totalOrders: number;
+  topProducts: Array<{ productId: number; name: string; quantity: number; revenue: number; image?: string }>;
+  dailyRevenue: Array<{ date: string; label: string; revenue: number }>;
+  monthlyRevenue: Array<{ month: string; label: string; revenue: number }>;
+};
+
+function useVendorAnalytics() {
+  return useQuery<AnalyticsData>({
+    queryKey: ["vendor-analytics"],
+    queryFn: () => customFetch<AnalyticsData>("/api/vendors/analytics"),
+    staleTime: 60_000,
+  });
+}
+
+function fmt(n: number) {
+  return `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+}
+
+function AnalyticsKpiCard({ label, value, icon: Icon, color, bg, sub }: {
+  label: string; value: string; icon: React.ElementType; color: string; bg: string; sub?: string;
+}) {
+  return (
+    <motion.div {...fadeIn} className={`relative bg-card rounded-2xl p-5 border border-border/50 shadow-sm overflow-hidden`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className={`p-2.5 rounded-xl ${bg}`}>
+          <Icon className={`w-4.5 h-4.5 ${color}`} />
+        </div>
+      </div>
+      <div className="text-2xl font-bold font-display tracking-tight">{value}</div>
+      <div className="text-sm font-medium text-muted-foreground mt-0.5">{label}</div>
+      {sub && <div className="text-xs text-muted-foreground/55 mt-0.5">{sub}</div>}
+      <div className={`absolute -right-3 -bottom-3 w-16 h-16 rounded-full ${bg} opacity-25`} />
+    </motion.div>
+  );
+}
+
+const CHART_COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"];
+
+function SmartDashboard({ isApproved }: { isApproved: boolean }) {
+  const [chartMode, setChartMode] = useState<"daily" | "monthly">("monthly");
+  const { data, isLoading } = useVendorAnalytics();
+
+  if (!isApproved) return null;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+        </div>
+        <Skeleton className="h-72 rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const chartData = chartMode === "daily" ? data.dailyRevenue : data.monthlyRevenue;
+  const chartKey = chartMode === "daily" ? "label" : "label";
+  const maxRevenue = Math.max(...data.topProducts.map(p => p.revenue), 1);
+
+  const kpis = [
+    { label: "Total Revenue", value: fmt(data.totalRevenue), icon: IndianRupee, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", sub: "Gross from all orders" },
+    { label: "Vendor Earnings", value: fmt(data.vendorEarnings), icon: TrendingUp, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10", sub: "After 15% platform fee" },
+    { label: "Pending Orders", value: String(data.pendingOrders), icon: Clock, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10", sub: "Awaiting fulfilment" },
+    { label: "Total Orders", value: String(data.totalOrders), icon: ShoppingBag, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10", sub: "All-time order count" },
+  ];
+
+  return (
+    <motion.div {...fadeIn} className="space-y-5">
+      {/* Section Header */}
+      <div className="flex items-center gap-2">
+        <div className="p-1.5 rounded-lg bg-primary/10">
+          <BarChart3 className="w-4 h-4 text-primary" />
+        </div>
+        <h2 className="text-base font-bold">Smart Dashboard</h2>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {kpis.map((kpi) => (
+          <AnalyticsKpiCard key={kpi.label} {...kpi} />
+        ))}
+      </div>
+
+      {/* Revenue Chart + Top Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Revenue Chart */}
+        <div className="lg:col-span-2 bg-card rounded-2xl border border-border/50 p-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div>
+              <h3 className="font-bold text-sm">Revenue Overview</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {chartMode === "daily" ? "Last 30 days" : "Last 12 months"}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/60 self-start sm:self-auto">
+              <button
+                onClick={() => setChartMode("daily")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${chartMode === "daily" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <CalendarDays className="w-3 h-3" /> Daily
+              </button>
+              <button
+                onClick={() => setChartMode("monthly")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${chartMode === "monthly" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Calendar className="w-3 h-3" /> Monthly
+              </button>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis
+                dataKey={chartKey}
+                tick={{ fontSize: 10, fill: "currentColor", opacity: 0.4 }}
+                tickLine={false}
+                axisLine={false}
+                interval={chartMode === "daily" ? 4 : 0}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "currentColor", opacity: 0.4 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
+                }}
+                formatter={(value: number) => [fmt(value), "Revenue"]}
+                labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#6366f1"
+                strokeWidth={2}
+                fill="url(#revenueGrad)"
+                dot={false}
+                activeDot={{ r: 4, fill: "#6366f1", stroke: "hsl(var(--card))", strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Top Products */}
+        <div className="bg-card rounded-2xl border border-border/50 p-5 shadow-sm">
+          <h3 className="font-bold text-sm mb-1">Top Products</h3>
+          <p className="text-xs text-muted-foreground mb-4">By revenue earned</p>
+          {data.topProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-center">
+              <Package className="w-8 h-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No sales data yet</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">Start selling to see top products</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {data.topProducts.map((product, i) => (
+                <div key={product.productId}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`}
+                        style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}>
+                        {i + 1}
+                      </span>
+                      <span className="text-xs font-medium truncate">{product.name}</span>
+                    </div>
+                    <span className="text-xs font-bold text-muted-foreground ml-2 flex-shrink-0">{fmt(product.revenue)}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${(product.revenue / maxRevenue) * 100}%`,
+                        background: CHART_COLORS[i % CHART_COLORS.length]
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">{product.quantity} units sold</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -407,6 +619,9 @@ export default function VendorDashboard() {
             <StatCard key={i} {...stat} />
           ))}
         </div>
+
+        {/* Smart Dashboard Analytics */}
+        <SmartDashboard isApproved={isApproved} />
 
         {/* Quick Actions + Tips */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

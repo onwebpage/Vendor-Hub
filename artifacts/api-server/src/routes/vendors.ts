@@ -65,6 +65,92 @@ router.get("/my-orders", authenticate, requireRole("vendor"), async (req, res) =
   }
 });
 
+router.get("/analytics", authenticate, requireRole("vendor"), async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.userId, userId));
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
+    const allOrders = await db.select().from(ordersTable)
+      .orderBy(sql`${ordersTable.createdAt} DESC`).limit(500);
+
+    const vendorOrders = allOrders.filter((order: any) =>
+      Array.isArray(order.items) && order.items.some((item: any) => item.vendorId === vendor.id)
+    );
+
+    let totalRevenue = 0;
+    let pendingCount = 0;
+    const productMap: Record<string, { name: string; quantity: number; revenue: number; image?: string }> = {};
+    const dailyMap: Record<string, number> = {};
+    const monthlyMap: Record<string, number> = {};
+    const now = new Date();
+
+    vendorOrders.forEach((order: any) => {
+      const vendorItems = (order.items as any[]).filter((item: any) => item.vendorId === vendor.id);
+      const orderRevenue = vendorItems.reduce((sum: number, item: any) => sum + Number(item.subtotal || 0), 0);
+      totalRevenue += orderRevenue;
+
+      const isPending = ["pending_payment", "pending", "confirmed", "processing"].includes(order.status);
+      if (isPending) pendingCount++;
+
+      vendorItems.forEach((item: any) => {
+        const key = String(item.productId);
+        if (!productMap[key]) productMap[key] = { name: item.productName, quantity: 0, revenue: 0, image: item.productImage };
+        productMap[key].quantity += Number(item.quantity);
+        productMap[key].revenue += Number(item.subtotal || 0);
+      });
+
+      const date = new Date(order.createdAt);
+      const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 30) {
+        const dayKey = date.toISOString().split("T")[0];
+        dailyMap[dayKey] = (dailyMap[dayKey] || 0) + orderRevenue;
+      }
+      const diffMonths = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+      if (diffMonths <= 12) {
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + orderRevenue;
+      }
+    });
+
+    const commissionRate = 0.15;
+    const vendorEarnings = totalRevenue * (1 - commissionRate);
+
+    const topProducts = Object.entries(productMap)
+      .map(([id, data]) => ({ productId: Number(id), ...data }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    const dailyRevenue = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (29 - i));
+      const key = d.toISOString().split("T")[0];
+      const label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      return { date: key, label, revenue: dailyMap[key] || 0 };
+    });
+
+    const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleString("en-IN", { month: "short", year: "2-digit" });
+      return { month: key, label, revenue: monthlyMap[key] || 0 };
+    });
+
+    return res.json({
+      totalRevenue,
+      vendorEarnings,
+      pendingOrders: pendingCount,
+      totalOrders: vendorOrders.length,
+      topProducts,
+      dailyRevenue,
+      monthlyRevenue,
+    });
+  } catch (err) {
+    console.error("analytics error", err);
+    return res.status(500).json({ message: "Failed to get analytics" });
+  }
+});
+
 router.get("/profile", authenticate, requireRole("vendor"), async (req, res) => {
   try {
     const userId = (req as any).userId;
