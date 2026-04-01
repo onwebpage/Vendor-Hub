@@ -99,8 +99,8 @@ export default function AddProduct() {
   if (profileLoading) {
     return (
       <DashboardLayout>
-        <div className="max-w-4xl mx-auto p-8">
-          <Skeleton className="h-10 w-64 mb-8 rounded-xl" />
+        <div className="max-w-4xl mx-auto">
+          <Skeleton className="h-10 w-64 mb-6 rounded-xl" />
           <Skeleton className="h-64 w-full rounded-3xl" />
         </div>
       </DashboardLayout>
@@ -215,14 +215,14 @@ export default function AddProduct() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-display font-bold mb-8">Add New Product</h1>
+        <h1 className="text-2xl md:text-3xl font-display font-bold mb-6 md:mb-8">Add New Product</h1>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
             
             {/* Basic Info */}
-            <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-6">
-              <h2 className="text-xl font-bold border-b border-border/50 pb-4">Basic Information</h2>
+            <div className="bg-card p-5 sm:p-6 md:p-8 rounded-3xl border border-border shadow-sm space-y-5 md:space-y-6">
+              <h2 className="text-lg md:text-xl font-bold border-b border-border/50 pb-3 md:pb-4">Basic Information</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="name" render={({ field }) => (
@@ -287,8 +287,8 @@ export default function AddProduct() {
             </div>
 
             {/* Pricing & Inventory */}
-            <div className="bg-card p-8 rounded-3xl border border-border shadow-sm space-y-6">
-              <h2 className="text-xl font-bold border-b border-border/50 pb-4">Pricing & Inventory</h2>
+            <div className="bg-card p-5 sm:p-6 md:p-8 rounded-3xl border border-border shadow-sm space-y-5 md:space-y-6">
+              <h2 className="text-lg md:text-xl font-bold border-b border-border/50 pb-3 md:pb-4">Pricing & Inventory</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField control={form.control} name="price" render={({ field }) => (
@@ -362,9 +362,9 @@ export default function AddProduct() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-4">
-              <Button type="button" variant="ghost" className="h-12 px-6" onClick={() => setLocation("/vendor-dashboard/products")}>Cancel</Button>
-              <Button type="submit" className="h-12 px-8 rounded-xl shadow-lg shadow-primary/25" disabled={isPending}>
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+              <Button type="button" variant="ghost" className="h-11 sm:h-12 px-5 sm:px-6 order-2 sm:order-1" onClick={() => setLocation("/vendor-dashboard/products")}>Cancel</Button>
+              <Button type="submit" className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl shadow-lg shadow-primary/25 order-1 sm:order-2" disabled={isPending}>
                 {isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                 Save Product
               </Button>

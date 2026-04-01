@@ -97,7 +97,7 @@ function StatusBanner({ status, rejectionReason, slug }: { status: string; rejec
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { step: 1, label: "Application Submitted", done: true },
             { step: 2, label: "Admin Review", done: false, active: true },
@@ -291,7 +291,7 @@ export default function VendorDashboard() {
     <DashboardLayout>
       <div className="space-y-8">
         {/* Header */}
-        <motion.div {...fadeIn} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <motion.div {...fadeIn} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h1 className="text-3xl font-display font-bold tracking-tight">Vendor Hub</h1>
             <p className="text-muted-foreground mt-1 text-sm">
