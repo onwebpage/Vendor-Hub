@@ -280,13 +280,13 @@ export default function Cart() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-3xl font-display font-bold mb-8">Shopping Cart</h1>
+      <h1 className="text-2xl sm:text-3xl font-display font-bold mb-6 sm:mb-8">Shopping Cart</h1>
 
       {!cart?.items || cart.items.length === 0 ? (
-        <div className="bg-card rounded-3xl border border-border p-16 text-center shadow-sm">
-          <ShoppingBag className="w-16 h-16 text-muted-foreground/30 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
-          <p className="text-muted-foreground mb-8">Looks like you haven't added any wholesale products yet.</p>
+        <div className="bg-card rounded-3xl border border-border p-8 sm:p-16 text-center shadow-sm">
+          <ShoppingBag className="w-14 h-14 sm:w-16 sm:h-16 text-muted-foreground/30 mx-auto mb-5 sm:mb-6" />
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">Your cart is empty</h2>
+          <p className="text-muted-foreground mb-6 sm:mb-8 text-sm sm:text-base">Looks like you haven't added any wholesale products yet.</p>
           <Button size="lg" className="rounded-xl px-8" asChild>
             <Link href="/products">Browse Catalog</Link>
           </Button>

@@ -79,7 +79,7 @@ export default function About() {
               <Award className="w-3.5 h-3.5 text-indigo-400" />
               <span className="text-indigo-300 text-xs font-bold tracking-widest uppercase">Our Story</span>
             </div>
-            <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6">
               Building India's Most<br />
               <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">
                 Trusted B2B Marketplace
@@ -122,7 +122,7 @@ export default function About() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
               <p className="text-primary font-bold text-xs uppercase tracking-widest mb-4">Our Mission</p>
-              <h2 className="text-4xl font-extrabold text-foreground leading-tight mb-5">
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground leading-tight mb-5">
                 Democratising B2B Trade Across India
               </h2>
               <p className="text-muted-foreground leading-relaxed mb-5">
@@ -168,7 +168,7 @@ export default function About() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-primary font-bold text-xs uppercase tracking-widest mb-3">What We Stand For</p>
-            <h2 className="text-4xl font-extrabold text-foreground">Our Core Values</h2>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground">Our Core Values</h2>
           </div>
           <div className="grid sm:grid-cols-2 gap-6">
             {values.map((v, i) => (
@@ -196,7 +196,7 @@ export default function About() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-primary font-bold text-xs uppercase tracking-widest mb-3">The People Behind Vendorkart</p>
-            <h2 className="text-4xl font-extrabold text-foreground">Meet Our Team</h2>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground">Meet Our Team</h2>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {team.map((member, i) => (
@@ -222,7 +222,7 @@ export default function About() {
       {/* CTA */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-extrabold mb-4">Ready to Transform Your Procurement?</h2>
+          <h2 className="text-2xl sm:text-4xl font-extrabold mb-4">Ready to Transform Your Procurement?</h2>
           <p className="text-primary-foreground/70 mb-8 text-lg">
             Join 12,000+ verified vendors and 2.4 lakh buyers on India's leading B2B marketplace.
           </p>

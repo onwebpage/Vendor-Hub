@@ -157,7 +157,7 @@ export default function Home() {
                 <motion.h1
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  className="text-[52px] sm:text-[62px] xl:text-[72px] font-black tracking-[-0.03em] leading-[1.03]"
+                  className="text-[34px] xs:text-[42px] sm:text-[54px] xl:text-[72px] font-black tracking-[-0.03em] leading-[1.03]"
                 >
                   <span className="text-white block">Smarter B2B</span>
                   <span className="text-white block">Sourcing,</span>
@@ -481,7 +481,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
             <div>
               <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">Browse by Industry</p>
-              <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
                 Explore Top<br />
                 <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">Wholesale Categories</span>
               </h2>
@@ -533,7 +533,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
             <div>
               <p className="text-indigo-400 font-bold text-xs uppercase tracking-widest mb-3">Trending Now</p>
-              <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
                 Bulk Products<br />
                 <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Ready to Order</span>
               </h2>
@@ -577,7 +577,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">Why Vendorkart</p>
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
               Built for B2B.<br />
               <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Engineered for Scale.</span>
             </h2>
@@ -670,7 +670,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">Customer Stories</p>
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
               Loved by{" "}
               <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">2 Lakh+</span> Businesses
             </h2>
@@ -736,7 +736,7 @@ export default function Home() {
               {/* Left */}
               <div className="p-8 sm:p-12 lg:p-16">
                 <p className="text-blue-200/60 font-bold text-xs uppercase tracking-widest mb-4">For Buyers</p>
-                <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
                   Source smarter.<br />Spend less.
                 </h2>
                 <p className="text-white/55 mb-8 leading-relaxed">Access 12,000+ verified suppliers, compare bulk quotes, and place orders with full escrow protection — all for free.</p>
@@ -751,7 +751,7 @@ export default function Home() {
               {/* Right */}
               <div className="p-8 sm:p-12 lg:p-16 lg:pl-16">
                 <p className="text-violet-200/60 font-bold text-xs uppercase tracking-widest mb-4">For Vendors</p>
-                <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
                   Grow your B2B<br />sales 10x.
                 </h2>
                 <p className="text-white/55 mb-8 leading-relaxed">Reach 2.4 lakh+ business buyers across India. List products, manage orders, and grow revenue — starting at just ₹999/mo.</p>

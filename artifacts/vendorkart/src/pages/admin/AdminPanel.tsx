@@ -436,7 +436,7 @@ function ProductFormModal({ open, onClose, initial, vendors, categories, token, 
 
         <div className="p-6 space-y-5">
           {/* Row 1: Name + SKU */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Product Name *</label>
               <input className={inputCls} placeholder="e.g. Industrial Sensors 50A" value={form.name} onChange={e => set("name", e.target.value)} />
@@ -448,7 +448,7 @@ function ProductFormModal({ open, onClose, initial, vendors, categories, token, 
           </div>
 
           {/* Row 2: Vendor + Category */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Vendor *</label>
               <select className={selectCls} value={form.vendorId} onChange={e => set("vendorId", e.target.value)}>
@@ -466,7 +466,7 @@ function ProductFormModal({ open, onClose, initial, vendors, categories, token, 
           </div>
 
           {/* Row 3: Price + Compare Price */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Price (₹) *</label>
               <input className={inputCls} type="number" min="0" placeholder="0" value={form.price} onChange={e => set("price", e.target.value)} />
@@ -478,7 +478,7 @@ function ProductFormModal({ open, onClose, initial, vendors, categories, token, 
           </div>
 
           {/* Row 4: Stock + MOQ + Unit */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-3 gap-4">
             <div>
               <label className={labelCls}>Stock</label>
               <input className={inputCls} type="number" min="0" placeholder="0" value={form.stock} onChange={e => set("stock", e.target.value)} />
@@ -498,7 +498,7 @@ function ProductFormModal({ open, onClose, initial, vendors, categories, token, 
           </div>
 
           {/* Row 5: Status + Featured */}
-          <div className="grid grid-cols-2 gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div>
               <label className={labelCls}>Status</label>
               <select className={selectCls} value={form.status} onChange={e => set("status", e.target.value)}>

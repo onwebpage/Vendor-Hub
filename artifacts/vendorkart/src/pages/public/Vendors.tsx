@@ -191,7 +191,7 @@ export default function Vendors() {
             <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-widest">
               <Shield className="w-3 h-3" /> GST-Verified Suppliers
             </div>
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-3">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-3">
               Discover Verified{" "}
               <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">
                 Vendors

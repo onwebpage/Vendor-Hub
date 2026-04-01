@@ -103,7 +103,7 @@ export default function Contact() {
               <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
               <span className="text-indigo-300 text-xs font-bold tracking-widest uppercase">Get in Touch</span>
             </div>
-            <h1 className="text-5xl font-extrabold tracking-tight mb-5">
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-5">
               We're Here to <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">Help</span>
             </h1>
             <p className="text-white/50 text-lg leading-relaxed">

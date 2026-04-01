@@ -293,7 +293,7 @@ export default function VendorDashboard() {
         {/* Header */}
         <motion.div {...fadeIn} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h1 className="text-3xl font-display font-bold tracking-tight">Vendor Hub</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">Vendor Hub</h1>
             <p className="text-muted-foreground mt-1 text-sm">
               {isApproved ? "Manage your store, products, and incoming orders." : "Your vendor dashboard — approval needed to go live."}
             </p>
