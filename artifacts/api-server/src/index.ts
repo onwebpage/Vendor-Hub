@@ -19,7 +19,9 @@ if (Number.isNaN(port) || port <= 0) {
 
 const httpServer = http.createServer(app);
 
-await setupFrontend(httpServer);
+if (process.env["SERVE_FRONTEND"] !== "false") {
+  await setupFrontend(httpServer);
+}
 
 httpServer.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening on 0.0.0.0");

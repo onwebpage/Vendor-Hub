@@ -474,13 +474,33 @@ router.delete("/coupons/:id", async (req, res) => {
 router.put("/subscription-plans/:id", async (req, res) => {
   try {
     const { name, price, billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, isActive, features } = req.body;
+    const slug = slugify(name);
     const [plan] = await db.update(subscriptionPlansTable)
-      .set({ name, price: String(price), billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, isActive, features })
+      .set({ name, slug, price: String(price), billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, isActive, features })
       .where(eq(subscriptionPlansTable.id, Number(req.params.id)))
       .returning();
+    logActivity({ action: "subscription_plan_updated", resource: "subscription_plan", details: `Updated plan: ${name}` });
     return res.json({ ...plan, price: Number(plan.price) });
   } catch (err) {
     return res.status(500).json({ message: "Failed to update plan" });
+  }
+});
+
+router.delete("/subscription-plans/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [plan] = await db.select().from(subscriptionPlansTable).where(eq(subscriptionPlansTable.id, id));
+    if (!plan) return res.status(404).json({ message: "Plan not found" });
+    const activeCount = await db.select({ count: count() }).from(vendorSubscriptionsTable)
+      .where(eq(vendorSubscriptionsTable.planId, id));
+    if (Number(activeCount[0]?.count) > 0) {
+      return res.status(400).json({ message: "Cannot delete a plan with active subscribers. Deactivate it instead." });
+    }
+    await db.delete(subscriptionPlansTable).where(eq(subscriptionPlansTable.id, id));
+    logActivity({ action: "subscription_plan_deleted", resource: "subscription_plan", details: `Deleted plan: ${plan.name}` });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete plan" });
   }
 });
 

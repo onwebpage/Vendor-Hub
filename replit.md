@@ -26,15 +26,14 @@ This is a **pnpm monorepo** with a unified Express + Vite dev server:
 
 ## Development
 
-In development, the Express server serves the frontend via Vite middleware mode (no separate dev server needed):
+Two separate dev processes run in parallel:
 
-```
-pnpm run dev   # starts Express + Vite on port 5000
-```
+- **"API Server" workflow** — Express API on port 8000 (`PORT=8000 SERVE_FRONTEND=false pnpm --filter @workspace/api-server run dev`)
+- **"artifacts/vendorkart: web" workflow** — Vite dev server on port 5000 with a proxy forwarding `/api/*` → `localhost:8000`
 
-The server listens on `0.0.0.0:5000` and serves:
-- `/api/*` — REST API routes
-- `/*` — React SPA (via Vite middleware in dev, static files in prod)
+The Vite proxy (in `artifacts/vendorkart/vite.config.ts`) makes all `/api/*` calls from the browser transparently reach the API server.
+
+In **production**, the unified Express server (`artifacts/api-server`) serves both the API and the built static frontend on port 5000 (`SERVE_FRONTEND` is not set to "false").
 
 ## Environment Variables
 

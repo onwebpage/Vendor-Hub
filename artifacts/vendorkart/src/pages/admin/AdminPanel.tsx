@@ -1440,79 +1440,198 @@ function CouponsPanel() {
 }
 
 // ─── SUBSCRIPTION PLANS ────────────────────────────────────────────────────────
+const BLANK_PLAN = { name: "", price: 0, billingCycle: "monthly", maxProducts: -1, maxCategories: -1, canUploadBanner: false, isFeatured: false, isActive: true, featuresRaw: "" };
+
 function SubscriptionPlansPanel() {
   const { data: plans, loading } = useAdminFetch<any[]>("/api/admin/subscription-plans");
   const { token } = useAdminAuthStore();
   const [editing, setEditing] = useState<any>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newPlan, setNewPlan] = useState({ ...BLANK_PLAN });
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
+  const setN = (k: string, v: any) => setNewPlan(p => ({ ...p, [k]: v }));
+
+  const parseFeatures = (raw: string) => raw.split("\n").map(s => s.trim()).filter(Boolean);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch(`${BASE}/api/admin/subscription-plans`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...newPlan,
+        price: Number(newPlan.price),
+        maxProducts: Number(newPlan.maxProducts),
+        maxCategories: Number(newPlan.maxCategories),
+        features: parseFeatures(newPlan.featuresRaw),
+      }),
+    });
+    if (res.ok) { setIsCreating(false); setNewPlan({ ...BLANK_PLAN }); window.location.reload(); }
+  };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     await fetch(`${BASE}/api/admin/subscription-plans/${editing.id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ ...editing, price: Number(editing.price), maxProducts: Number(editing.maxProducts), maxCategories: Number(editing.maxCategories) }),
+      body: JSON.stringify({
+        ...editing,
+        price: Number(editing.price),
+        maxProducts: Number(editing.maxProducts),
+        maxCategories: Number(editing.maxCategories),
+        features: parseFeatures(editing.featuresRaw ?? (editing.features ?? []).join("\n")),
+      }),
     });
     setEditing(null);
     window.location.reload();
   };
 
+  const handleDelete = async (plan: any) => {
+    setDeleteErr(null);
+    const res = await fetch(`${BASE}/api/admin/subscription-plans/${plan.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) { setDeleteErr(data.message); return; }
+    window.location.reload();
+  };
+
+  const openEdit = (plan: any) => setEditing({
+    ...plan,
+    featuresRaw: (plan.features ?? []).join("\n"),
+  });
+
   const list = plans ?? [];
   const planColors: Record<string, string> = { basic: "text-slate-400", standard: "text-blue-400", premium: "text-amber-400" };
 
+  const PlanFormFields = ({ vals, set }: { vals: any; set: (k: string, v: any) => void }) => (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <label className="text-white/50 text-xs mb-1 block">Plan Name *</label>
+          <Input value={vals.name} onChange={e => set("name", e.target.value)} placeholder="Gold, Enterprise, Starter…" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs mb-1 block">Price (₹/month, 0 = Free)</label>
+          <Input type="number" min="0" value={vals.price} onChange={e => set("price", e.target.value)} className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs mb-1 block">Billing Cycle</label>
+          <select value={vals.billingCycle} onChange={e => set("billingCycle", e.target.value)} className="w-full h-9 rounded-xl bg-white/5 border border-white/10 text-white px-3 text-sm">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-white/50 text-xs mb-1 block">Max Products (-1 = unlimited)</label>
+          <Input type="number" value={vals.maxProducts} onChange={e => set("maxProducts", e.target.value)} className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs mb-1 block">Max Categories (-1 = all)</label>
+          <Input type="number" value={vals.maxCategories} onChange={e => set("maxCategories", e.target.value)} className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+        </div>
+        <div className="col-span-2">
+          <label className="text-white/50 text-xs mb-1 block">Feature Bullet Points (one per line)</label>
+          <textarea value={vals.featuresRaw ?? ""} onChange={e => set("featuresRaw", e.target.value)} rows={3} placeholder={"Priority support\nCustom store URL\nAnalytics dashboard"} className="w-full rounded-xl bg-white/5 border border-white/10 text-white px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+        </div>
+      </div>
+      <div className="flex gap-5 flex-wrap">
+        {[["canUploadBanner", "Banner Upload"], ["isFeatured", "Featured Listing"], ["isActive", "Active"]].map(([k, l]) => (
+          <label key={k} className="flex items-center gap-2 text-white/60 text-sm cursor-pointer">
+            <input type="checkbox" checked={!!vals[k]} onChange={e => set(k, e.target.checked)} className="w-4 h-4" />
+            {l}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-5">
-      <div className="bg-indigo-500/8 border border-indigo-500/20 rounded-2xl p-4 flex items-center gap-3">
-        <CreditCard className="w-5 h-5 text-indigo-400 flex-shrink-0" />
-        <p className="text-indigo-300 text-sm"><strong>Razorpay Payments:</strong> Under Development — vendors can subscribe to the free Basic plan. Paid plans will activate once Razorpay is live.</p>
+      <div className="flex items-center justify-between">
+        <div className="bg-indigo-500/8 border border-indigo-500/20 rounded-2xl p-4 flex items-center gap-3 flex-1 mr-4">
+          <CreditCard className="w-5 h-5 text-indigo-400 flex-shrink-0" />
+          <p className="text-indigo-300 text-sm"><strong>Razorpay Payments:</strong> Under Development — vendors can subscribe to the free Basic plan. Paid plans will activate once Razorpay is live.</p>
+        </div>
+        <Button onClick={() => setIsCreating(true)} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9 flex-shrink-0">
+          <Plus className="w-4 h-4" /> New Plan
+        </Button>
       </div>
+
+      {deleteErr && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/8 border border-red-500/20">
+          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <p className="text-red-300 text-sm">{deleteErr}</p>
+          <button onClick={() => setDeleteErr(null)} className="ml-auto text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {loading ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-56 rounded-2xl bg-white/5" />) :
           list.map((plan: any) => (
-            <div key={plan.id} className="bg-white/3 rounded-2xl border border-white/8 p-6 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-lg font-extrabold capitalize ${planColors[plan.slug] ?? "text-white"}`}>{plan.name}</p>
+            <div key={plan.id} className={`bg-white/3 rounded-2xl border p-6 space-y-3 ${plan.isActive ? "border-white/8" : "border-white/4 opacity-60"}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-lg font-extrabold capitalize truncate ${planColors[plan.slug] ?? "text-white"}`}>{plan.name}</p>
+                    {!plan.isActive && <Badge className="text-[10px] bg-white/5 text-white/30 border border-white/10 flex-shrink-0">Inactive</Badge>}
+                  </div>
                   <p className="text-white/40 text-xs mt-0.5 capitalize">{plan.billingCycle} billing</p>
                 </div>
-                <p className="text-2xl font-extrabold text-white">{plan.price === 0 ? "Free" : `₹${Number(plan.price).toLocaleString("en-IN")}`}</p>
+                <p className="text-2xl font-extrabold text-white flex-shrink-0">{Number(plan.price) === 0 ? "Free" : `₹${Number(plan.price).toLocaleString("en-IN")}`}</p>
               </div>
               <div className="space-y-1.5 text-xs text-white/50">
                 <p>Max Products: <span className="text-white font-semibold">{plan.maxProducts === -1 ? "Unlimited" : plan.maxProducts}</span></p>
                 <p>Max Categories: <span className="text-white font-semibold">{plan.maxCategories === -1 ? "All" : plan.maxCategories}</span></p>
                 <p>Banner Upload: <span className={`font-semibold ${plan.canUploadBanner ? "text-emerald-400" : "text-red-400"}`}>{plan.canUploadBanner ? "Yes" : "No"}</span></p>
                 <p>Featured Listing: <span className={`font-semibold ${plan.isFeatured ? "text-emerald-400" : "text-red-400"}`}>{plan.isFeatured ? "Yes" : "No"}</span></p>
-                <p>Status: <span className={`font-semibold ${plan.isActive ? "text-emerald-400" : "text-red-400"}`}>{plan.isActive ? "Active" : "Inactive"}</span></p>
+                {plan.features?.length > 0 && (
+                  <p>Features: <span className="text-white/60">{plan.features.length} bullet{plan.features.length !== 1 ? "s" : ""}</span></p>
+                )}
               </div>
-              <Button onClick={() => setEditing({ ...plan })} size="sm" className="w-full rounded-xl h-8 text-xs bg-white/5 border border-white/10 text-white/60 hover:bg-white/10">Edit Plan</Button>
+              <div className="flex gap-2">
+                <Button onClick={() => openEdit(plan)} size="sm" className="flex-1 rounded-xl h-8 text-xs bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20">
+                  <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                </Button>
+                <Button onClick={() => handleDelete(plan)} size="sm" className="h-8 px-3 rounded-xl text-xs bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
           ))}
       </div>
 
+      {/* Create Modal */}
+      {isCreating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setIsCreating(false)} />
+          <form onSubmit={handleCreate} className="relative bg-[#080c14] border border-white/10 rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">Create New Plan</h3>
+              <button type="button" onClick={() => setIsCreating(false)}><X className="w-5 h-5 text-white/40 hover:text-white" /></button>
+            </div>
+            <PlanFormFields vals={newPlan} set={setN} />
+            <div className="flex gap-3 justify-end pt-2">
+              <Button type="button" variant="ghost" onClick={() => setIsCreating(false)} className="rounded-xl text-white/50 h-9">Cancel</Button>
+              <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">Create Plan</Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Edit Modal */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70" onClick={() => setEditing(null)} />
-          <form onSubmit={handleUpdate} className="relative bg-[#080c14] border border-white/10 rounded-2xl p-6 w-full max-w-md space-y-4">
-            <h3 className="text-white font-bold text-lg">Edit Plan: {editing.name}</h3>
-            <div className="space-y-3">
-              {[
-                { label: "Plan Name", key: "name", type: "text" },
-                { label: "Price (₹/month)", key: "price", type: "number" },
-                { label: "Max Products (-1 = unlimited)", key: "maxProducts", type: "number" },
-                { label: "Max Categories (-1 = all)", key: "maxCategories", type: "number" },
-              ].map(f => (
-                <div key={f.key}><label className="text-white/50 text-xs mb-1 block">{f.label}</label>
-                  <Input type={f.type} value={editing[f.key]} onChange={e => setEditing((p: any) => ({ ...p, [f.key]: e.target.value }))} className="bg-white/5 border-white/10 text-white rounded-xl h-9" /></div>
-              ))}
-              <div className="flex gap-6">
-                {[["canUploadBanner", "Banner Upload"], ["isFeatured", "Featured Listing"], ["isActive", "Active"]].map(([k, l]) => (
-                  <label key={k} className="flex items-center gap-2 text-white/60 text-sm cursor-pointer">
-                    <input type="checkbox" checked={!!editing[k]} onChange={e => setEditing((p: any) => ({ ...p, [k]: e.target.checked }))} className="w-4 h-4" />
-                    {l}
-                  </label>
-                ))}
-              </div>
+          <form onSubmit={handleUpdate} className="relative bg-[#080c14] border border-white/10 rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-bold text-lg">Edit Plan: {editing.name}</h3>
+              <button type="button" onClick={() => setEditing(null)}><X className="w-5 h-5 text-white/40 hover:text-white" /></button>
             </div>
-            <div className="flex gap-3 justify-end">
+            <PlanFormFields vals={editing} set={(k, v) => setEditing((p: any) => ({ ...p, [k]: v }))} />
+            <div className="flex gap-3 justify-end pt-2">
               <Button type="button" variant="ghost" onClick={() => setEditing(null)} className="rounded-xl text-white/50 h-9">Cancel</Button>
               <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">Save Changes</Button>
             </div>
