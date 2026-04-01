@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { FaFacebook, FaInstagram, FaLinkedinIn, FaYoutube, FaWhatsapp, FaPinterest, FaTelegram } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 import {
   ShoppingBag, Search, Menu, X, Heart, LogOut, LayoutDashboard,
   ChevronDown, Cpu, Shirt, Home as HomeIcon, Factory, Grid3X3,
@@ -292,6 +294,20 @@ function SearchModal({ onClose }: { onClose: () => void }) {
 /* ─────────────────────────────────────────────────────────
    MAIN LAYOUT
 ───────────────────────────────────────────────────────── */
+type SocialLinksData = {
+  facebook?: string | null; twitter?: string | null; instagram?: string | null;
+  linkedin?: string | null; youtube?: string | null; whatsapp?: string | null;
+  pinterest?: string | null; telegram?: string | null;
+};
+
+function useSocialLinks() {
+  const [links, setLinks] = useState<SocialLinksData>({});
+  useEffect(() => {
+    fetch("/api/contact/social-links").then(r => r.json()).then(setLinks).catch(() => {});
+  }, []);
+  return links;
+}
+
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = React.useState(false);
@@ -299,6 +315,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const socialLinks = useSocialLinks();
 
   // ⌘K / Ctrl+K shortcut
   React.useEffect(() => {
@@ -620,6 +637,30 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="mt-14 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
             <p>© {new Date().getFullYear()} Vendorkart. All rights reserved.</p>
+            {(() => {
+              const icons: { key: keyof SocialLinksData; Icon: React.ElementType; label: string }[] = [
+                { key: "facebook",  Icon: FaFacebook,   label: "Facebook" },
+                { key: "twitter",   Icon: FaXTwitter,   label: "Twitter / X" },
+                { key: "instagram", Icon: FaInstagram,  label: "Instagram" },
+                { key: "linkedin",  Icon: FaLinkedinIn, label: "LinkedIn" },
+                { key: "youtube",   Icon: FaYoutube,    label: "YouTube" },
+                { key: "whatsapp",  Icon: FaWhatsapp,   label: "WhatsApp" },
+                { key: "pinterest", Icon: FaPinterest,  label: "Pinterest" },
+                { key: "telegram",  Icon: FaTelegram,   label: "Telegram" },
+              ];
+              const active = icons.filter(i => socialLinks[i.key]);
+              if (active.length === 0) return null;
+              return (
+                <div className="flex items-center gap-3">
+                  {active.map(({ key, Icon, label }) => (
+                    <a key={key} href={socialLinks[key]!} target="_blank" rel="noopener noreferrer" aria-label={label}
+                      className="w-8 h-8 rounded-full bg-white/8 hover:bg-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary transition-all">
+                      <Icon className="w-4 h-4" />
+                    </a>
+                  ))}
+                </div>
+              );
+            })()}
             <div className="flex gap-6">
               <span className="cursor-pointer hover:text-white transition-colors">Privacy</span>
               <span className="cursor-pointer hover:text-white transition-colors">Terms</span>

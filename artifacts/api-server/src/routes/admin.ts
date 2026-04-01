@@ -4,6 +4,7 @@ import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, vendorSubscriptionsTable, commissionSettingsTable, activityLogsTable,
   contactMessagesTable, bannersTable, emailLogsTable, paymentsTable, categoriesTable, contactInfoTable,
+  socialLinksTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
@@ -753,6 +754,43 @@ router.get("/reports", async (_req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch reports" });
+  }
+});
+
+router.get("/social-links", async (_req, res) => {
+  try {
+    const [links] = await db.select().from(socialLinksTable);
+    if (!links) return res.json({ facebook: null, twitter: null, instagram: null, linkedin: null, youtube: null, whatsapp: null, pinterest: null, telegram: null });
+    return res.json(links);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch social links" });
+  }
+});
+
+router.put("/social-links", async (req, res) => {
+  try {
+    const { facebook, twitter, instagram, linkedin, youtube, whatsapp, pinterest, telegram } = req.body;
+    const payload = {
+      facebook: facebook || null,
+      twitter: twitter || null,
+      instagram: instagram || null,
+      linkedin: linkedin || null,
+      youtube: youtube || null,
+      whatsapp: whatsapp || null,
+      pinterest: pinterest || null,
+      telegram: telegram || null,
+      updatedAt: new Date(),
+    };
+    const existing = await db.select().from(socialLinksTable);
+    if (existing.length > 0) {
+      await db.update(socialLinksTable).set(payload).where(eq(socialLinksTable.id, existing[0].id));
+    } else {
+      await db.insert(socialLinksTable).values(payload);
+    }
+    logActivity({ action: "social_links_updated", resource: "settings", details: "Admin updated social media links" });
+    return res.json(payload);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update social links" });
   }
 });
 

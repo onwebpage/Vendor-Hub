@@ -149,6 +149,19 @@ export const contactMessagesTable = pgTable("contact_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const socialLinksTable = pgTable("social_links", {
+  id: serial("id").primaryKey(),
+  facebook: text("facebook"),
+  twitter: text("twitter"),
+  instagram: text("instagram"),
+  linkedin: text("linkedin"),
+  youtube: text("youtube"),
+  whatsapp: text("whatsapp"),
+  pinterest: text("pinterest"),
+  telegram: text("telegram"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertReviewSchema = createInsertSchema(reviewsTable).omit({ id: true, createdAt: true });
 export const insertCouponSchema = createInsertSchema(couponsTable).omit({ id: true, createdAt: true });
 export const insertSupportTicketSchema = createInsertSchema(supportTicketsTable).omit({ id: true, createdAt: true, updatedAt: true });
@@ -163,3 +176,4 @@ export type ContactInfo = typeof contactInfoTable.$inferSelect;
 export type ContactMessage = typeof contactMessagesTable.$inferSelect;
 export type Banner = typeof bannersTable.$inferSelect;
 export type EmailLog = typeof emailLogsTable.$inferSelect;
+export type SocialLinks = typeof socialLinksTable.$inferSelect;

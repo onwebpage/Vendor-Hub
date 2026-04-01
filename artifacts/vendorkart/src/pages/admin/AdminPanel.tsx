@@ -2494,6 +2494,82 @@ function SubscriptionPaymentsPanel() {
   );
 }
 
+// ─── SOCIAL LINKS ─────────────────────────────────────────────────────────────
+const SOCIAL_PLATFORMS = [
+  { key: "facebook",  label: "Facebook",  placeholder: "https://facebook.com/yourpage", color: "text-blue-400" },
+  { key: "twitter",   label: "Twitter / X", placeholder: "https://x.com/yourhandle", color: "text-sky-400" },
+  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/yourprofile", color: "text-pink-400" },
+  { key: "linkedin",  label: "LinkedIn",  placeholder: "https://linkedin.com/company/yourco", color: "text-blue-500" },
+  { key: "youtube",   label: "YouTube",   placeholder: "https://youtube.com/@yourchannel", color: "text-red-400" },
+  { key: "whatsapp",  label: "WhatsApp",  placeholder: "https://wa.me/919876543210", color: "text-emerald-400" },
+  { key: "pinterest", label: "Pinterest", placeholder: "https://pinterest.com/yourprofile", color: "text-rose-400" },
+  { key: "telegram",  label: "Telegram",  placeholder: "https://t.me/yourchannel", color: "text-cyan-400" },
+] as const;
+
+function SocialLinksPanel() {
+  const { data, loading } = useAdminFetch<any>("/api/admin/social-links");
+  const { token } = useAdminAuthStore();
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      const initial: Record<string, string> = {};
+      SOCIAL_PLATFORMS.forEach(p => { initial[p.key] = data[p.key] ?? ""; });
+      setForm(initial);
+    }
+  }, [data]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const payload: Record<string, string | null> = {};
+    SOCIAL_PLATFORMS.forEach(p => { payload[p.key] = form[p.key]?.trim() || null; });
+    await fetch(`${BASE}/api/admin/social-links`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <p className="text-white/60 text-sm">Set the URLs for your social media profiles. These will appear in the site footer. Leave blank to hide a platform.</p>
+      {loading ? (
+        <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl bg-white/5" />)}</div>
+      ) : (
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="bg-white/3 rounded-2xl border border-white/8 p-6 space-y-4">
+            {SOCIAL_PLATFORMS.map(p => (
+              <div key={p.key}>
+                <label className={`text-xs font-semibold mb-1.5 block ${p.color}`}>{p.label}</label>
+                <Input
+                  type="url"
+                  value={form[p.key] ?? ""}
+                  onChange={e => setForm(prev => ({ ...prev, [p.key]: e.target.value }))}
+                  placeholder={p.placeholder}
+                  className="bg-white/5 border-white/10 text-white rounded-xl h-9 placeholder:text-white/20"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9 gap-2">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+              {saving ? "Saving…" : "Save Social Links"}
+            </Button>
+            {saved && <span className="text-emerald-400 text-sm font-medium">Saved!</span>}
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const SECTIONS: Record<string, { title: string; component: React.ElementType }> = {
   "/admin": { title: "Dashboard Overview", component: Overview },
@@ -2510,6 +2586,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/commission": { title: "Commission Settings", component: CommissionPanel },
   "/admin/banners": { title: "Banner & Ads Management", component: BannersPanel },
   "/admin/contact-info": { title: "Contact Info Cards", component: ContactInfoPanel },
+  "/admin/social-links": { title: "Social Media Links", component: SocialLinksPanel },
   "/admin/emails": { title: "Email System", component: EmailLogsPanel },
   "/admin/contact": { title: "Contact Messages", component: ContactMessagesPanel },
   "/admin/activity": { title: "Activity Logs", component: ActivityLogsPanel },

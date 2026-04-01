@@ -47,6 +47,15 @@ In **production**, the unified Express server (`artifacts/api-server`) serves bo
 - `COREPACK_ENABLE_AUTO_PIN=0 COREPACK_ENABLE_PROJECT_SPEC=0` flags used to bypass corepack version enforcement
 - Windows-specific packages (`@rollup/rollup-win32-x64-msvc`, etc.) removed from root devDependencies
 
+## Admin Panel Features
+
+- Dashboard, Reports, Vendors, Customers, Products, Orders, Categories
+- Payments, Coupons, Subscriptions, Commission Settings
+- Banners, Contact Info Cards, **Social Media Links** (`/admin/social-links`)
+- Email Logs, Contact Messages, Activity Logs
+
+Social links are stored in the `social_links` DB table (single-row settings). Admins manage them at `/admin/social-links`. Active links appear as icons in the public site footer. Public read endpoint: `GET /api/contact/social-links`.
+
 ## Deployment
 
 - **Target**: Autoscale
