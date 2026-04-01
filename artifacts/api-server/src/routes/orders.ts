@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, cartItemsTable, addressesTable, usersTable } from "@workspace/db/schema";
+import { ordersTable, cartItemsTable, addressesTable, usersTable, couponsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 import { generateOrderNumber } from "../lib/slugify.js";
@@ -85,6 +85,23 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
       }
     }
 
+    let discountAmount = 0;
+    let resolvedCouponCode: string | null = couponCode || null;
+    if (couponCode) {
+      const [coupon] = await db.select().from(couponsTable).where(eq(couponsTable.code, couponCode.toUpperCase()));
+      if (coupon && coupon.isActive && !(coupon.expiresAt && new Date() > coupon.expiresAt) && !(coupon.maxUses && coupon.usedCount >= coupon.maxUses) && !(coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount))) {
+        if (coupon.discountType === "percentage") {
+          discountAmount = Math.round((subtotal * Number(coupon.discountValue)) / 100);
+        } else {
+          discountAmount = Number(coupon.discountValue);
+        }
+        discountAmount = Math.min(discountAmount, subtotal);
+        await db.update(couponsTable).set({ usedCount: (coupon.usedCount || 0) + 1 }).where(eq(couponsTable.id, coupon.id));
+        resolvedCouponCode = coupon.code;
+      }
+    }
+    const finalTotal = subtotal - discountAmount;
+
     const orderNumber = generateOrderNumber();
     const [order] = await db.insert(ordersTable).values({
       orderNumber,
@@ -105,9 +122,9 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
       },
       items: orderItems,
       subtotal: String(subtotal),
-      discount: "0",
-      total: String(subtotal),
-      couponCode,
+      discount: String(discountAmount),
+      total: String(finalTotal),
+      couponCode: resolvedCouponCode,
       notes,
     }).returning();
 

@@ -1169,31 +1169,63 @@ function ScreenshotModal({ src, onClose }: { src: string; onClose: () => void })
   );
 }
 
+function downloadAdminInvoice(order: any) {
+  const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+  const items = (order.items || []).map((i: any) =>
+    `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${fmt(i.price)}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${fmt(i.subtotal)}</td></tr>`
+  ).join("");
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice – ${order.orderNumber}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:#f8f9fa;padding:40px;color:#1a1a1a}.inv{max-width:720px;margin:auto;background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.08);overflow:hidden}.hdr{background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px 40px;color:#fff}.hdr h1{font-size:28px;font-weight:800;letter-spacing:-.5px}.hdr p{margin-top:4px;opacity:.8;font-size:14px}.body{padding:40px}.meta{display:flex;justify-content:space-between;margin-bottom:32px;gap:24px}.meta-block h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:6px}.meta-block p{font-size:14px;color:#111;font-weight:500}.table-wrap{border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;margin-bottom:24px}table{width:100%;border-collapse:collapse}thead tr{background:#f3f4f6}thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:.5px}thead th:nth-child(n+2){text-align:center}thead th:last-child{text-align:right}.summary{margin-left:auto;width:280px}.summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:#374151}.summary-row.total{border-top:2px solid #e5e7eb;margin-top:8px;padding-top:12px;font-size:16px;font-weight:800;color:#1a1a1a}.chip{display:inline-block;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700}.chip-paid{background:#d1fae5;color:#065f46}.chip-pending{background:#fef3c7;color:#92400e}.footer{text-align:center;padding:24px 40px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af}@media print{body{background:#fff;padding:0}.inv{box-shadow:none}}</style></head><body><div class="inv"><div class="hdr"><h1>Vendorkart</h1><p>India's #1 B2B Wholesale Marketplace</p></div><div class="body"><div class="meta"><div class="meta-block"><h3>Invoice To</h3><p>${order.customerName || "Customer #" + order.customerId}</p>${order.customerEmail ? `<p style="color:#6b7280;font-size:13px">${order.customerEmail}</p>` : ""}</div><div class="meta-block"><h3>Invoice Details</h3><p>Invoice: INV-${order.orderNumber}</p><p>Order: #${order.orderNumber}</p><p>Date: ${new Date(order.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})}</p></div><div class="meta-block" style="text-align:right"><h3>Payment Status</h3><span class="chip chip-${order.paymentStatus === "paid" ? "paid" : "pending"}">${order.paymentStatus?.toUpperCase()}</span>${order.couponCode ? `<p style="margin-top:8px;font-size:12px;color:#6b7280">Coupon: ${order.couponCode}</p>` : ""}</div></div><div class="table-wrap"><table><thead><tr><th>Product</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Subtotal</th></tr></thead><tbody>${items}</tbody></table></div><div class="summary"><div class="summary-row"><span>Subtotal</span><span>${fmt(Number(order.subtotal))}</span></div><div class="summary-row" style="color:#059669"><span>Discount${order.couponCode ? ` (${order.couponCode})` : ""}</span><span>- ${fmt(Number(order.discount || 0))}</span></div><div class="summary-row total"><span>Total Amount</span><span>${fmt(Number(order.total))}</span></div></div></div><div class="footer"><p>Thank you for your business! · Vendorkart · support@vendorkart.in</p></div></div><script>window.print()</script></body></html>`;
+  const win = window.open("", "_blank");
+  if (win) { win.document.write(html); win.document.close(); }
+}
+
+const ORDER_TAB_CONFIG = [
+  { key: "new",        label: "New Orders",        statuses: ["pending_payment", "pending"],   color: "bg-orange-500/15 text-orange-400 border-orange-500/25", dot: "bg-orange-400" },
+  { key: "processing", label: "Processing",         statuses: ["confirmed", "processing"],      color: "bg-violet-500/15 text-violet-400 border-violet-500/25", dot: "bg-violet-400" },
+  { key: "shipped",    label: "Shipped",            statuses: ["shipped"],                      color: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",        dot: "bg-cyan-400" },
+  { key: "delivered",  label: "Delivered",          statuses: ["delivered"],                    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25", dot: "bg-emerald-400" },
+  { key: "cancelled",  label: "Cancelled / Returned", statuses: ["cancelled", "refunded"],     color: "bg-red-500/15 text-red-400 border-red-500/25",          dot: "bg-red-400" },
+];
+
+const ALL_STATUS_COLORS: Record<string, string> = {
+  pending_payment: "bg-orange-500/15 text-orange-400 border-orange-500/25",
+  pending:    "bg-amber-500/15 text-amber-400 border-amber-500/25",
+  confirmed:  "bg-blue-500/15 text-blue-400 border-blue-500/25",
+  processing: "bg-violet-500/15 text-violet-400 border-violet-500/25",
+  shipped:    "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
+  delivered:  "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  cancelled:  "bg-red-500/15 text-red-400 border-red-500/25",
+  refunded:   "bg-slate-500/15 text-slate-400 border-slate-500/25",
+};
+
 function OrdersPanel() {
-  const { data, loading } = useAdminFetch<any>("/api/admin/orders?limit=50");
+  const { data, loading } = useAdminFetch<any>("/api/admin/orders");
   const { token } = useAdminAuthStore();
-  const [statusFilter, setStatusFilter] = useState("pending_payment");
+  const [activeTab, setActiveTab] = useState("new");
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
   const [verifying, setVerifying] = useState<number | null>(null);
+  const [updating, setUpdating] = useState<number | null>(null);
   const orders: any[] = data?.orders ?? [];
-  const filtered = orders.filter(o => statusFilter === "all" || o.status === statusFilter);
-  const statusColors: Record<string, string> = {
-    pending_payment: "bg-orange-500/15 text-orange-400 border-orange-500/25",
-    pending: "bg-amber-500/15 text-amber-400 border-amber-500/25",
-    confirmed: "bg-blue-500/15 text-blue-400 border-blue-500/25",
-    processing: "bg-violet-500/15 text-violet-400 border-violet-500/25",
-    shipped: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
-    delivered: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
-    cancelled: "bg-red-500/15 text-red-400 border-red-500/25",
-  };
+
+  const currentTabCfg = ORDER_TAB_CONFIG.find(t => t.key === activeTab)!;
+  const filtered = orders.filter(o => currentTabCfg.statuses.includes(o.status));
+
+  const newCount = orders.filter(o => ["pending_payment", "pending"].includes(o.status)).length;
+
   const updateStatus = async (id: number, status: string) => {
-    await fetch(`${BASE}/api/orders/${id}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    window.location.reload();
+    setUpdating(id);
+    try {
+      await fetch(`${BASE}/api/orders/${id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      window.location.reload();
+    } finally {
+      setUpdating(null);
+    }
   };
+
   const verifyPayment = async (id: number, action: "approve" | "reject") => {
     setVerifying(id);
     try {
@@ -1207,93 +1239,155 @@ function OrdersPanel() {
       setVerifying(null);
     }
   };
-  const pendingPaymentCount = orders.filter(o => o.status === "pending_payment").length;
+
   return (
     <div className="space-y-5">
       {screenshotModal && <ScreenshotModal src={screenshotModal} onClose={() => setScreenshotModal(null)} />}
 
-      {pendingPaymentCount > 0 && (
+      {newCount > 0 && (
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-orange-500/10 border border-orange-500/25">
           <div className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-pulse flex-shrink-0" />
           <p className="text-orange-300 text-sm font-medium">
-            {pendingPaymentCount} order{pendingPaymentCount > 1 ? "s" : ""} awaiting payment verification
+            {newCount} order{newCount > 1 ? "s" : ""} awaiting payment verification or confirmation
           </p>
         </div>
       )}
 
+      {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
-        {["pending_payment", "all", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"].map(s => (
-          <Button key={s} size="sm" onClick={() => setStatusFilter(s)}
-            className={`rounded-xl text-xs capitalize h-9 ${statusFilter === s ? "bg-indigo-600 text-white" : "text-white/50 hover:text-white/80 bg-transparent border-white/10 border"}`}>
-            {s === "pending_payment" ? "⏳ Pending Payment" : s}
-            {s === "pending_payment" && pendingPaymentCount > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px] font-bold">{pendingPaymentCount}</span>
-            )}
-          </Button>
-        ))}
+        {ORDER_TAB_CONFIG.map(tab => {
+          const count = orders.filter(o => tab.statuses.includes(o.status)).length;
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                isActive
+                  ? "bg-indigo-600 text-white border-indigo-500"
+                  : "text-white/50 hover:text-white/80 bg-white/3 border-white/10"
+              }`}
+            >
+              {tab.label}
+              {count > 0 && (
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${isActive ? "bg-white/20 text-white" : `${tab.dot} bg-opacity-20 text-white/70`}`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Orders table */}
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-          <thead><tr className="border-b border-white/6">
-            {["Order #", "Customer", "Total", "Payment", "Status", "Screenshot", "Date", "Actions"].map(h => (
-              <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
-            ))}
-          </tr></thead>
-          <tbody>
-            {loading ? Array.from({ length: 6 }).map((_, i) => (
-              <tr key={i} className="border-b border-white/4">{Array.from({ length: 8 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}</tr>
-            )) : filtered.map(o => (
-              <tr key={o.id} className={`border-b border-white/4 hover:bg-white/2 transition-colors ${o.status === "pending_payment" ? "bg-orange-500/3" : ""}`}>
-                <td className="px-4 py-3 text-white text-sm font-mono">{o.orderNumber}</td>
-                <td className="px-4 py-3 text-white/50 text-sm">#{o.customerId}</td>
-                <td className="px-4 py-3 text-white font-semibold text-sm">₹{Number(o.total).toLocaleString("en-IN")}</td>
-                <td className="px-4 py-3"><Badge className={`text-[10px] capitalize border ${o.paymentStatus === "paid" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : o.paymentStatus === "failed" ? "bg-red-500/15 text-red-400 border-red-500/25" : "bg-amber-500/15 text-amber-400 border-amber-500/25"}`}>{o.paymentStatus}</Badge></td>
-                <td className="px-4 py-3"><Badge className={`text-[10px] capitalize border ${statusColors[o.status] ?? "bg-white/10 text-white/40"}`}>{o.status?.replace("_", " ")}</Badge></td>
-                <td className="px-4 py-3">
-                  {o.paymentScreenshot ? (
-                    <button
-                      onClick={() => setScreenshotModal(o.paymentScreenshot)}
-                      className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 transition-colors"
-                    >
-                      <ImageIcon className="w-3 h-3" /> View
-                    </button>
-                  ) : (
-                    <span className="text-white/20 text-xs">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-white/30 text-xs">{new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td>
-                <td className="px-4 py-3">
-                  {o.status === "pending_payment" ? (
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => verifyPayment(o.id, "approve")}
-                        disabled={verifying === o.id}
-                        className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
-                      >
-                        <CheckCircle2 className="w-3 h-3" /> Approve
-                      </button>
-                      <button
-                        onClick={() => verifyPayment(o.id, "reject")}
-                        disabled={verifying === o.id}
-                        className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors disabled:opacity-50"
-                      >
-                        <XCircle className="w-3 h-3" /> Reject
-                      </button>
-                    </div>
-                  ) : (
-                    <select onChange={e => updateStatus(o.id, e.target.value)} value={o.status}
-                      className="text-[11px] bg-white/5 border border-white/10 text-white/60 rounded-lg px-2 py-1 cursor-pointer">
-                      {["pending","confirmed","processing","shipped","delivered","cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  )}
-                </td>
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr className="border-b border-white/6">
+                {["Order #", "Customer", "Items", "Total", "Discount", "Payment", "Status", "Date", "Actions"].map(h => (
+                  <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-white/4">
+                    {Array.from({ length: 9 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}
+                  </tr>
+                ))
+              ) : filtered.map(o => (
+                <tr key={o.id} className={`border-b border-white/4 hover:bg-white/2 transition-colors ${["pending_payment", "pending"].includes(o.status) ? "bg-orange-500/3" : ""}`}>
+                  <td className="px-4 py-3">
+                    <span className="text-white text-sm font-mono font-bold">{o.orderNumber}</span>
+                    {o.couponCode && <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-400">{o.couponCode}</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div>
+                      <p className="text-white text-sm font-semibold">{o.customerName || `Customer #${o.customerId}`}</p>
+                      {o.customerEmail && <p className="text-white/35 text-[10px] truncate max-w-[140px]">{o.customerEmail}</p>}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-white/50 text-sm">{(o.items || []).length} item{(o.items || []).length !== 1 ? "s" : ""}</td>
+                  <td className="px-4 py-3 text-white font-bold text-sm">₹{Number(o.total).toLocaleString("en-IN")}</td>
+                  <td className="px-4 py-3">
+                    {Number(o.discount) > 0 ? (
+                      <span className="text-emerald-400 text-sm font-semibold">-₹{Number(o.discount).toLocaleString("en-IN")}</span>
+                    ) : (
+                      <span className="text-white/20 text-sm">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge className={`text-[10px] capitalize border ${o.paymentStatus === "paid" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : o.paymentStatus === "failed" ? "bg-red-500/15 text-red-400 border-red-500/25" : "bg-amber-500/15 text-amber-400 border-amber-500/25"}`}>{o.paymentStatus}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge className={`text-[10px] capitalize border ${ALL_STATUS_COLORS[o.status] ?? "bg-white/10 text-white/40"}`}>{o.status?.replace(/_/g, " ")}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-white/30 text-xs whitespace-nowrap">{new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* Invoice download */}
+                      <button
+                        onClick={() => downloadAdminInvoice(o)}
+                        className="flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 hover:bg-indigo-500/25 transition-colors"
+                        title="Download Invoice"
+                      >
+                        <FileText className="w-3 h-3" />
+                      </button>
+                      {/* Screenshot */}
+                      {o.paymentScreenshot && (
+                        <button
+                          onClick={() => setScreenshotModal(o.paymentScreenshot)}
+                          className="flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 transition-colors"
+                          title="View Screenshot"
+                        >
+                          <ImageIcon className="w-3 h-3" />
+                        </button>
+                      )}
+                      {/* Verify payment */}
+                      {o.status === "pending_payment" ? (
+                        <>
+                          <button
+                            onClick={() => verifyPayment(o.id, "approve")}
+                            disabled={verifying === o.id}
+                            className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> Approve
+                          </button>
+                          <button
+                            onClick={() => verifyPayment(o.id, "reject")}
+                            disabled={verifying === o.id}
+                            className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                          >
+                            <XCircle className="w-3 h-3" /> Reject
+                          </button>
+                        </>
+                      ) : (
+                        <select
+                          onChange={e => updateStatus(o.id, e.target.value)}
+                          value={o.status}
+                          disabled={updating === o.id}
+                          className="text-[11px] bg-white/5 border border-white/10 text-white/60 rounded-lg px-2 py-1 cursor-pointer disabled:opacity-50"
+                        >
+                          {["confirmed", "processing", "shipped", "delivered", "cancelled"].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        {!loading && filtered.length === 0 && <div className="text-center py-12 text-white/30">No orders found</div>}
+        {!loading && filtered.length === 0 && (
+          <div className="text-center py-16 text-white/30">
+            <ShoppingBag className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p>No {currentTabCfg.label.toLowerCase()} orders</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1354,96 +1448,189 @@ function PaymentsPanel() {
 }
 
 // ─── COUPONS ──────────────────────────────────────────────────────────────────
+const BLANK_COUPON = { code: "", discountType: "percentage", discountValue: "", minOrderAmount: "", maxUses: "", expiresAt: "", isActive: true };
+
 function CouponsPanel() {
   const { data: coupons, loading } = useAdminFetch<any[]>("/api/admin/coupons");
   const { token } = useAdminAuthStore();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ code: "", discountType: "percentage", discountValue: "", minOrderAmount: "", maxUses: "", expiresAt: "" });
-  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState<any>({ ...BLANK_COUPON });
+  const set = (k: string, v: any) => setForm((p: any) => ({ ...p, [k]: v }));
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await fetch(`${BASE}/api/admin/coupons`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, discountValue: Number(form.discountValue), minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null, maxUses: form.maxUses ? Number(form.maxUses) : null }),
+  const openCreate = () => { setEditingId(null); setForm({ ...BLANK_COUPON }); setShowForm(true); };
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setForm({
+      code: c.code,
+      discountType: c.discountType,
+      discountValue: String(c.discountValue),
+      minOrderAmount: c.minOrderAmount ? String(c.minOrderAmount) : "",
+      maxUses: c.maxUses ? String(c.maxUses) : "",
+      expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString().split("T")[0] : "",
+      isActive: c.isActive,
     });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      ...form,
+      discountValue: Number(form.discountValue),
+      minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
+      maxUses: form.maxUses ? Number(form.maxUses) : null,
+    };
+    if (editingId) {
+      await fetch(`${BASE}/api/admin/coupons/${editingId}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await fetch(`${BASE}/api/admin/coupons`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
     setShowForm(false);
-    setForm({ code: "", discountType: "percentage", discountValue: "", minOrderAmount: "", maxUses: "", expiresAt: "" });
+    setEditingId(null);
+    setForm({ ...BLANK_COUPON });
+    window.location.reload();
+  };
+
+  const handleToggleActive = async (c: any) => {
+    await fetch(`${BASE}/api/admin/coupons/${c.id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !c.isActive }),
+    });
     window.location.reload();
   };
 
   const handleDelete = async (id: number) => {
+    if (!confirm("Delete this coupon?")) return;
     await fetch(`${BASE}/api/admin/coupons/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
     window.location.reload();
   };
 
   const list = coupons ?? [];
 
+  const inputCls = "w-full h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-indigo-500/50";
+  const labelCls = "text-white/50 text-xs mb-1.5 block font-semibold uppercase tracking-wider";
+
   return (
     <div className="space-y-5">
-      <div className="flex justify-end">
-        <Button onClick={() => setShowForm(!showForm)} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9">
+      <div className="flex justify-between items-center">
+        <p className="text-white/40 text-sm">Create and manage discount coupons. Apply them at checkout.</p>
+        <Button onClick={openCreate} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9">
           <Plus className="w-4 h-4" /> Create Coupon
         </Button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white/3 rounded-2xl border border-indigo-500/25 p-6 space-y-4">
-          <h3 className="text-white font-bold">New Coupon</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-white/50 text-xs mb-1 block">Code *</label>
-              <Input value={form.code} onChange={e => set("code", e.target.value.toUpperCase())} placeholder="SAVE20" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required /></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Type</label>
-              <select value={form.discountType} onChange={e => set("discountType", e.target.value)} className="w-full h-9 rounded-xl bg-white/5 border border-white/10 text-white px-3 text-sm">
+        <form onSubmit={handleSubmit} className="bg-white/3 rounded-2xl border border-indigo-500/25 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-white font-bold text-base">{editingId ? "Edit Coupon" : "New Coupon"}</h3>
+            <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }} className="p-1.5 rounded-lg hover:bg-white/8">
+              <X className="w-4 h-4 text-white/40" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Code *</label>
+              <input className={inputCls} value={form.code} onChange={e => set("code", e.target.value.toUpperCase())} placeholder="e.g. SAVE20" required />
+            </div>
+            <div>
+              <label className={labelCls}>Discount Type</label>
+              <select value={form.discountType} onChange={e => set("discountType", e.target.value)} className="w-full h-9 rounded-xl bg-[#111827] border border-white/10 text-white px-3 text-sm">
                 <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed (₹)</option>
-              </select></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Discount Value *</label>
-              <Input type="number" value={form.discountValue} onChange={e => set("discountValue", e.target.value)} placeholder="20" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required /></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Min Order Amount</label>
-              <Input type="number" value={form.minOrderAmount} onChange={e => set("minOrderAmount", e.target.value)} placeholder="500" className="bg-white/5 border-white/10 text-white rounded-xl h-9" /></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Max Uses</label>
-              <Input type="number" value={form.maxUses} onChange={e => set("maxUses", e.target.value)} placeholder="100" className="bg-white/5 border-white/10 text-white rounded-xl h-9" /></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Expires At</label>
-              <Input type="date" value={form.expiresAt} onChange={e => set("expiresAt", e.target.value)} className="bg-white/5 border-white/10 text-white rounded-xl h-9" /></div>
+                <option value="fixed">Fixed Amount (₹)</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Discount Value *</label>
+              <input type="number" className={inputCls} value={form.discountValue} onChange={e => set("discountValue", e.target.value)} placeholder={form.discountType === "percentage" ? "e.g. 20" : "e.g. 500"} required min="0" />
+            </div>
+            <div>
+              <label className={labelCls}>Min Order Amount (₹)</label>
+              <input type="number" className={inputCls} value={form.minOrderAmount} onChange={e => set("minOrderAmount", e.target.value)} placeholder="e.g. 1000" min="0" />
+            </div>
+            <div>
+              <label className={labelCls}>Max Uses</label>
+              <input type="number" className={inputCls} value={form.maxUses} onChange={e => set("maxUses", e.target.value)} placeholder="Leave blank for unlimited" min="1" />
+            </div>
+            <div>
+              <label className={labelCls}>Expires At</label>
+              <input type="date" className={inputCls} value={form.expiresAt} onChange={e => set("expiresAt", e.target.value)} />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="couponActive" checked={form.isActive} onChange={e => set("isActive", e.target.checked)} className="w-4 h-4 rounded" />
+            <label htmlFor="couponActive" className="text-white/60 text-sm cursor-pointer">Active (customers can use this coupon)</label>
           </div>
           <div className="flex gap-3 justify-end">
-            <Button type="button" variant="ghost" onClick={() => setShowForm(false)} className="rounded-xl text-white/50 h-9">Cancel</Button>
-            <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">Create</Button>
+            <Button type="button" variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); }} className="rounded-xl text-white/50 h-9">Cancel</Button>
+            <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">{editingId ? "Save Changes" : "Create Coupon"}</Button>
           </div>
         </form>
       )}
 
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[650px]">
-          <thead><tr className="border-b border-white/6">
-            {["Code", "Type", "Value", "Min Order", "Uses", "Expires", "Active", ""].map(h => (
-              <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
-            ))}
-          </tr></thead>
-          <tbody>
-            {loading ? Array.from({ length: 4 }).map((_, i) => (
-              <tr key={i} className="border-b border-white/4">{Array.from({ length: 8 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}</tr>
-            )) : list.map((c: any) => (
-              <tr key={c.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
-                <td className="px-4 py-3 text-white font-bold font-mono text-sm">{c.code}</td>
-                <td className="px-4 py-3 text-white/50 text-sm capitalize">{c.discountType}</td>
-                <td className="px-4 py-3 text-white font-semibold text-sm">{c.discountType === "percentage" ? `${c.discountValue}%` : `₹${c.discountValue}`}</td>
-                <td className="px-4 py-3 text-white/50 text-sm">{c.minOrderAmount ? `₹${c.minOrderAmount}` : "—"}</td>
-                <td className="px-4 py-3 text-white/50 text-sm">{c.usedCount}/{c.maxUses ?? "∞"}</td>
-                <td className="px-4 py-3 text-white/30 text-xs">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString("en-IN") : "Never"}</td>
-                <td className="px-4 py-3"><Badge className={`text-[10px] border ${c.isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-red-500/15 text-red-400 border-red-500/25"}`}>{c.isActive ? "Active" : "Inactive"}</Badge></td>
-                <td className="px-4 py-3">
-                  <Button size="sm" onClick={() => handleDelete(c.id)} className="h-6 px-2 text-[10px] rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20"><Trash2 className="w-3 h-3" /></Button>
-                </td>
+          <table className="w-full min-w-[700px]">
+            <thead>
+              <tr className="border-b border-white/6">
+                {["Code", "Type", "Value", "Min Order", "Uses", "Expires", "Status", "Actions"].map(h => (
+                  <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="border-b border-white/4">
+                    {Array.from({ length: 8 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-4 rounded bg-white/5" /></td>)}
+                  </tr>
+                ))
+              ) : list.map((c: any) => (
+                <tr key={c.id} className={`border-b border-white/4 hover:bg-white/2 transition-colors ${!c.isActive ? "opacity-50" : ""}`}>
+                  <td className="px-4 py-3 text-white font-bold font-mono text-sm">{c.code}</td>
+                  <td className="px-4 py-3 text-white/50 text-sm capitalize">{c.discountType}</td>
+                  <td className="px-4 py-3 text-emerald-400 font-bold text-sm">{c.discountType === "percentage" ? `${c.discountValue}%` : `₹${Number(c.discountValue).toLocaleString("en-IN")}`}</td>
+                  <td className="px-4 py-3 text-white/50 text-sm">{c.minOrderAmount ? `₹${Number(c.minOrderAmount).toLocaleString("en-IN")}` : "—"}</td>
+                  <td className="px-4 py-3 text-white/50 text-sm">{c.usedCount ?? 0}<span className="text-white/20">/{c.maxUses ?? "∞"}</span></td>
+                  <td className="px-4 py-3 text-white/30 text-xs">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString("en-IN") : "Never"}</td>
+                  <td className="px-4 py-3">
+                    <Badge className={`text-[10px] border ${c.isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-red-500/15 text-red-400 border-red-500/25"}`}>
+                      {c.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <Button size="sm" onClick={() => openEdit(c)} className="h-6 px-2 text-[10px] rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20">
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" onClick={() => handleToggleActive(c)} className={`h-6 px-2.5 text-[10px] rounded-lg border ${c.isActive ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20"}`}>
+                        {c.isActive ? "Disable" : "Enable"}
+                      </Button>
+                      <Button size="sm" onClick={() => handleDelete(c.id)} className="h-6 px-2 text-[10px] rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20">
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        {!loading && list.length === 0 && <div className="text-center py-12 text-white/30">No coupons yet</div>}
+        {!loading && list.length === 0 && (
+          <div className="text-center py-12 text-white/30">
+            <Tags className="w-8 h-8 mx-auto mb-3 opacity-30" />
+            <p>No coupons yet. Create your first discount coupon.</p>
+          </div>
+        )}
       </div>
     </div>
   );

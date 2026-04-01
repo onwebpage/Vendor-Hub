@@ -276,12 +276,19 @@ router.get("/customers", async (_req, res) => {
 router.get("/orders", async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
-    const limit = 20;
+    const limit = 100;
     const offset = (page - 1) * limit;
     const orders = await db.select().from(ordersTable)
       .orderBy(sql`${ordersTable.createdAt} DESC`)
       .limit(limit).offset(offset);
-    return res.json({ orders, total: orders.length, page });
+    const customerIds = [...new Set(orders.map(o => o.customerId))];
+    const customers = customerIds.length > 0
+      ? await db.select({ id: usersTable.id, name: usersTable.name, email: usersTable.email }).from(usersTable)
+          .where(sql`${usersTable.id} = ANY(ARRAY[${sql.raw(customerIds.join(","))}])`)
+      : [];
+    const customerMap = Object.fromEntries(customers.map(c => [c.id, c]));
+    const enriched = orders.map(o => ({ ...o, customerName: customerMap[o.customerId]?.name ?? null, customerEmail: customerMap[o.customerId]?.email ?? null }));
+    return res.json({ orders: enriched, total: orders.length, page });
   } catch (err) {
     return res.status(500).json({ message: "Failed to list orders" });
   }
@@ -371,6 +378,26 @@ router.post("/coupons", async (req, res) => {
     expiresAt: expiresAt ? new Date(expiresAt) : null,
   }).returning();
   return res.status(201).json({ ...coupon, discountValue: Number(coupon.discountValue) });
+});
+
+router.put("/coupons/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { code, discountType, discountValue, minOrderAmount, maxUses, expiresAt, isActive } = req.body;
+    const updates: Record<string, any> = {};
+    if (code !== undefined) updates.code = code.toUpperCase();
+    if (discountType !== undefined) updates.discountType = discountType;
+    if (discountValue !== undefined) updates.discountValue = String(discountValue);
+    if (minOrderAmount !== undefined) updates.minOrderAmount = minOrderAmount ? String(minOrderAmount) : null;
+    if (maxUses !== undefined) updates.maxUses = maxUses ?? null;
+    if (expiresAt !== undefined) updates.expiresAt = expiresAt ? new Date(expiresAt) : null;
+    if (isActive !== undefined) updates.isActive = isActive;
+    const [coupon] = await db.update(couponsTable).set(updates).where(eq(couponsTable.id, id)).returning();
+    if (!coupon) return res.status(404).json({ message: "Coupon not found" });
+    return res.json({ ...coupon, discountValue: Number(coupon.discountValue) });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update coupon" });
+  }
 });
 
 router.get("/subscription-plans", async (_req, res) => {
