@@ -138,7 +138,7 @@ export default function ProductDetail() {
               <div className="flex flex-wrap items-center gap-4 mb-6 pb-6 border-b border-border/50">
                 <div className="flex items-center gap-1 text-amber-500">
                   <Star className="w-5 h-5 fill-current" />
-                  <span className="font-bold">{product.rating ? product.rating.toFixed(1) : 'New'}</span>
+                  <span className="font-bold">{product.rating ? parseFloat(String(product.rating)).toFixed(1) : 'New'}</span>
                   <span className="text-muted-foreground text-sm ml-1">({product.reviewCount || 0} reviews)</span>
                 </div>
                 <div className="text-muted-foreground text-sm flex items-center gap-1">
@@ -234,7 +234,7 @@ export default function ProductDetail() {
                   <h3 className="font-bold text-lg leading-none mb-2">{vendor?.businessName}</h3>
                   <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
                     <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-green-500" /> Verified Supplier</span>
-                    <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-500" /> {vendor?.rating?.toFixed(1) || 'New'}</span>
+                    <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-500" /> {vendor?.rating ? parseFloat(String(vendor.rating)).toFixed(1) : 'New'}</span>
                   </div>
                 </div>
                 {vendorWaHref && (

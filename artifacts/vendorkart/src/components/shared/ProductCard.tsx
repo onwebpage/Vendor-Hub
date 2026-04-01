@@ -62,7 +62,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </Link>
           <div className="flex items-center text-amber-500">
             <Star className="w-4 h-4 fill-current" />
-            <span className="text-sm font-bold ml-1">{product.rating ? product.rating.toFixed(1) : 'New'}</span>
+            <span className="text-sm font-bold ml-1">{product.rating ? parseFloat(String(product.rating)).toFixed(1) : 'New'}</span>
           </div>
         </div>
       </div>
