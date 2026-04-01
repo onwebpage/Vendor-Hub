@@ -7,8 +7,8 @@ import {
   socialLinksTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql } from "drizzle-orm";
-import { authenticate, requireRole } from "../lib/auth.js";
-import { slugify } from "../lib/slugify.js";
+import { authenticate, requireRole, hashPassword } from "../lib/auth.js";
+import { slugify, uniqueSlug } from "../lib/slugify.js";
 import { logActivity } from "../lib/activity.js";
 import { logEmail } from "../lib/email-log.js";
 import { createNotification } from "../lib/notify.js";
@@ -72,6 +72,63 @@ router.get("/vendors", async (req, res) => {
     return res.json({ vendors, total: vendors.length, page: 1, totalPages: 1 });
   } catch (err) {
     return res.status(500).json({ message: "Failed to list vendors" });
+  }
+});
+
+router.post("/vendors", async (req, res) => {
+  try {
+    const { name, email, password, businessName, phone, city, state, gstNumber, address, pincode, autoApprove } = req.body;
+    if (!name || !email || !password || !businessName) {
+      return res.status(400).json({ message: "Name, email, password and business name are required" });
+    }
+    const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (existing.length > 0) {
+      return res.status(409).json({ message: "Email already registered" });
+    }
+    const hashed = hashPassword(password);
+    const [user] = await db.insert(usersTable).values({
+      name, email, password: hashed, role: "vendor", phone,
+    }).returning();
+
+    const slug = uniqueSlug(businessName);
+    const status = autoApprove !== false ? "approved" : "pending";
+    const [vendor] = await db.insert(vendorsTable).values({
+      userId: user.id,
+      businessName,
+      slug,
+      email,
+      phone,
+      city,
+      state,
+      gstNumber,
+      address,
+      pincode,
+      status,
+    }).returning();
+
+    await logActivity({
+      userId: (req as any).user.id,
+      action: "admin_created_vendor",
+      details: `Admin manually created vendor: ${businessName} (${email}), status: ${status}`,
+    });
+
+    logEmail({
+      recipient: email,
+      recipientType: "vendor",
+      subject: status === "approved"
+        ? "Welcome to Vendorkart – Your Account is Ready"
+        : "Welcome to Vendorkart – Registration Received",
+      body: status === "approved"
+        ? `Dear ${name}, your vendor account on Vendorkart has been created and approved by admin. You can now log in and start managing your store.`
+        : `Dear ${name}, your vendor account on Vendorkart has been created. Your account is pending review and will be approved shortly.`,
+      type: "vendor_registered",
+      relatedId: user.id,
+    });
+
+    return res.status(201).json({ vendor, user: { id: user.id, name: user.name, email: user.email }, message: "Vendor created successfully" });
+  } catch (err) {
+    req.log.error({ err }, "Admin create vendor error");
+    return res.status(500).json({ message: "Failed to create vendor" });
   }
 });
 

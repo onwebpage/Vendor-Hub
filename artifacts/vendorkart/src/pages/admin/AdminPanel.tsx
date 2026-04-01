@@ -206,9 +206,139 @@ function Overview() {
 }
 
 // ─── VENDORS ──────────────────────────────────────────────────────────────────
+const EMPTY_VENDOR_FORM = {
+  name: "", email: "", password: "", businessName: "",
+  phone: "", city: "", state: "", gstNumber: "", address: "", pincode: "",
+  autoApprove: true,
+};
+
+function AddVendorModal({ onClose, onSuccess, token }: { onClose: () => void; onSuccess: () => void; token: string }) {
+  const [form, setForm] = useState({ ...EMPTY_VENDOR_FORM });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (key: string, val: string | boolean) => setForm((p) => ({ ...p, [key]: val }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.password || !form.businessName) {
+      setError("Business name, contact name, email and password are required.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`${BASE}/api/admin/vendors`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.message || "Failed to create vendor"); setSaving(false); return; }
+      onSuccess();
+    } catch {
+      setError("Network error. Please try again.");
+      setSaving(false);
+    }
+  };
+
+  const field = (label: string, key: string, type = "text", placeholder = "") => (
+    <div>
+      <label className="block text-xs text-white/50 font-medium mb-1">{label}</label>
+      <Input
+        type={type}
+        placeholder={placeholder || label}
+        value={(form as any)[key] as string}
+        onChange={(e) => set(key, e.target.value)}
+        className="h-9 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/20 text-sm"
+      />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-[#0f1117] border border-white/10 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="p-6 border-b border-white/8 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white">Add Vendor Manually</h2>
+            <p className="text-white/40 text-xs mt-0.5">Create a vendor account directly without going through the registration flow.</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Account info */}
+          <div>
+            <p className="text-xs font-bold text-white/30 uppercase tracking-wider mb-3">Account Credentials</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {field("Contact Person Name *", "name", "text", "e.g. Rajesh Mehta")}
+              {field("Email Address *", "email", "email", "vendor@example.com")}
+              {field("Password *", "password", "password", "Set a secure password")}
+              {field("Phone Number", "phone", "tel", "+91 98765 43210")}
+            </div>
+          </div>
+
+          {/* Business info */}
+          <div>
+            <p className="text-xs font-bold text-white/30 uppercase tracking-wider mb-3">Business Details</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                {field("Business Name *", "businessName", "text", "e.g. TechCorp Industries Pvt Ltd")}
+              </div>
+              {field("GST Number", "gstNumber", "text", "22AAAAA0000A1Z5")}
+              {field("Address", "address", "text", "Street address, building")}
+              {field("City", "city", "text", "Mumbai")}
+              {field("State", "state", "text", "Maharashtra")}
+              {field("Pincode", "pincode", "text", "400001")}
+            </div>
+          </div>
+
+          {/* Options */}
+          <div className="flex items-center gap-3 p-4 bg-white/3 rounded-2xl border border-white/8">
+            <input
+              id="autoApprove"
+              type="checkbox"
+              checked={form.autoApprove}
+              onChange={(e) => set("autoApprove", e.target.checked)}
+              className="w-4 h-4 rounded accent-indigo-500"
+            />
+            <label htmlFor="autoApprove" className="text-sm text-white/70 cursor-pointer select-none">
+              <span className="font-semibold text-white">Auto-approve vendor</span>
+              <span className="text-white/40 ml-1.5">— vendor can start selling immediately without review</span>
+            </label>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-1">
+            <Button type="button" variant="ghost" onClick={onClose} className="rounded-xl text-white/50 hover:text-white">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 hover:bg-indigo-500 gap-2 min-w-32">
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : <><Plus className="w-4 h-4" /> Create Vendor</>}
+            </Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 function VendorsPanel() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showAddModal, setShowAddModal] = useState(false);
   const { data, loading } = useAdminFetch<any>("/api/admin/vendors?limit=50");
   const { token } = useAdminAuthStore();
 
@@ -239,6 +369,14 @@ function VendorsPanel() {
   };
 
   return (
+    <>
+    {showAddModal && (
+      <AddVendorModal
+        token={token!}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => { setShowAddModal(false); window.location.reload(); }}
+      />
+    )}
     <div className="space-y-5">
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
@@ -253,6 +391,13 @@ function VendorsPanel() {
             {s}
           </Button>
         ))}
+        <Button
+          size="sm"
+          onClick={() => setShowAddModal(true)}
+          className="rounded-xl h-10 bg-indigo-600 hover:bg-indigo-500 text-white gap-2 ml-auto"
+        >
+          <Plus className="w-4 h-4" /> Add Vendor
+        </Button>
       </div>
 
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
@@ -329,6 +474,7 @@ function VendorsPanel() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
