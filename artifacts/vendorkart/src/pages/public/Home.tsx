@@ -734,7 +734,7 @@ export default function Home() {
 
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-0">
               {/* Left */}
-              <div className="p-12 lg:p-16">
+              <div className="p-8 sm:p-12 lg:p-16">
                 <p className="text-blue-200/60 font-bold text-xs uppercase tracking-widest mb-4">For Buyers</p>
                 <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
                   Source smarter.<br />Spend less.
@@ -749,7 +749,7 @@ export default function Home() {
               <div className="hidden lg:block absolute left-1/2 top-8 bottom-8 w-px bg-white/10" />
 
               {/* Right */}
-              <div className="p-12 lg:p-16 lg:pl-16">
+              <div className="p-8 sm:p-12 lg:p-16 lg:pl-16">
                 <p className="text-violet-200/60 font-bold text-xs uppercase tracking-widest mb-4">For Vendors</p>
                 <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
                   Grow your B2B<br />sales 10x.

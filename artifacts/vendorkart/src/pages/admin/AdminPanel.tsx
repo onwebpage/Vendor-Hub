@@ -256,7 +256,8 @@ function VendorsPanel() {
       </div>
 
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[700px]">
           <thead>
             <tr className="border-b border-white/6">
               {["Business", "Email", "Location", "Plan", "Rating", "Status", "Actions"].map((h) => (
@@ -322,6 +323,7 @@ function VendorsPanel() {
               ))}
           </tbody>
         </table>
+        </div>
         {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-white/30">No vendors found</div>
         )}
@@ -785,7 +787,8 @@ function CustomersPanel() {
       </div>
 
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px]">
           <thead>
             <tr className="border-b border-white/6">
               {["Customer", "Email", "Phone", "Joined", "Status"].map((h) => (
@@ -824,6 +827,7 @@ function CustomersPanel() {
               ))}
           </tbody>
         </table>
+        </div>
         {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-white/30">No customers registered yet</div>
         )}
@@ -1229,7 +1233,8 @@ function OrdersPanel() {
         ))}
       </div>
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[800px]">
           <thead><tr className="border-b border-white/6">
             {["Order #", "Customer", "Total", "Payment", "Status", "Screenshot", "Date", "Actions"].map(h => (
               <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
@@ -1287,6 +1292,7 @@ function OrdersPanel() {
             ))}
           </tbody>
         </table>
+        </div>
         {!loading && filtered.length === 0 && <div className="text-center py-12 text-white/30">No orders found</div>}
       </div>
     </div>
@@ -1317,7 +1323,8 @@ function PaymentsPanel() {
         <p className="text-emerald-300 text-sm"><strong>UPI QR Payment:</strong> Customers pay via UPI QR code and submit a screenshot. Go to <strong>Orders</strong> tab to verify and approve/reject pending payments.</p>
       </div>
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[700px]">
           <thead><tr className="border-b border-white/6">
             {["Transaction ID", "Order ID", "User", "Amount", "Method", "Status", "Date"].map(h => (
               <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
@@ -1339,6 +1346,7 @@ function PaymentsPanel() {
             ))}
           </tbody>
         </table>
+        </div>
         {!loading && list.length === 0 && <div className="text-center py-12 text-white/30">No payment records yet</div>}
       </div>
     </div>
@@ -1408,7 +1416,8 @@ function CouponsPanel() {
       )}
 
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[650px]">
           <thead><tr className="border-b border-white/6">
             {["Code", "Type", "Value", "Min Order", "Uses", "Expires", "Active", ""].map(h => (
               <th key={h} className="text-left text-white/30 text-[11px] font-bold uppercase tracking-wider px-4 py-3">{h}</th>
@@ -1433,6 +1442,7 @@ function CouponsPanel() {
             ))}
           </tbody>
         </table>
+        </div>
         {!loading && list.length === 0 && <div className="text-center py-12 text-white/30">No coupons yet</div>}
       </div>
     </div>
@@ -2217,7 +2227,8 @@ function SubscriptionPaymentsPanel() {
       </div>
 
       <div className="bg-white/3 rounded-3xl border border-white/8 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px]">
           <thead>
             <tr className="border-b border-white/6">
               {["Vendor", "Plan", "UTR / Txn ID", "Amount Paid", "Screenshot", "Submitted", "Status", "Actions"].map(h => (
@@ -2287,6 +2298,7 @@ function SubscriptionPaymentsPanel() {
             ))}
           </tbody>
         </table>
+        </div>
         {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-white/30">No subscription payments found</div>
         )}

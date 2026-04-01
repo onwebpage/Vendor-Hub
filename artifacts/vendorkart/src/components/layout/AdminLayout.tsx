@@ -30,9 +30,83 @@ const NAV = [
   { icon: Activity, label: "Activity", href: "/admin/activity" },
 ];
 
+function SidebarContent({
+  collapsed,
+  setCollapsed,
+  isActive,
+  handleLogout,
+  onNavClick,
+}: {
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+  isActive: (href: string) => boolean;
+  handleLogout: () => void;
+  onNavClick?: () => void;
+}) {
+  return (
+    <>
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 py-5 border-b border-white/6 min-h-[64px]">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+          <ShieldCheck className="w-[18px] h-[18px] text-white" />
+        </div>
+        {!collapsed && (
+          <div>
+            <p className="text-white font-bold text-sm leading-none">Admin Portal</p>
+            <p className="text-white/30 text-[10px] mt-0.5">Vendorkart</p>
+          </div>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
+        {NAV.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link key={item.href} href={item.href} onClick={onNavClick}>
+              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group ${
+                active
+                  ? "bg-indigo-500/15 text-indigo-300"
+                  : "text-white/40 hover:text-white/70 hover:bg-white/4"
+              }`}>
+                <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-indigo-400" : ""}`} />
+                {!collapsed && (
+                  <span className="text-sm font-medium truncate">{item.label}</span>
+                )}
+                {!collapsed && active && (
+                  <ChevronRight className="w-3.5 h-3.5 ml-auto text-indigo-400" />
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Bottom actions */}
+      <div className="border-t border-white/6 p-2 space-y-0.5">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="hidden md:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-white/30 hover:text-white/60 hover:bg-white/4 transition-all"
+        >
+          {collapsed ? <Menu className="w-5 h-5 flex-shrink-0" /> : <X className="w-5 h-5 flex-shrink-0" />}
+          {!collapsed && <span className="text-sm">Collapse</span>}
+        </button>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400/70 hover:text-red-400 hover:bg-red-500/8 transition-all"
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span className="text-sm">Sign Out</span>}
+        </button>
+      </div>
+    </>
+  );
+}
+
 export function AdminLayout({ children, title }: { children: React.ReactNode; title?: string }) {
   const [location, setLocation] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAdminAuthStore();
 
   const handleLogout = () => {
@@ -45,84 +119,78 @@ export function AdminLayout({ children, title }: { children: React.ReactNode; ti
 
   return (
     <div className="flex h-screen bg-[#080c14] overflow-hidden">
-      {/* ── Sidebar ── */}
+      {/* ── Desktop Sidebar ── */}
       <aside
-        className={`flex-shrink-0 flex flex-col border-r border-white/6 bg-[#03050d] transition-all duration-300 ${collapsed ? "w-[68px]" : "w-60"}`}
+        className={`hidden md:flex flex-shrink-0 flex-col border-r border-white/6 bg-[#03050d] transition-all duration-300 ${collapsed ? "w-[68px]" : "w-60"}`}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-white/6 min-h-[64px]">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="w-4.5 h-4.5 text-white w-[18px] h-[18px]" />
-          </div>
-          {!collapsed && (
-            <div>
-              <p className="text-white font-bold text-sm leading-none">Admin Portal</p>
-              <p className="text-white/30 text-[10px] mt-0.5">Vendorkart</p>
-            </div>
-          )}
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
-          {NAV.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link key={item.href} href={item.href}>
-                <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group ${
-                  active
-                    ? "bg-indigo-500/15 text-indigo-300"
-                    : "text-white/40 hover:text-white/70 hover:bg-white/4"
-                }`}>
-                  <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-indigo-400" : ""}`} />
-                  {!collapsed && (
-                    <span className="text-sm font-medium truncate">{item.label}</span>
-                  )}
-                  {!collapsed && active && (
-                    <ChevronRight className="w-3.5 h-3.5 ml-auto text-indigo-400" />
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Bottom actions */}
-        <div className="border-t border-white/6 p-2 space-y-0.5">
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/30 hover:text-white/60 hover:bg-white/4 transition-all"
-          >
-            {collapsed ? <Menu className="w-5 h-5 flex-shrink-0" /> : <X className="w-5 h-5 flex-shrink-0" />}
-            {!collapsed && <span className="text-sm">Collapse</span>}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400/70 hover:text-red-400 hover:bg-red-500/8 transition-all"
-          >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="text-sm">Sign Out</span>}
-          </button>
-        </div>
+        <SidebarContent
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          isActive={isActive}
+          handleLogout={handleLogout}
+        />
       </aside>
 
+      {/* ── Mobile Drawer ── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+              onClick={() => setMobileOpen(false)}
+            />
+            {/* Drawer */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed left-0 top-0 bottom-0 z-50 w-64 flex flex-col border-r border-white/6 bg-[#03050d] md:hidden"
+            >
+              <SidebarContent
+                collapsed={false}
+                setCollapsed={setCollapsed}
+                isActive={isActive}
+                handleLogout={handleLogout}
+                onNavClick={() => setMobileOpen(false)}
+              />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ── Main ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top bar */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-white/6 bg-[#03050d]/80 backdrop-blur-md min-h-[64px] flex-shrink-0">
-          <h1 className="text-white font-bold text-lg">{title || "Dashboard"}</h1>
+        <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/6 bg-[#03050d]/80 backdrop-blur-md min-h-[64px] flex-shrink-0">
           <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <button
+              className="md:hidden w-9 h-9 rounded-xl border border-white/8 bg-white/4 flex items-center justify-center text-white/50 hover:text-white/80 hover:bg-white/8 transition-all"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+            <h1 className="text-white font-bold text-base sm:text-lg truncate">{title || "Dashboard"}</h1>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
             <button className="w-9 h-9 rounded-xl border border-white/8 bg-white/4 flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/8 transition-all">
               <Bell className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/8 bg-white/4">
+            <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-xl border border-white/8 bg-white/4">
               <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-[10px] font-bold">A</div>
-              <span className="text-white/60 text-xs font-medium">Admin</span>
+              <span className="text-white/60 text-xs font-medium hidden sm:inline">Admin</span>
             </div>
           </div>
         </header>
 
         {/* Scrollable content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       </div>
