@@ -1785,6 +1785,16 @@ function CouponsPanel() {
 // ─── SUBSCRIPTION PLANS ────────────────────────────────────────────────────────
 const BLANK_PLAN = { name: "", price: 0, billingCycle: "monthly", maxProducts: -1, maxCategories: -1, canUploadBanner: false, isFeatured: false, isActive: true, featuresRaw: "" };
 
+const formatBillingCycle = (cycle: string) => {
+  const map: Record<string, string> = {
+    monthly: "Monthly",
+    quarterly: "Quarterly",
+    half_yearly: "Half Yearly",
+    yearly: "Yearly",
+  };
+  return map[cycle] ?? cycle.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+};
+
 function SubscriptionPlansPanel() {
   const { data: plans, loading } = useAdminFetch<any[]>("/api/admin/subscription-plans");
   const { token } = useAdminAuthStore();
@@ -1864,6 +1874,7 @@ function SubscriptionPlansPanel() {
           <select value={vals.billingCycle} onChange={e => set("billingCycle", e.target.value)} className="w-full h-9 rounded-xl bg-white/5 border border-white/10 text-white px-3 text-sm">
             <option value="monthly">Monthly</option>
             <option value="quarterly">Quarterly</option>
+            <option value="half_yearly">Half Yearly</option>
             <option value="yearly">Yearly</option>
           </select>
         </div>
@@ -1921,7 +1932,7 @@ function SubscriptionPlansPanel() {
                     <p className={`text-lg font-extrabold capitalize truncate ${planColors[plan.slug] ?? "text-white"}`}>{plan.name}</p>
                     {!plan.isActive && <Badge className="text-[10px] bg-white/5 text-white/30 border border-white/10 flex-shrink-0">Inactive</Badge>}
                   </div>
-                  <p className="text-white/40 text-xs mt-0.5 capitalize">{plan.billingCycle} billing</p>
+                  <p className="text-white/40 text-xs mt-0.5">{formatBillingCycle(plan.billingCycle)} billing</p>
                 </div>
                 <p className="text-2xl font-extrabold text-white flex-shrink-0">{Number(plan.price) === 0 ? "Free" : `₹${Number(plan.price).toLocaleString("en-IN")}`}</p>
               </div>
