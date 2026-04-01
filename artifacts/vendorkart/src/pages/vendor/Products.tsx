@@ -166,10 +166,10 @@ function ProductCard({ product, onDelete, delay }: { product: any; onDelete: (id
               <p className="text-xs text-muted-foreground line-through">₹{Number(product.comparePrice).toLocaleString("en-IN")}</p>
             )}
           </div>
-          {product.rating > 0 && (
+          {parseFloat(String(product.rating || "0")) > 0 && (
             <div className="flex items-center gap-1 text-xs text-amber-500 font-semibold">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-              {Number(product.rating).toFixed(1)}
+              {parseFloat(String(product.rating)).toFixed(1)}
             </div>
           )}
         </div>
