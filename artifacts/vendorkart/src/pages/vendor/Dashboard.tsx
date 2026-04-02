@@ -480,7 +480,7 @@ export default function VendorDashboard() {
     },
     {
       label: "Store Rating",
-      value: isApproved ? (rating > 0 ? `${rating.toFixed(1)} ★` : "New") : "—",
+      value: isApproved ? (parseFloat(String(rating)) > 0 ? `${parseFloat(String(rating)).toFixed(1)} ★` : "New") : "—",
       icon: Star,
       color: "text-amber-600 dark:text-amber-400",
       bg: "bg-amber-500/10",

@@ -102,7 +102,7 @@ function Overview() {
   };
 
   const statCards = [
-    { label: "Total Revenue", value: `₹${((stats?.totalRevenue || 0) / 100000).toFixed(1)}L`, icon: IndianRupee, color: "text-emerald-400", change: "+18%", changeUp: true },
+    { label: "Total Revenue", value: `₹${(parseFloat(String(stats?.totalRevenue ?? 0)) / 100000).toFixed(1)}L`, icon: IndianRupee, color: "text-emerald-400", change: "+18%", changeUp: true },
     { label: "Total Vendors", value: stats?.totalVendors || 6, icon: Store, color: "text-blue-400", change: "+3", changeUp: true },
     { label: "Total Customers", value: stats?.totalCustomers || 0, icon: Users, color: "text-violet-400", change: "+12%", changeUp: true },
     { label: "Pending Approvals", value: stats?.pendingVendors || 0, icon: Clock, color: "text-amber-400" },

@@ -295,7 +295,7 @@ export default function VendorProducts() {
             <StatCard label="Total Products" value={products.length} icon={Boxes} gradient="bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/15" delay={0} />
             <StatCard label="Live Now" value={liveCount} icon={Sparkles} gradient="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/15" delay={0.05} />
             <StatCard label="Under Review" value={pendingCount} icon={Clock} gradient="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-500/15" delay={0.1} />
-            <StatCard label="Stock Value (₹)" value={totalRevenue > 0 ? `${(totalRevenue / 100000).toFixed(1)}L` : "—"} icon={IndianRupee} gradient="bg-gradient-to-br from-violet-500/10 to-purple-500/5 border-violet-500/15" delay={0.15} />
+            <StatCard label="Stock Value (₹)" value={totalRevenue > 0 ? `${(parseFloat(String(totalRevenue)) / 100000).toFixed(1)}L` : "—"} icon={IndianRupee} gradient="bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/15" delay={0.15} />
           </div>
         )}
 

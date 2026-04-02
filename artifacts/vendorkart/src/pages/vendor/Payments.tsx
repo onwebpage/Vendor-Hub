@@ -122,7 +122,7 @@ export default function VendorPayments() {
                 const pct = max > 0 ? (amount / max) * 100 : 0;
                 return (
                   <div key={month} className="flex-1 flex flex-col items-center gap-2">
-                    <p className="text-xs font-semibold text-primary">₹{amount > 999 ? `${(amount / 1000).toFixed(1)}k` : amount}</p>
+                    <p className="text-xs font-semibold text-primary">₹{parseFloat(String(amount)) > 999 ? `${(parseFloat(String(amount)) / 1000).toFixed(1)}k` : amount}</p>
                     <div className="w-full bg-muted rounded-t-lg overflow-hidden" style={{ height: "80px" }}>
                       <div
                         className="w-full bg-primary/70 rounded-t-lg transition-all duration-500"

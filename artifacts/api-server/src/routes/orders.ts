@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, cartItemsTable, addressesTable, usersTable, couponsTable } from "@workspace/db/schema";
+import { ordersTable, cartItemsTable, addressesTable, usersTable, couponsTable, productsTable, vendorsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 import { generateOrderNumber } from "../lib/slugify.js";
@@ -52,84 +52,121 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
       return res.status(400).json({ message: "Payment screenshot is required to place an order" });
     }
 
-    const cartItems = await db.select().from(cartItemsTable).where(eq(cartItemsTable.userId, userId));
-    if (cartItems.length === 0) return res.status(400).json({ message: "Cart is empty" });
+    // Use a transaction to ensure all operations succeed or none do
+    const result = await db.transaction(async (tx) => {
+      const cartItems = await tx.select().from(cartItemsTable).where(eq(cartItemsTable.userId, userId));
+      if (cartItems.length === 0) {
+        throw new Error("CART_EMPTY");
+      }
 
-    const [address] = await db.select().from(addressesTable).where(eq(addressesTable.id, shippingAddressId));
-    if (!address) return res.status(400).json({ message: "Address not found" });
+      const [address] = await tx.select().from(addressesTable).where(eq(addressesTable.id, shippingAddressId));
+      if (!address) {
+        throw new Error("ADDRESS_NOT_FOUND");
+      }
 
-    const orderItems: any[] = [];
-    let subtotal = 0;
+      const orderItems: any[] = [];
+      let subtotal = 0;
 
-    for (const item of cartItems) {
-      const [p] = await db.execute<any>(
-        `SELECT p.*, v.business_name as vendor_name FROM products p 
-         LEFT JOIN vendors v ON p.vendor_id = v.id 
-         WHERE p.id = ${item.productId}`
-      );
-      if (p && p.rows?.[0]) {
-        const row = p.rows[0];
-        const price = Number(row.price);
+      for (const item of cartItems) {
+        // Replace raw SQL with type-safe Drizzle join
+        const [productWithVendor] = await tx
+          .select({
+            product: productsTable,
+            vendorName: vendorsTable.businessName,
+          })
+          .from(productsTable)
+          .leftJoin(vendorsTable, eq(productsTable.vendorId, vendorsTable.id))
+          .where(eq(productsTable.id, item.productId));
+
+        if (!productWithVendor || !productWithVendor.product) {
+          throw new Error(`PRODUCT_NOT_FOUND:${item.productId}`);
+        }
+
+        const product = productWithVendor.product;
+        const price = Number(product.price);
         const sub = price * item.quantity;
         subtotal += sub;
+
         orderItems.push({
           productId: item.productId,
-          productName: row.name,
-          productImage: row.images?.[0],
-          vendorId: row.vendor_id,
-          vendorName: row.vendor_name,
+          productName: product.name,
+          productImage: product.images?.[0] || null,
+          vendorId: product.vendorId,
+          vendorName: productWithVendor.vendorName || "Unknown Vendor",
           quantity: item.quantity,
-          price,
+          price: price,
           subtotal: sub,
         });
       }
-    }
 
-    let discountAmount = 0;
-    let resolvedCouponCode: string | null = couponCode || null;
-    if (couponCode) {
-      const [coupon] = await db.select().from(couponsTable).where(eq(couponsTable.code, couponCode.toUpperCase()));
-      if (coupon && coupon.isActive && !(coupon.expiresAt && new Date() > coupon.expiresAt) && !(coupon.maxUses && coupon.usedCount >= coupon.maxUses) && !(coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount))) {
-        if (coupon.discountType === "percentage") {
-          discountAmount = Math.round((subtotal * Number(coupon.discountValue)) / 100);
-        } else {
-          discountAmount = Number(coupon.discountValue);
+      let discountAmount = 0;
+      let resolvedCouponCode: string | null = couponCode || null;
+
+      if (couponCode) {
+        const [coupon] = await tx.select().from(couponsTable).where(eq(couponsTable.code, couponCode.toUpperCase()));
+        if (
+          coupon && 
+          coupon.isActive && 
+          !(coupon.expiresAt && new Date() > coupon.expiresAt) && 
+          !(coupon.maxUses && coupon.usedCount >= coupon.maxUses) && 
+          !(coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount))
+        ) {
+          if (coupon.discountType === "percentage") {
+            discountAmount = Math.round((subtotal * Number(coupon.discountValue)) / 100);
+          } else {
+            discountAmount = Number(coupon.discountValue);
+          }
+          discountAmount = Math.min(discountAmount, subtotal);
+          
+          await tx.update(couponsTable)
+            .set({ usedCount: (coupon.usedCount || 0) + 1 })
+            .where(eq(couponsTable.id, coupon.id));
+          
+          resolvedCouponCode = coupon.code;
+        } else if (couponCode) {
+          // If a coupon code was provided but is invalid, we don't throw, just ignore it or could return error
+          resolvedCouponCode = null;
         }
-        discountAmount = Math.min(discountAmount, subtotal);
-        await db.update(couponsTable).set({ usedCount: (coupon.usedCount || 0) + 1 }).where(eq(couponsTable.id, coupon.id));
-        resolvedCouponCode = coupon.code;
       }
-    }
-    const finalTotal = subtotal - discountAmount;
 
-    const orderNumber = generateOrderNumber();
-    const [order] = await db.insert(ordersTable).values({
-      orderNumber,
-      customerId: userId,
-      status: "pending_payment",
-      paymentStatus: "pending",
-      paymentMethod: "upi_qr",
-      paymentScreenshot,
-      shippingAddress: {
-        name: address.name || undefined,
-        phone: address.phone || undefined,
-        addressLine1: address.addressLine1,
-        addressLine2: address.addressLine2 || undefined,
-        city: address.city,
-        state: address.state,
-        pincode: address.pincode,
-        country: address.country || "India",
-      },
-      items: orderItems,
-      subtotal: String(subtotal),
-      discount: String(discountAmount),
-      total: String(finalTotal),
-      couponCode: resolvedCouponCode,
-      notes,
-    }).returning();
+      const finalTotal = Math.max(0, subtotal - discountAmount);
+      const orderNumber = generateOrderNumber();
 
-    await db.delete(cartItemsTable).where(eq(cartItemsTable.userId, userId));
+      const [newOrder] = await tx.insert(ordersTable).values({
+        orderNumber,
+        customerId: userId,
+        status: "pending_payment",
+        paymentStatus: "pending",
+        paymentMethod: "upi_qr",
+        paymentScreenshot,
+        shippingAddress: {
+          name: address.name || "",
+          phone: address.phone || "",
+          addressLine1: address.addressLine1,
+          addressLine2: address.addressLine2 || "",
+          city: address.city,
+          state: address.state,
+          pincode: address.pincode,
+          country: address.country || "India",
+        },
+        items: orderItems,
+        subtotal: String(subtotal),
+        discount: String(discountAmount),
+        total: String(finalTotal),
+        couponCode: resolvedCouponCode,
+        notes: notes || "",
+      }).returning();
 
+      // Clear cart
+      await tx.delete(cartItemsTable).where(eq(cartItemsTable.userId, userId));
+
+      return { order: newOrder, orderItems };
+    });
+
+    const { order, orderItems } = result;
+
+    // Post-order processing (emails, notifications, activity logs)
+    // These are outside the transaction as they don't affect DB state if they fail
     const [customer] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     if (customer) {
       logEmail({
@@ -140,25 +177,45 @@ router.post("/", authenticate, requireRole("customer"), async (req, res) => {
         type: "order_confirmation",
         relatedId: order.id,
       });
-      const uniqueVendors = [...new Set(orderItems.map(i => i.vendorId))];
+
+      const uniqueVendors = [...new Set(orderItems.map((i: any) => i.vendorId))];
       for (const vendorId of uniqueVendors) {
         logEmail({
           recipient: `vendor-${vendorId}@vendorkart.in`,
           recipientType: "vendor",
           subject: `New Order Received – ${order.orderNumber} (Pending Payment Verification)`,
-          body: `You have a new order #${order.orderNumber} awaiting payment verification. Items: ${orderItems.filter(i => i.vendorId === vendorId).map(i => `${i.productName} (x${i.quantity})`).join(", ")}. Total: ₹${Number(order.total).toLocaleString("en-IN")}.`,
+          body: `You have a new order #${order.orderNumber} awaiting payment verification. Items: ${orderItems.filter((i: any) => i.vendorId === vendorId).map((i: any) => `${i.productName} (x${i.quantity})`).join(", ")}. Total: ₹${Number(order.total).toLocaleString("en-IN")}.`,
           type: "new_order_alert",
           relatedId: order.id,
         });
       }
     }
 
-    logActivity({ userId, action: "order_placed", resource: "order", details: `Order ${order.orderNumber} placed via UPI QR. Awaiting payment verification. Total: ₹${Number(order.total).toLocaleString("en-IN")}` });
+    logActivity({ 
+      userId, 
+      action: "order_placed", 
+      resource: "order", 
+      details: `Order ${order.orderNumber} placed via UPI QR. Awaiting payment verification. Total: ₹${Number(order.total).toLocaleString("en-IN")}` 
+    });
 
     return res.status(201).json(order);
-  } catch (err) {
-    req.log.error({ err }, "Create order error");
-    return res.status(500).json({ message: "Failed to create order" });
+  } catch (err: any) {
+    req.log.error({ err }, "Order creation failed");
+
+    if (err.message === "CART_EMPTY") {
+      return res.status(400).json({ message: "Your cart is empty" });
+    }
+    if (err.message === "ADDRESS_NOT_FOUND") {
+      return res.status(400).json({ message: "Shipping address not found" });
+    }
+    if (err.message?.startsWith("PRODUCT_NOT_FOUND")) {
+      return res.status(400).json({ message: "One or more products in your cart are no longer available" });
+    }
+
+    return res.status(500).json({ 
+      message: "An internal error occurred while creating your order. Please try again or contact support.",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
