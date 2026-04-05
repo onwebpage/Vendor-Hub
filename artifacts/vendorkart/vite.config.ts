@@ -22,7 +22,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 5000,
+    port: parseInt(process.env.PORT || "5000"),
     host: "0.0.0.0",
     allowedHosts: true,
     proxy: {
@@ -33,7 +33,7 @@ export default defineConfig({
     },
   },
   preview: {
-    port: 5000,
+    port: parseInt(process.env.PORT || "5000"),
     host: "0.0.0.0",
     allowedHosts: true,
   },
