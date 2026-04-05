@@ -1,14 +1,37 @@
 import { Link } from "wouter";
-import { Package, TrendingUp, Star, Store } from "lucide-react";
+import { Package, TrendingUp, Star, Store, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAddToWishlist } from "@workspace/api-client-react";
+import { useAuthStore } from "@/lib/auth-store";
+import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@workspace/api-client-react";
 
 interface ProductCardProps {
   product: Product;
+  isWishlisted?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, isWishlisted = false }: ProductCardProps) {
   const imageUrl = product.images?.[0] || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop";
+  const { mutate: addToWishlist, isPending } = useAddToWishlist();
+  const { isAuthenticated, user } = useAuthStore();
+  const { toast } = useToast();
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated || user?.role !== "customer") {
+      toast({ title: "Please log in", description: "You need a buyer account to save products.", variant: "destructive" });
+      return;
+    }
+    addToWishlist(
+      { data: { productId: product.id } },
+      {
+        onSuccess: () => toast({ title: "Saved to wishlist", description: product.name }),
+        onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+      }
+    );
+  };
 
   return (
     <div className="group bg-card rounded-2xl border border-border/50 overflow-hidden hover:shadow-xl hover:border-primary/30 transition-all duration-300 flex flex-col h-full relative">
@@ -23,6 +46,14 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
+        <button
+          onClick={handleWishlist}
+          disabled={isPending}
+          className="absolute top-3 left-3 p-2 rounded-xl bg-background/80 backdrop-blur-sm border border-border hover:bg-background transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+          aria-label="Save to wishlist"
+        >
+          <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? "fill-rose-500 text-rose-500" : "text-muted-foreground hover:text-rose-500"}`} />
+        </button>
       </Link>
       
       <div className="p-5 flex flex-col flex-1">

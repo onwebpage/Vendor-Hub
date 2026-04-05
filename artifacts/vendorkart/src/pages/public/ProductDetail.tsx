@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useRoute } from "wouter";
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { useGetProduct, useAddToCart } from "@workspace/api-client-react";
-import { Store, Star, ShieldCheck, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp } from "lucide-react";
+import { useGetProduct, useAddToCart, useGetWishlist, useAddToWishlist, useRemoveFromWishlist } from "@workspace/api-client-react";
+import { Store, Star, ShieldCheck, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,8 +22,11 @@ export default function ProductDetail() {
   const id = parseInt(params?.id || "0");
   const { data, isLoading } = useGetProduct(id);
   const { mutate: addToCart, isPending: addingToCart } = useAddToCart();
+  const { mutate: addToWishlist, isPending: addingToWishlist } = useAddToWishlist();
+  const { mutate: removeFromWishlist, isPending: removingFromWishlist } = useRemoveFromWishlist();
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuthStore();
+  const { data: wishlistItems } = useGetWishlist({ query: { enabled: isAuthenticated && user?.role === "customer" } });
   
   const [quantity, setQuantity] = useState<number>(0);
   const [activeImage, setActiveImage] = useState<number>(0);
@@ -72,6 +75,26 @@ export default function ProductDetail() {
       activeTierIndex = product.bulkPricing.indexOf(applicableTier);
     }
   }
+
+  const isWishlisted = wishlistItems?.some((item: any) => item.productId === id) ?? false;
+
+  const handleWishlistToggle = () => {
+    if (!isAuthenticated || user?.role !== "customer") {
+      toast({ title: "Please log in", description: "You need a buyer account to save products.", variant: "destructive" });
+      return;
+    }
+    if (isWishlisted) {
+      removeFromWishlist({ productId: id }, {
+        onSuccess: () => toast({ title: "Removed from wishlist" }),
+        onError: () => toast({ title: "Failed to update wishlist", variant: "destructive" }),
+      });
+    } else {
+      addToWishlist({ data: { productId: id } }, {
+        onSuccess: () => toast({ title: "Saved to wishlist", description: product.name }),
+        onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+      });
+    }
+  };
 
   const handleAddToCart = () => {
     if (!isAuthenticated || user?.role !== 'customer') {
@@ -215,6 +238,15 @@ export default function ProductDetail() {
                   >
                     {addingToCart ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ShoppingCart className="w-5 h-5 mr-2" />}
                     Add to Cart
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-14 w-14 rounded-xl shrink-0 border-border"
+                    onClick={handleWishlistToggle}
+                    disabled={addingToWishlist || removingFromWishlist}
+                    aria-label={isWishlisted ? "Remove from wishlist" : "Save to wishlist"}
+                  >
+                    <Heart className={`w-5 h-5 transition-colors ${isWishlisted ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
                   </Button>
                 </div>
                 
