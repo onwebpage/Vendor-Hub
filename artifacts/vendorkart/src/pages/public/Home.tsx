@@ -7,6 +7,7 @@ import { useListProducts } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/shared/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRef, useEffect, useState } from "react";
+import { useLanguage } from "@/lib/language-context";
 
 const testimonials = [
   { name: "Rajesh Mehta", role: "CEO, MegaSupply Pvt Ltd", avatar: "RM", rating: 5, text: "Vendorkart transformed how we source industrial components. We cut procurement costs by 32% in just 3 months.", color: "from-blue-500 to-indigo-600" },
@@ -68,6 +69,7 @@ const features = [
 
 export default function Home() {
   const { data: productData, isLoading } = useListProducts({ limit: 8 });
+  const { t } = useLanguage();
 
   return (
     <PublicLayout>
@@ -148,7 +150,7 @@ export default function Home() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-400" />
                 </span>
-                <span className="text-indigo-300 text-xs font-bold tracking-[0.12em] uppercase">India's #1 B2B Wholesale Marketplace</span>
+                <span className="text-indigo-300 text-xs font-bold tracking-[0.12em] uppercase">{t.hero.badge}</span>
                 <Sparkles className="w-3.5 h-3.5 text-indigo-400/70" />
               </motion.div>
 
@@ -159,8 +161,7 @@ export default function Home() {
                   transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   className="text-[34px] xs:text-[42px] sm:text-[54px] xl:text-[72px] font-black tracking-[-0.03em] leading-[1.03]"
                 >
-                  <span className="text-white block">Smarter B2B</span>
-                  <span className="text-white block">Sourcing,</span>
+                  <span className="text-white block">{t.hero.headline1}</span>
                   <span className="block relative mt-1">
                     <span style={{
                       background: "linear-gradient(95deg, #60a5fa 0%, #818cf8 35%, #a78bfa 65%, #c084fc 100%)",
@@ -168,7 +169,7 @@ export default function Home() {
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
                     }}>
-                      Built for India.
+                      {t.hero.headline2}
                     </span>
                   </span>
                 </motion.h1>
@@ -179,8 +180,7 @@ export default function Home() {
                 transition={{ duration: 0.7, delay: 0.35 }}
                 className="text-base lg:text-[17px] text-white/45 mb-10 max-w-[460px] leading-[1.75]"
               >
-                Connect directly with verified manufacturers, distributors, and bulk suppliers across all 28 states.
-                Escrow payments, competitive pricing, real-time logistics — all in one platform.
+                {t.hero.subtext}
               </motion.p>
 
               {/* CTA buttons */}
@@ -195,7 +195,7 @@ export default function Home() {
                     boxShadow: "0 8px 32px rgba(37,99,235,0.35), 0 0 0 1px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)"
                   }}>
                   <Link href="/register?role=customer">
-                    Start Buying Free <ArrowRight className="ml-2 w-5 h-5" />
+                    {t.hero.buyBtn} <ArrowRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
                 <Button size="lg" asChild
@@ -207,7 +207,7 @@ export default function Home() {
                     boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)"
                   }}>
                   <Link href="/register?role=vendor">
-                    Sell on Vendorkart <ArrowUpRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    {t.hero.sellBtn} <ArrowUpRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   </Link>
                 </Button>
               </motion.div>

@@ -48,6 +48,7 @@ import Terms from "@/pages/public/Terms";
 import Privacy from "@/pages/public/Privacy";
 import NotFound from "@/pages/not-found";
 import ChatBot from "@/components/ChatBot";
+import { LanguageProvider } from "@/lib/language-context";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -115,15 +116,17 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-          <ChatBot />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+            <ChatBot />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </LanguageProvider>
   );
 }
 

@@ -7,7 +7,7 @@ import {
   ShoppingBag, Search, Menu, X, Heart, LogOut, LayoutDashboard,
   ChevronDown, Cpu, Shirt, Home as HomeIcon, Factory, Grid3X3,
   ArrowRight, SlidersHorizontal, Tag, Package, Zap, TrendingUp,
-  ArrowUpRight, Command, Store,
+  ArrowUpRight, Command, Store, Globe,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useListProducts } from "@workspace/api-client-react";
+import { useLanguage, LANGUAGE_OPTIONS } from "@/lib/language-context";
 
 /* ─────────────────────────────────────────────────────────
    DATA
@@ -315,6 +316,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { language, setLanguage, t } = useLanguage();
   const socialLinks = useSocialLinks();
 
   // ⌘K / Ctrl+K shortcut
@@ -369,7 +371,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <nav className="hidden lg:flex items-center gap-0.5 text-sm font-medium text-muted-foreground flex-1 justify-center">
 
               {/* 1. Home */}
-              <Link href="/" className={nl("/")}>Home</Link>
+              <Link href="/" className={nl("/")}>{t.nav.home}</Link>
 
               {/* 2. Categories dropdown */}
               <div
@@ -378,7 +380,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 onMouseLeave={() => setIsCategoryOpen(false)}
               >
                 <button className="flex items-center gap-1 px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap">
-                  Categories
+                  {t.nav.categories}
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCategoryOpen ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence>
@@ -412,14 +414,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* 3. All Vendors */}
-              <Link href="/vendors" className={nl("/vendors")}>All Vendors</Link>
+              <Link href="/vendors" className={nl("/vendors")}>{t.nav.allVendors}</Link>
 
               {/* 4. Product Listing */}
-              <Link href="/products" className={nl("/products")}>Product Listing</Link>
+              <Link href="/products" className={nl("/products")}>{t.nav.productListing}</Link>
 
               {/* 5. Product Details */}
               <Link href="/products" className="px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap">
-                Product Details
+                {t.nav.productDetails}
               </Link>
 
               {/* 6. Search + Filters — PREMIUM PILL */}
@@ -429,7 +431,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               >
                 <Search className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                 <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors whitespace-nowrap">
-                  Search + Filters
+                  {t.nav.searchFilters}
                 </span>
                 <kbd className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-background/80 border border-border text-[10px] text-muted-foreground font-mono ml-1 group-hover:border-primary/30 transition-colors">
                   <Command className="w-2.5 h-2.5" />K
@@ -437,17 +439,46 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </button>
 
               {/* 7. Pricing */}
-              <Link href="/pricing" className={nl("/pricing")}>Pricing</Link>
+              <Link href="/pricing" className={nl("/pricing")}>{t.nav.pricing}</Link>
 
               {/* 8. About Us */}
-              <Link href="/about" className={nl("/about")}>About Us</Link>
+              <Link href="/about" className={nl("/about")}>{t.nav.aboutUs}</Link>
 
               {/* 9. Contact Us */}
-              <Link href="/contact" className={nl("/contact")}>Contact Us</Link>
+              <Link href="/contact" className={nl("/contact")}>{t.nav.contactUs}</Link>
             </nav>
 
             {/* Desktop Auth */}
             <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
+              {/* Language Picker */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1.5 px-2.5 text-muted-foreground hover:text-foreground font-medium">
+                    <Globe className="w-4 h-4" />
+                    <span className="text-sm">{LANGUAGE_OPTIONS.find(l => l.code === language)?.flag}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground font-normal pb-1">Select Language</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {LANGUAGE_OPTIONS.map((opt) => (
+                    <DropdownMenuItem
+                      key={opt.code}
+                      onClick={() => setLanguage(opt.code)}
+                      className={`cursor-pointer gap-2 ${language === opt.code ? "bg-primary/10 text-primary font-medium" : ""}`}
+                    >
+                      <span className="text-base">{opt.flag}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm">{opt.label}</span>
+                        <span className="text-xs text-muted-foreground">{opt.nativeLabel}</span>
+                      </div>
+                      {language === opt.code && <span className="ml-auto text-primary text-xs">✓</span>}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               {isAuthenticated ? (
                 <div className="flex items-center gap-2">
                   {user?.role === "customer" && (
@@ -481,18 +512,18 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setLocation(getDashboardLink())} className="cursor-pointer">
-                        <LayoutDashboard className="mr-2 h-4 w-4" /><span>Dashboard</span>
+                        <LayoutDashboard className="mr-2 h-4 w-4" /><span>{t.nav.dashboard}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
-                        <LogOut className="mr-2 h-4 w-4" /><span>Log out</span>
+                        <LogOut className="mr-2 h-4 w-4" /><span>{t.nav.logout}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" className="font-semibold" onClick={() => setLocation("/login")}>Log in</Button>
-                  <Button size="sm" className="rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-primary/35 transition-all" onClick={() => setLocation("/register")}>Sign up</Button>
+                  <Button variant="ghost" size="sm" className="font-semibold" onClick={() => setLocation("/login")}>{t.nav.login}</Button>
+                  <Button size="sm" className="rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-primary/35 transition-all" onClick={() => setLocation("/register")}>{t.nav.signUp}</Button>
                 </div>
               )}
             </div>
@@ -532,11 +563,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             className="lg:hidden fixed inset-x-0 top-[88px] bg-background border-b border-border shadow-2xl z-40 overflow-y-auto max-h-[85vh]"
           >
             <div className="p-4 space-y-1">
-              <Link href="/" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>Home</Link>
+              <Link href="/" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>{t.nav.home}</Link>
 
               {/* Categories */}
               <button onClick={() => setIsMobileCategoryOpen(!isMobileCategoryOpen)} className="flex items-center justify-between w-full p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors">
-                Categories
+                {t.nav.categories}
                 <ChevronDown className={`w-4 h-4 transition-transform ${isMobileCategoryOpen ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -552,9 +583,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 )}
               </AnimatePresence>
 
-              <Link href="/vendors" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/vendors" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>All Vendors</Link>
-              <Link href="/products" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/products" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>Product Listing</Link>
-              <Link href="/products" className="flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors" onClick={closeAll}>Product Details</Link>
+              <Link href="/vendors" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/vendors" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>{t.nav.allVendors}</Link>
+              <Link href="/products" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/products" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>{t.nav.productListing}</Link>
+              <Link href="/products" className="flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors" onClick={closeAll}>{t.nav.productDetails}</Link>
 
               {/* Search + Filters premium pill in mobile menu */}
               <button
@@ -562,29 +593,51 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 className="flex items-center gap-3 w-full p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors text-left"
               >
                 <Search className="w-5 h-5 text-primary" />
-                <span>Search + Filters</span>
+                <span>{t.nav.searchFilters}</span>
                 <kbd className="ml-auto text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 font-mono">⌘K</kbd>
               </button>
 
-              <Link href="/about" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/about" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>About Us</Link>
-              <Link href="/contact" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/contact" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>Contact Us</Link>
+              <Link href="/about" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/about" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>{t.nav.aboutUs}</Link>
+              <Link href="/contact" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/contact" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>{t.nav.contactUs}</Link>
 
-              <div className="h-px bg-border w-full !my-4" />
+              {/* Language picker in mobile menu */}
+              <div className="h-px bg-border w-full !my-2" />
+              <div className="px-1 pb-1">
+                <p className="text-xs text-muted-foreground px-2 pb-2 pt-1 font-medium uppercase tracking-wider">Language</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {LANGUAGE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.code}
+                      onClick={() => setLanguage(opt.code)}
+                      className={`flex flex-col items-center gap-1 p-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                        language === opt.code
+                          ? "bg-primary/10 border-primary/40 text-primary"
+                          : "border-border/60 hover:bg-secondary/60 text-muted-foreground"
+                      }`}
+                    >
+                      <span className="text-xl">{opt.flag}</span>
+                      <span className="text-xs">{opt.nativeLabel}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-border w-full !my-2" />
 
               {isAuthenticated ? (
                 <div className="space-y-2">
                   <div className="p-3 text-sm text-muted-foreground">Signed in as <span className="font-semibold text-foreground">{user?.name}</span></div>
                   <Button variant="outline" className="w-full justify-start rounded-xl h-11" onClick={() => { setLocation(getDashboardLink()); closeAll(); }}>
-                    <LayoutDashboard className="mr-2 h-5 w-5" /> Dashboard
+                    <LayoutDashboard className="mr-2 h-5 w-5" /> {t.nav.dashboard}
                   </Button>
                   <Button variant="destructive" className="w-full justify-start rounded-xl h-11" onClick={() => { handleLogout(); closeAll(); }}>
-                    <LogOut className="mr-2 h-5 w-5" /> Log out
+                    <LogOut className="mr-2 h-5 w-5" /> {t.nav.logout}
                   </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="rounded-xl h-11" onClick={() => { setLocation("/login"); closeAll(); }}>Log in</Button>
-                  <Button className="rounded-xl h-11" onClick={() => { setLocation("/register"); closeAll(); }}>Sign up</Button>
+                  <Button variant="outline" className="rounded-xl h-11" onClick={() => { setLocation("/login"); closeAll(); }}>{t.nav.login}</Button>
+                  <Button className="rounded-xl h-11" onClick={() => { setLocation("/register"); closeAll(); }}>{t.nav.signUp}</Button>
                 </div>
               )}
             </div>
