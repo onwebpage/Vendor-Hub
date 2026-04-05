@@ -13,6 +13,9 @@ export const usersTable = pgTable("users", {
   phone: text("phone"),
   avatar: text("avatar"),
   isActive: boolean("is_active").notNull().default(true),
+  twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
+  twoFactorCode: text("two_factor_code"),
+  twoFactorExpiry: timestamp("two_factor_expiry"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

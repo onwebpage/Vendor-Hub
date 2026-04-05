@@ -5,8 +5,14 @@ import { eq } from "drizzle-orm";
 import { hashPassword, generateToken, authenticate } from "../lib/auth.js";
 import { uniqueSlug } from "../lib/slugify.js";
 import { logEmail } from "../lib/email-log.js";
+import { sendEmail } from "../lib/email.js";
+import crypto from "crypto";
 
 const router = Router();
+
+function generateOtp(): string {
+  return String(Math.floor(100000 + crypto.randomInt(900000)));
+}
 
 router.post("/register", async (req, res) => {
   try {
@@ -37,7 +43,7 @@ router.post("/register", async (req, res) => {
     }
 
     const token = generateToken(user.id, user.role);
-    const { password: _, ...userOut } = user;
+    const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
 
     if (role === "vendor") {
       logEmail({
@@ -78,12 +84,119 @@ router.post("/login", async (req, res) => {
     if (!user.isActive) {
       return res.status(403).json({ message: "Account is deactivated" });
     }
+
+    if (user.twoFactorEnabled) {
+      const otp = generateOtp();
+      const expiry = new Date(Date.now() + 10 * 60 * 1000);
+      await db.update(usersTable)
+        .set({ twoFactorCode: otp, twoFactorExpiry: expiry })
+        .where(eq(usersTable.id, user.id));
+
+      const emailSent = await sendEmail({
+        to: user.email,
+        subject: "Your Vendorkart login verification code",
+        text: `Your one-time verification code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
+      });
+
+      if (!emailSent) {
+        req.log.info({ otp, userId: user.id }, "2FA OTP generated (SMTP not configured, code logged)");
+        logEmail({
+          recipient: user.email,
+          recipientType: user.role === "vendor" ? "vendor" : "customer",
+          subject: "Your Vendorkart login verification code",
+          body: `Your one-time verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
+          type: "two_factor_otp",
+          relatedId: user.id,
+        });
+      }
+
+      const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
+      return res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email" });
+    }
+
     const token = generateToken(user.id, user.role);
-    const { password: _, ...userOut } = user;
+    const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
     return res.json({ user: userOut, token, message: "Login successful" });
   } catch (err) {
     req.log.error({ err }, "Login error");
     return res.status(500).json({ message: "Login failed" });
+  }
+});
+
+router.post("/verify-2fa", async (req, res) => {
+  try {
+    const { pendingToken, code } = req.body;
+    if (!pendingToken || !code) {
+      return res.status(400).json({ message: "Pending token and code are required" });
+    }
+
+    let pendingUserId: number;
+    try {
+      const payload = JSON.parse(Buffer.from(pendingToken, "base64").toString("utf8"));
+      pendingUserId = payload.pendingUserId;
+      if (!pendingUserId) throw new Error("Invalid token");
+    } catch {
+      return res.status(400).json({ message: "Invalid pending token" });
+    }
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, pendingUserId)).limit(1);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.twoFactorCode || !user.twoFactorExpiry) {
+      return res.status(400).json({ message: "No verification code pending. Please log in again." });
+    }
+    if (new Date() > user.twoFactorExpiry) {
+      return res.status(400).json({ message: "Verification code has expired. Please log in again." });
+    }
+    if (user.twoFactorCode !== code.trim()) {
+      return res.status(401).json({ message: "Invalid verification code." });
+    }
+
+    await db.update(usersTable)
+      .set({ twoFactorCode: null, twoFactorExpiry: null })
+      .where(eq(usersTable.id, user.id));
+
+    const token = generateToken(user.id, user.role);
+    const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
+    return res.json({ user: userOut, token, message: "Login successful" });
+  } catch (err) {
+    req.log.error({ err }, "Verify 2FA error");
+    return res.status(500).json({ message: "Verification failed" });
+  }
+});
+
+router.post("/2fa/enable", authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    await db.update(usersTable)
+      .set({ twoFactorEnabled: true, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
+    return res.json({ message: "Two-factor authentication enabled" });
+  } catch (err) {
+    req.log.error({ err }, "Enable 2FA error");
+    return res.status(500).json({ message: "Failed to enable two-factor authentication" });
+  }
+});
+
+router.post("/2fa/disable", authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).userId;
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ message: "Password required to disable 2FA" });
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.password !== hashPassword(password)) {
+      return res.status(401).json({ message: "Incorrect password" });
+    }
+
+    await db.update(usersTable)
+      .set({ twoFactorEnabled: false, twoFactorCode: null, twoFactorExpiry: null, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
+    return res.json({ message: "Two-factor authentication disabled" });
+  } catch (err) {
+    req.log.error({ err }, "Disable 2FA error");
+    return res.status(500).json({ message: "Failed to disable two-factor authentication" });
   }
 });
 
@@ -96,7 +209,7 @@ router.get("/me", authenticate, async (req, res) => {
     const userId = (req as any).userId;
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) return res.status(404).json({ message: "User not found" });
-    const { password: _, ...userOut } = user;
+    const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
     return res.json(userOut);
   } catch (err) {
     req.log.error({ err }, "Get me error");
@@ -113,7 +226,7 @@ router.put("/me", authenticate, async (req, res) => {
       .where(eq(usersTable.id, userId))
       .returning();
     if (!user) return res.status(404).json({ message: "User not found" });
-    const { password: _, ...userOut } = user;
+    const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
     return res.json(userOut);
   } catch (err) {
     req.log.error({ err }, "Update me error");

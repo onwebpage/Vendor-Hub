@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ShoppingBag, ArrowRight, Loader2, Store, User } from "lucide-react";
+import { ShoppingBag, ArrowRight, Loader2, Store, User, ShieldCheck, MailCheck } from "lucide-react";
 import { useLogin } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +31,13 @@ export default function Login() {
   const { toast } = useToast();
   const login = useAuthStore(s => s.login);
   const [role, setRole] = useState<'customer' | 'vendor'>('customer');
-  
+
+  const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
+  const [pendingToken, setPendingToken] = useState<string>("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const { mutateAsync: loginMutation, isPending } = useLogin();
 
   const form = useForm<LoginFormValues>({
@@ -41,33 +47,98 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // In a real app, role might be inferred from backend, or passed to limit access.
       const response = await loginMutation({ data });
-      
-      // If user tries to login to wrong portal, we can block or just login and redirect
+
+      if ((response as any).requires2FA) {
+        setPendingToken((response as any).pendingToken);
+        setStep('otp');
+        toast({ title: "Check your email", description: "A 6-digit verification code has been sent to your email." });
+        return;
+      }
+
       if (response.user.role !== role && response.user.role !== 'admin') {
-         toast({ title: "Note", description: `Logged in as ${response.user.role}.` });
+        toast({ title: "Note", description: `Logged in as ${response.user.role}.` });
       }
 
       login(response.user, response.token);
       toast({ title: "Welcome back!", description: "Successfully logged in." });
-      
+
       if (response.user.role === 'admin') setLocation('/admin');
       else if (response.user.role === 'vendor') setLocation('/vendor-dashboard');
       else setLocation('/customer-dashboard');
-      
+
     } catch (error: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Login failed", 
-        description: error.message || "Please check your credentials and try again." 
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again.",
       });
     }
   };
 
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const updated = [...otp];
+    updated[index] = value.slice(-1);
+    setOtp(updated);
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      setOtp(pasted.split(""));
+      otpRefs.current[5]?.focus();
+    }
+    e.preventDefault();
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otp.join("");
+    if (code.length !== 6) {
+      toast({ variant: "destructive", title: "Enter the full 6-digit code" });
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendingToken, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Verification failed");
+
+      login(data.user, data.token);
+      toast({ title: "Welcome back!", description: "Successfully logged in." });
+
+      if (data.user.role === 'admin') setLocation('/admin');
+      else if (data.user.role === 'vendor') setLocation('/vendor-dashboard');
+      else setLocation('/customer-dashboard');
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Verification failed", description: error.message });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setStep('credentials');
+    setOtp(["", "", "", "", "", ""]);
+    setPendingToken("");
+    toast({ description: "Please log in again to resend the code." });
+  };
+
   return (
     <div className="min-h-screen flex">
-      {/* Left Form Side */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:flex-none lg:w-[600px] xl:w-[700px] bg-background">
         <div className="mx-auto w-full max-w-sm lg:w-[450px]">
           <Link href="/" className="flex items-center gap-2 mb-12">
@@ -79,80 +150,137 @@ export default function Login() {
             </span>
           </Link>
 
-          <div>
-            <h2 className="text-3xl font-display font-bold tracking-tight text-foreground">Sign in to your account</h2>
-            <p className="mt-2 text-muted-foreground">Welcome back! Please enter your details.</p>
-          </div>
+          {step === 'credentials' ? (
+            <>
+              <div>
+                <h2 className="text-3xl font-display font-bold tracking-tight text-foreground">Sign in to your account</h2>
+                <p className="mt-2 text-muted-foreground">Welcome back! Please enter your details.</p>
+              </div>
 
-          <div className="mt-8">
-            <Tabs value={role} onValueChange={(v) => setRole(v as 'customer' | 'vendor')} className="mb-8">
-              <TabsList className="grid w-full grid-cols-2 h-14 p-1 rounded-xl bg-secondary/50">
-                <TabsTrigger value="customer" className="rounded-lg text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <User className="w-4 h-4 mr-2" /> Buyer
-                </TabsTrigger>
-                <TabsTrigger value="vendor" className="rounded-lg text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  <Store className="w-4 h-4 mr-2" /> Supplier
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+              <div className="mt-8">
+                <Tabs value={role} onValueChange={(v) => setRole(v as 'customer' | 'vendor')} className="mb-8">
+                  <TabsList className="grid w-full grid-cols-2 h-14 p-1 rounded-xl bg-secondary/50">
+                    <TabsTrigger value="customer" className="rounded-lg text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <User className="w-4 h-4 mr-2" /> Buyer
+                    </TabsTrigger>
+                    <TabsTrigger value="vendor" className="rounded-lg text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                      <Store className="w-4 h-4 mr-2" /> Supplier
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Email address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="name@company.com" className="h-12 rounded-xl" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Email address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="name@company.com" className="h-12 rounded-xl" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center justify-between">
-                        <FormLabel className="text-foreground">Password</FormLabel>
-                        <a href="#" className="text-sm font-semibold text-primary hover:underline">
-                          Forgot password?
-                        </a>
-                      </div>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" className="h-12 rounded-xl" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="text-foreground">Password</FormLabel>
+                            <a href="#" className="text-sm font-semibold text-primary hover:underline">
+                              Forgot password?
+                            </a>
+                          </div>
+                          <FormControl>
+                            <Input type="password" placeholder="••••••••" className="h-12 rounded-xl" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <Button 
-                  type="submit" 
-                  className="w-full h-14 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40" 
-                  disabled={isPending}
+                    <Button
+                      type="submit"
+                      className="w-full h-14 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40"
+                      disabled={isPending}
+                    >
+                      {isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                      Sign In
+                    </Button>
+                  </form>
+                </Form>
+
+                <div className="mt-8 text-center text-sm text-muted-foreground">
+                  Don't have an account?{' '}
+                  <Link href={`/register?role=${role}`} className="font-semibold text-primary hover:underline">
+                    Create an account
+                  </Link>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col items-center text-center mb-8">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <MailCheck className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-3xl font-display font-bold tracking-tight text-foreground">Check your email</h2>
+                <p className="mt-2 text-muted-foreground max-w-xs">
+                  We sent a 6-digit verification code to <span className="font-semibold text-foreground">{form.getValues("email")}</span>. Enter it below to continue.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-3">Verification code</p>
+                  <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                    {otp.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={el => { otpRefs.current[i] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={e => handleOtpChange(i, e.target.value)}
+                        onKeyDown={e => handleOtpKeyDown(i, e)}
+                        className="w-12 h-14 text-center text-xl font-bold border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-3">Code expires in 10 minutes</p>
+                </div>
+
+                <Button
+                  onClick={handleVerifyOtp}
+                  disabled={otpLoading || otp.join("").length !== 6}
+                  className="w-full h-14 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40"
                 >
-                  {isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                  Sign In
+                  {otpLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
+                  Verify &amp; Sign In
                 </Button>
-              </form>
-            </Form>
 
-            <div className="mt-8 text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href={`/register?role=${role}`} className="font-semibold text-primary hover:underline">
-                Create an account
-              </Link>
-            </div>
-          </div>
+                <div className="text-center text-sm text-muted-foreground">
+                  Didn't receive the code?{' '}
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    Go back and try again
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Right Image Side */}
       <div className="hidden lg:block relative w-0 flex-1 bg-foreground">
         <img
           className="absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-overlay"

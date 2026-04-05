@@ -4,14 +4,17 @@ import { useGetVendorProfile, useUpdateVendorProfile } from "@workspace/api-clie
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Store, Loader2, Save, AlertCircle, MapPin, Phone, Wallet, Lock, Link2, Copy, ExternalLink, Upload, QrCode } from "lucide-react";
+import { Store, Loader2, Save, AlertCircle, MapPin, Phone, Wallet, Lock, Link2, Copy, ExternalLink, Upload, QrCode, ShieldCheck, ShieldOff, X, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { useAuthStore } from "@/lib/auth-store";
+import { useGetMe } from "@workspace/api-client-react";
 
 const settingsSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -45,9 +48,134 @@ function Section({ icon: Icon, title, children }: { icon: React.ElementType; tit
   );
 }
 
+function TwoFactorSection({ twoFactorEnabled, onToggled }: { twoFactorEnabled: boolean; onToggled: () => void }) {
+  const { toast } = useToast();
+  const [loading, setLoading] = React.useState(false);
+  const [showDisableModal, setShowDisableModal] = React.useState(false);
+  const [disablePassword, setDisablePassword] = React.useState("");
+  const [showPass, setShowPass] = React.useState(false);
+
+  const handleEnable = async () => {
+    setLoading(true);
+    try {
+      const token = useAuthStore.getState().token;
+      const res = await fetch("/api/auth/2fa/enable", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast({ title: "Two-factor authentication enabled", description: "You'll be asked for a code on each login." });
+      onToggled();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: err.message || "Failed to enable 2FA" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisable = async () => {
+    if (!disablePassword) {
+      toast({ variant: "destructive", title: "Enter your password to confirm" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = useAuthStore.getState().token;
+      const res = await fetch("/api/auth/2fa/disable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ password: disablePassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast({ title: "Two-factor authentication disabled" });
+      setShowDisableModal(false);
+      setDisablePassword("");
+      onToggled();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: err.message || "Failed to disable 2FA" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/20">
+        <div className="flex items-start gap-3">
+          <div className={`mt-0.5 p-1.5 rounded-lg ${twoFactorEnabled ? "bg-green-500/10" : "bg-muted"}`}>
+            {twoFactorEnabled ? <ShieldCheck className="w-4 h-4 text-green-600" /> : <ShieldOff className="w-4 h-4 text-muted-foreground" />}
+          </div>
+          <div>
+            <p className="font-semibold text-sm">Two-Factor Authentication</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {twoFactorEnabled ? "Enabled — a code is sent to your email on each login." : "Add an extra layer of security to your account."}
+            </p>
+          </div>
+        </div>
+        {twoFactorEnabled ? (
+          <Button type="button" variant="outline" size="sm" className="rounded-xl text-xs h-9 gap-2 border-red-200 text-red-600 hover:bg-red-50" onClick={() => setShowDisableModal(true)} disabled={loading}>
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldOff className="w-3.5 h-3.5" />}
+            Disable
+          </Button>
+        ) : (
+          <Button type="button" size="sm" className="rounded-xl text-xs h-9 gap-2" onClick={handleEnable} disabled={loading}>
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+            Enable
+          </Button>
+        )}
+      </div>
+
+      {showDisableModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDisableModal(false)} />
+          <div className="relative bg-card rounded-3xl border border-border shadow-2xl w-full max-w-md p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold">Disable 2FA</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">Confirm with your password</p>
+              </div>
+              <button onClick={() => setShowDisableModal(false)} className="p-2 rounded-xl hover:bg-muted transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type={showPass ? "text" : "password"}
+                    value={disablePassword}
+                    onChange={e => setDisablePassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-12 rounded-xl pl-10 pr-10"
+                  />
+                  <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="outline" className="flex-1 rounded-xl h-11" onClick={() => setShowDisableModal(false)}>Cancel</Button>
+                <Button type="button" onClick={handleDisable} disabled={loading} className="flex-1 rounded-xl h-11 gap-2 bg-red-600 hover:bg-red-700 text-white">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldOff className="w-4 h-4" />}
+                  Disable 2FA
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function StoreSettings() {
   const { toast } = useToast();
   const { data: profile, isLoading, isError } = useGetVendorProfile();
+  const { data: me, refetch: refetchMe } = useGetMe();
   const { mutateAsync: updateProfile, isPending } = useUpdateVendorProfile();
   const [saved, setSaved] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
@@ -398,6 +526,13 @@ export default function StoreSettings() {
                 </FormItem>
               )} />
             </div>
+          </Section>
+
+          <Section icon={ShieldCheck} title="Account Security">
+            <TwoFactorSection
+              twoFactorEnabled={!!(me as any)?.twoFactorEnabled}
+              onToggled={() => refetchMe()}
+            />
           </Section>
 
           <div className="flex justify-end">
