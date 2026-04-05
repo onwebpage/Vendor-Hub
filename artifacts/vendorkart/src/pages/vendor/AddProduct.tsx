@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock, AlertCircle, Images, Upload } from "lucide-react";
+import { Loader2, Plus, Trash2, ImagePlus, Lock, Clock, AlertCircle, Images, Upload, RotateCcw, Crown } from "lucide-react";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
 } from "@/components/ui/form";
@@ -66,7 +66,26 @@ export default function AddProduct() {
 
   const maxProducts: number = (currentSub as any)?.plan?.maxProducts ?? 50;
   const maxImages: number = (currentSub as any)?.plan?.maxImages ?? 5;
+  const can360View: boolean = (currentSub as any)?.plan?.can360View ?? false;
   const isAtLimit = maxProducts !== -1 && productCount !== null && productCount >= maxProducts;
+
+  const [images360, setImages360] = React.useState<[string, string]>(["", ""]);
+  const image360FileRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+
+  const handle360FileUpload = (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImages360(prev => {
+        const next: [string, string] = [...prev] as [string, string];
+        next[index] = reader.result as string;
+        return next;
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -103,9 +122,11 @@ export default function AddProduct() {
   const onSubmit = async (data: ProductFormValues) => {
     try {
       const images = (data.imageUrls || []).map(i => i.url).filter(u => u && u.trim().length > 0);
+      const validImages360 = images360.filter(u => u && u.trim().length > 0);
       const apiData = {
         ...data,
         images,
+        images360: can360View && validImages360.length === 2 ? validImages360 : [],
         bulkPricing: data.bulkPricing?.filter(b => b.minQty > 0 && b.price > 0)
       };
       
@@ -381,6 +402,74 @@ export default function AddProduct() {
                 )}
               </div>
             </div>
+
+            {/* 360° View Images — Premium only */}
+            {can360View ? (
+              <div className="bg-card p-5 sm:p-6 md:p-8 rounded-3xl border border-primary/30 shadow-sm space-y-5 ring-1 ring-primary/10">
+                <div className="flex items-center gap-3 border-b border-border/50 pb-3 md:pb-4">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <RotateCcw className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-bold leading-none">360° Product View</h2>
+                    <p className="text-xs text-muted-foreground mt-1">Add exactly 2 images (front &amp; back/side) to enable the interactive 360° viewer on your product page.</p>
+                  </div>
+                  <Badge className="ml-auto bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">Premium</Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {([0, 1] as const).map((i) => (
+                    <div key={i} className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">{i === 0 ? "Front View" : "Back / Side View"}</label>
+                      <div className="relative aspect-square rounded-2xl border-2 border-dashed border-border bg-muted/40 overflow-hidden flex items-center justify-center group cursor-pointer"
+                        onClick={() => image360FileRefs.current[i]?.click()}>
+                        {images360[i] ? (
+                          <img src={images360[i]} alt={`360 view ${i + 1}`} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
+                            <RotateCcw className="w-8 h-8" />
+                            <span className="text-xs font-medium">Click to upload</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Or paste image URL…"
+                          className="h-9 rounded-xl text-sm flex-1"
+                          value={images360[i]}
+                          onChange={e => setImages360(prev => { const n: [string, string] = [...prev] as [string, string]; n[i] = e.target.value; return n; })}
+                        />
+                        <Button type="button" variant="outline" size="icon" className="h-9 w-9 rounded-xl shrink-0"
+                          onClick={() => image360FileRefs.current[i]?.click()}>
+                          <Upload className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden"
+                        ref={el => { image360FileRefs.current[i] = el; }}
+                        onChange={handle360FileUpload(i)} />
+                    </div>
+                  ))}
+                </div>
+                {images360[0] && images360[1] && (
+                  <p className="text-xs text-emerald-600 flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Both images added — 360° viewer will be enabled on your product page.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="bg-card p-5 sm:p-6 rounded-3xl border border-border/50 flex items-center gap-4 opacity-70">
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <Crown className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">360° Product View — Premium Feature</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Upgrade your subscription to unlock interactive 360° product views for your customers.</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" className="ml-auto rounded-xl shrink-0" onClick={() => setLocation("/vendor-dashboard/subscription")}>
+                  Upgrade
+                </Button>
+              </div>
+            )}
 
             {/* Description */}
             <div className="bg-card p-5 sm:p-6 md:p-8 rounded-3xl border border-border shadow-sm space-y-5">

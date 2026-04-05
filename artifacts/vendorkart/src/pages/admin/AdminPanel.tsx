@@ -1783,7 +1783,7 @@ function CouponsPanel() {
 }
 
 // ─── SUBSCRIPTION PLANS ────────────────────────────────────────────────────────
-const BLANK_PLAN = { name: "", price: 0, billingCycle: "monthly", maxProducts: -1, maxCategories: -1, canUploadBanner: false, isFeatured: false, isActive: true, featuresRaw: "" };
+const BLANK_PLAN = { name: "", price: 0, billingCycle: "monthly", maxProducts: -1, maxCategories: -1, canUploadBanner: false, isFeatured: false, can360View: false, isActive: true, featuresRaw: "" };
 
 const formatBillingCycle = (cycle: string) => {
   const map: Record<string, string> = {
@@ -1892,7 +1892,7 @@ function SubscriptionPlansPanel() {
         </div>
       </div>
       <div className="flex gap-5 flex-wrap">
-        {[["canUploadBanner", "Banner Upload"], ["isFeatured", "Featured Listing"], ["isActive", "Active"]].map(([k, l]) => (
+        {[["canUploadBanner", "Banner Upload"], ["isFeatured", "Featured Listing"], ["can360View", "360° View"], ["isActive", "Active"]].map(([k, l]) => (
           <label key={k} className="flex items-center gap-2 text-white/60 text-sm cursor-pointer">
             <input type="checkbox" checked={!!vals[k]} onChange={e => set(k, e.target.checked)} className="w-4 h-4" />
             {l}
@@ -1941,6 +1941,7 @@ function SubscriptionPlansPanel() {
                 <p>Max Categories: <span className="text-white font-semibold">{plan.maxCategories === -1 ? "All" : plan.maxCategories}</span></p>
                 <p>Banner Upload: <span className={`font-semibold ${plan.canUploadBanner ? "text-emerald-400" : "text-red-400"}`}>{plan.canUploadBanner ? "Yes" : "No"}</span></p>
                 <p>Featured Listing: <span className={`font-semibold ${plan.isFeatured ? "text-emerald-400" : "text-red-400"}`}>{plan.isFeatured ? "Yes" : "No"}</span></p>
+                <p>360° View: <span className={`font-semibold ${plan.can360View ? "text-emerald-400" : "text-red-400"}`}>{plan.can360View ? "Yes" : "No"}</span></p>
                 {plan.features?.length > 0 && (
                   <p>Features: <span className="text-white/60">{plan.features.length} bullet{plan.features.length !== 1 ? "s" : ""}</span></p>
                 )}

@@ -1,13 +1,82 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useRoute } from "wouter";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { useGetProduct, useAddToCart, useGetWishlist, useAddToWishlist, useRemoveFromWishlist } from "@workspace/api-client-react";
-import { Store, Star, ShieldCheck, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, Heart } from "lucide-react";
+import { Store, Star, ShieldCheck, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, Heart, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/auth-store";
+
+function View360({ images }: { images: [string, string] }) {
+  const [idx, setIdx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [showHint, setShowHint] = useState(true);
+  const startX = useRef<number | null>(null);
+  const accumulated = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const THRESHOLD = 60;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!dragging) setIdx(i => (i + 1) % 2);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [dragging]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowHint(false), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const onMove = useCallback((clientX: number) => {
+    if (startX.current === null) return;
+    accumulated.current += clientX - startX.current;
+    startX.current = clientX;
+    if (Math.abs(accumulated.current) >= THRESHOLD) {
+      setIdx(i => (i + 1) % 2);
+      accumulated.current = 0;
+      setShowHint(false);
+    }
+  }, []);
+
+  const onStart = (clientX: number) => { setDragging(true); startX.current = clientX; accumulated.current = 0; };
+  const onEnd = () => { setDragging(false); startX.current = null; accumulated.current = 0; };
+
+  return (
+    <div ref={containerRef} className="relative aspect-square bg-white rounded-3xl border border-border shadow-sm overflow-hidden flex items-center justify-center p-4 select-none cursor-grab active:cursor-grabbing"
+      onMouseDown={e => onStart(e.clientX)}
+      onMouseMove={e => dragging && onMove(e.clientX)}
+      onMouseUp={onEnd} onMouseLeave={onEnd}
+      onTouchStart={e => onStart(e.touches[0].clientX)}
+      onTouchMove={e => onMove(e.touches[0].clientX)}
+      onTouchEnd={onEnd}>
+      <img
+        src={images[idx]}
+        alt={`360 view ${idx + 1}`}
+        className="max-w-full max-h-full object-contain transition-opacity duration-200 pointer-events-none"
+        draggable={false}
+      />
+      <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 text-white text-xs font-bold px-2.5 py-1.5 rounded-full backdrop-blur-sm">
+        <RotateCcw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "3s" }} />
+        360°
+      </div>
+      {showHint && (
+        <div className="absolute bottom-4 inset-x-0 flex justify-center">
+          <div className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+            ← Drag to rotate →
+          </div>
+        </div>
+      )}
+      <div className="absolute bottom-3 right-3 flex gap-1">
+        {[0, 1].map(i => (
+          <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? "bg-white" : "bg-white/40"}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function WaIcon() {
   return (
@@ -116,6 +185,8 @@ export default function ProductDetail() {
   };
 
   const images = product.images && product.images.length > 0 ? product.images : ["https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1000"];
+  const images360 = (product as any).images360 as string[] | undefined;
+  const has360View = Array.isArray(images360) && images360.length >= 2 && images360[0] && images360[1];
   const vendorPhone = (vendor as any)?.phone;
   const vendorWaHref = vendorPhone ? `https://wa.me/${vendorPhone.replace(/[^0-9]/g, "")}?text=Hi%2C%20I%27m%20interested%20in%20your%20product%3A%20${encodeURIComponent(product.name)}` : null;
 
@@ -126,25 +197,40 @@ export default function ProductDetail() {
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
             {/* Left: Images */}
             <div className="w-full lg:w-1/2 space-y-4">
-              <div className="aspect-square bg-white rounded-3xl border border-border shadow-sm overflow-hidden flex items-center justify-center p-4">
-                <img 
-                  src={images[activeImage]} 
-                  alt={product.name} 
-                  className="max-w-full max-h-full object-contain mix-blend-multiply"
-                />
-              </div>
-              {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {images.map((img, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setActiveImage(idx)}
-                      className={`w-20 h-20 rounded-xl border-2 bg-white p-1.5 shrink-0 cursor-pointer transition-all ${activeImage === idx ? "border-primary shadow-md shadow-primary/20" : "border-border hover:border-primary/50"}`}
-                    >
-                      <img src={img} alt="" className="w-full h-full object-contain" />
+              {has360View ? (
+                <>
+                  <View360 images={[images360![0], images360![1]]} />
+                  {images.length > 1 && (
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                      {images.map((img, idx) => (
+                        <div key={idx} onClick={() => setActiveImage(idx)}
+                          className={`w-20 h-20 rounded-xl border-2 bg-white p-1.5 shrink-0 cursor-pointer transition-all ${activeImage === idx ? "border-primary shadow-md shadow-primary/20" : "border-border hover:border-primary/50"}`}>
+                          <img src={img} alt="" className="w-full h-full object-contain" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="aspect-square bg-white rounded-3xl border border-border shadow-sm overflow-hidden flex items-center justify-center p-4">
+                    <img 
+                      src={images[activeImage]} 
+                      alt={product.name} 
+                      className="max-w-full max-h-full object-contain mix-blend-multiply"
+                    />
+                  </div>
+                  {images.length > 1 && (
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                      {images.map((img, idx) => (
+                        <div key={idx} onClick={() => setActiveImage(idx)}
+                          className={`w-20 h-20 rounded-xl border-2 bg-white p-1.5 shrink-0 cursor-pointer transition-all ${activeImage === idx ? "border-primary shadow-md shadow-primary/20" : "border-border hover:border-primary/50"}`}>
+                          <img src={img} alt="" className="w-full h-full object-contain" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

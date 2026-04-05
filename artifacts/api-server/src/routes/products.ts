@@ -83,13 +83,14 @@ router.post("/", authenticate, requireRole("vendor"), async (req, res) => {
       return res.status(403).json({ message: "Your vendor account is pending approval. You can add products once the admin approves your account." });
     }
 
-    const { categoryId, name, description, shortDescription, images, price, comparePrice, moq, unit, stock, sku, bulkPricing } = req.body;
+    const { categoryId, name, description, shortDescription, images, images360, price, comparePrice, moq, unit, stock, sku, bulkPricing } = req.body;
     const slug = uniqueSlug(name);
     const [product] = await db.insert(productsTable).values({
       vendorId: vendor.id,
       categoryId: Number(categoryId),
       name, slug, description, shortDescription,
       images: images || [],
+      images360: images360 || [],
       price: String(price),
       comparePrice: comparePrice ? String(comparePrice) : null,
       moq: moq || 1,
@@ -120,13 +121,14 @@ router.put("/:id", authenticate, requireRole("vendor"), async (req, res) => {
       .where(and(eq(productsTable.id, Number(req.params.id)), eq(productsTable.vendorId, vendor.id)));
     if (!existing) return res.status(404).json({ message: "Product not found" });
 
-    const { categoryId, name, description, shortDescription, images, price, comparePrice, moq, unit, stock, sku, bulkPricing } = req.body;
+    const { categoryId, name, description, shortDescription, images, images360, price, comparePrice, moq, unit, stock, sku, bulkPricing } = req.body;
     const [product] = await db.update(productsTable)
       .set({
         categoryId: categoryId ? Number(categoryId) : existing.categoryId,
         name: name || existing.name,
         description, shortDescription,
         images: images || existing.images,
+        images360: images360 !== undefined ? images360 : existing.images360,
         price: price ? String(price) : existing.price,
         comparePrice: comparePrice ? String(comparePrice) : existing.comparePrice,
         moq: moq || existing.moq,

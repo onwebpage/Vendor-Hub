@@ -15,6 +15,7 @@ export const productsTable = pgTable("products", {
   description: text("description"),
   shortDescription: text("short_description"),
   images: json("images").$type<string[]>().default([]),
+  images360: json("images_360").$type<string[]>().default([]),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   comparePrice: numeric("compare_price", { precision: 10, scale: 2 }),
   moq: integer("moq").notNull().default(1),

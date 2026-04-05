@@ -464,12 +464,13 @@ router.get("/subscription-plans", async (_req, res) => {
 });
 
 router.post("/subscription-plans", async (req, res) => {
-  const { name, price, billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, features } = req.body;
+  const { name, price, billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, can360View, features } = req.body;
   const slug = slugify(name);
   const [plan] = await db.insert(subscriptionPlansTable).values({
     name, slug, price: String(price), billingCycle: billingCycle || "monthly",
     maxProducts: maxProducts ?? -1, maxCategories: maxCategories ?? -1,
     canUploadBanner: canUploadBanner ?? false, isFeatured: isFeatured ?? false,
+    can360View: can360View ?? false,
     features: features || [],
   }).returning();
   return res.status(201).json({ ...plan, price: Number(plan.price) });
@@ -558,10 +559,10 @@ router.delete("/coupons/:id", async (req, res) => {
 
 router.put("/subscription-plans/:id", async (req, res) => {
   try {
-    const { name, price, billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, isActive, features } = req.body;
+    const { name, price, billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, can360View, isActive, features } = req.body;
     const slug = slugify(name);
     const [plan] = await db.update(subscriptionPlansTable)
-      .set({ name, slug, price: String(price), billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, isActive, features })
+      .set({ name, slug, price: String(price), billingCycle, maxProducts, maxCategories, canUploadBanner, isFeatured, can360View: can360View ?? false, isActive, features })
       .where(eq(subscriptionPlansTable.id, Number(req.params.id)))
       .returning();
     logActivity({ action: "subscription_plan_updated", resource: "subscription_plan", details: `Updated plan: ${name}` });

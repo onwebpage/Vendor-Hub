@@ -14,6 +14,7 @@ export const subscriptionPlansTable = pgTable("subscription_plans", {
   maxCategories: integer("max_categories").default(-1),
   canUploadBanner: boolean("can_upload_banner").notNull().default(false),
   isFeatured: boolean("is_featured").notNull().default(false),
+  can360View: boolean("can_360_view").notNull().default(false),
   features: json("features").$type<string[]>().default([]),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
