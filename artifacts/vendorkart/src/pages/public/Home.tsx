@@ -9,67 +9,56 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRef, useEffect, useState } from "react";
 import { useLanguage } from "@/lib/language-context";
 
-const testimonials = [
-  { name: "Rajesh Mehta", role: "CEO, MegaSupply Pvt Ltd", avatar: "RM", rating: 5, text: "Vendorkart transformed how we source industrial components. We cut procurement costs by 32% in just 3 months.", color: "from-blue-500 to-indigo-600" },
-  { name: "Priya Sharma", role: "Procurement Head, FashionHub", avatar: "PS", rating: 5, text: "We scaled from 3 vendors to 28 verified suppliers. The bulk pricing tool alone saved us ₹14L last quarter.", color: "from-violet-500 to-purple-600" },
-  { name: "Anil Gupta", role: "Founder, AgriTech Solutions", avatar: "AG", rating: 5, text: "The MOQ feature is a game-changer. We negotiate directly with manufacturers and compare bulk quotes side-by-side.", color: "from-emerald-500 to-teal-600" },
-  { name: "Sunita Patel", role: "Director, MedEquip Traders", avatar: "SP", rating: 5, text: "Every vendor is GST-verified and background-checked. It's become our #1 sourcing channel for medical equipment.", color: "from-rose-500 to-pink-600" },
-  { name: "Deepak Verma", role: "MD, TechParts Industries", avatar: "DV", rating: 5, text: "We crossed ₹50L in sales within 6 months. Orders came from 12 different states. Incredible reach.", color: "from-amber-500 to-orange-600" },
-  { name: "Kavitha Nair", role: "Supply Chain Manager", avatar: "KN", rating: 5, text: "Real-time order tracking and escrow payments give us total control. Disputes resolved within 24 hours.", color: "from-cyan-500 to-sky-600" },
-  { name: "Mohammed Iqbal", role: "Owner, ElectroBulk", avatar: "MI", rating: 5, text: "Vendorkart's escrow system gave me confidence placing large orders. Now we do ₹20L+ monthly through the platform.", color: "from-indigo-500 to-blue-600" },
-  { name: "Lakshmi Iyer", role: "Buyer, AutoParts Direct", avatar: "LI", rating: 5, text: "10+ verified quotes in hours — what used to take weeks. The vendor subscription is absolutely worth every rupee.", color: "from-teal-500 to-green-600" },
+const testimonialMeta = [
+  { name: "Rajesh Mehta", role: "CEO, MegaSupply Pvt Ltd", avatar: "RM", rating: 5, color: "from-blue-500 to-indigo-600" },
+  { name: "Priya Sharma", role: "Procurement Head, FashionHub", avatar: "PS", rating: 5, color: "from-violet-500 to-purple-600" },
+  { name: "Anil Gupta", role: "Founder, AgriTech Solutions", avatar: "AG", rating: 5, color: "from-emerald-500 to-teal-600" },
+  { name: "Sunita Patel", role: "Director, MedEquip Traders", avatar: "SP", rating: 5, color: "from-rose-500 to-pink-600" },
+  { name: "Deepak Verma", role: "MD, TechParts Industries", avatar: "DV", rating: 5, color: "from-amber-500 to-orange-600" },
+  { name: "Kavitha Nair", role: "Supply Chain Manager", avatar: "KN", rating: 5, color: "from-cyan-500 to-sky-600" },
+  { name: "Mohammed Iqbal", role: "Owner, ElectroBulk", avatar: "MI", rating: 5, color: "from-indigo-500 to-blue-600" },
+  { name: "Lakshmi Iyer", role: "Buyer, AutoParts Direct", avatar: "LI", rating: 5, color: "from-teal-500 to-green-600" },
 ];
 
-const categories = [
-  { name: "Electronics & Tech", emoji: "💻", count: "2,400+", gradient: "from-blue-600/20 to-indigo-600/20", border: "border-blue-500/20", glow: "group-hover:shadow-blue-500/10", tag: "Most Popular" },
-  { name: "Industrial Machinery", emoji: "⚙️", count: "1,800+", gradient: "from-slate-600/20 to-zinc-600/20", border: "border-slate-500/20", glow: "group-hover:shadow-slate-500/10" },
-  { name: "Fashion & Apparel", emoji: "👗", count: "3,200+", gradient: "from-violet-600/20 to-pink-600/20", border: "border-violet-500/20", glow: "group-hover:shadow-violet-500/10", tag: "Top Seller" },
-  { name: "Agriculture & Farm", emoji: "🌾", count: "900+", gradient: "from-green-600/20 to-emerald-600/20", border: "border-green-500/20", glow: "group-hover:shadow-green-500/10" },
-  { name: "Medical & Pharma", emoji: "🏥", count: "600+", gradient: "from-red-600/20 to-rose-600/20", border: "border-red-500/20", glow: "group-hover:shadow-red-500/10" },
-  { name: "Home & Decor", emoji: "🏠", count: "1,500+", gradient: "from-amber-600/20 to-orange-600/20", border: "border-amber-500/20", glow: "group-hover:shadow-amber-500/10" },
-  { name: "Automotive Parts", emoji: "🚗", count: "1,100+", gradient: "from-zinc-600/20 to-slate-600/20", border: "border-zinc-500/20", glow: "group-hover:shadow-zinc-500/10" },
-  { name: "Food & Beverages", emoji: "🍱", count: "750+", gradient: "from-lime-600/20 to-green-600/20", border: "border-lime-500/20", glow: "group-hover:shadow-lime-500/10" },
+const categoriesMeta = [
+  { key: "Electronics & Tech", emoji: "💻", count: "2,400+", gradient: "from-blue-600/20 to-indigo-600/20", border: "border-blue-500/20", glow: "group-hover:shadow-blue-500/10", tag: "mostPopular" as const },
+  { key: "Industrial Machinery", emoji: "⚙️", count: "1,800+", gradient: "from-slate-600/20 to-zinc-600/20", border: "border-slate-500/20", glow: "group-hover:shadow-slate-500/10" },
+  { key: "Fashion & Apparel", emoji: "👗", count: "3,200+", gradient: "from-violet-600/20 to-pink-600/20", border: "border-violet-500/20", glow: "group-hover:shadow-violet-500/10", tag: "topSeller" as const },
+  { key: "Agriculture & Farm", emoji: "🌾", count: "900+", gradient: "from-green-600/20 to-emerald-600/20", border: "border-green-500/20", glow: "group-hover:shadow-green-500/10" },
+  { key: "Medical & Pharma", emoji: "🏥", count: "600+", gradient: "from-red-600/20 to-rose-600/20", border: "border-red-500/20", glow: "group-hover:shadow-red-500/10" },
+  { key: "Home & Decor", emoji: "🏠", count: "1,500+", gradient: "from-amber-600/20 to-orange-600/20", border: "border-amber-500/20", glow: "group-hover:shadow-amber-500/10" },
+  { key: "Automotive Parts", emoji: "🚗", count: "1,100+", gradient: "from-zinc-600/20 to-slate-600/20", border: "border-zinc-500/20", glow: "group-hover:shadow-zinc-500/10" },
+  { key: "Food & Beverages", emoji: "🍱", count: "750+", gradient: "from-lime-600/20 to-green-600/20", border: "border-lime-500/20", glow: "group-hover:shadow-lime-500/10" },
 ];
 
-const statsData = [
-  { value: "12,000+", label: "Verified Vendors" },
-  { value: "2.4L+", label: "B2B Buyers" },
-  { value: "₹850Cr+", label: "Trade Volume" },
-  { value: "98.4%", label: "Satisfaction Rate" },
-];
-
-const features = [
-  {
-    icon: Shield, title: "GST-Verified Businesses", desc: "Every vendor undergoes strict GST and business registration verification. Zero fraud tolerance.",
-    gradient: "from-blue-500 to-indigo-600", size: "large",
-    stat: "100%", statLabel: "Vendors Verified"
-  },
-  {
-    icon: Zap, title: "Instant Quote Matching", desc: "Smart engine matches bulk requirements to the most competitive suppliers in real-time.",
-    gradient: "from-amber-500 to-orange-500", size: "small"
-  },
-  {
-    icon: Lock, title: "Escrow Payments", desc: "Funds held securely until delivery is confirmed. Zero risk for buyers and vendors.",
-    gradient: "from-emerald-500 to-teal-600", size: "small"
-  },
-  {
-    icon: Globe, title: "Pan-India Network", desc: "Source from verified suppliers across all 28 states with doorstep delivery nationwide.",
-    gradient: "from-violet-500 to-purple-600", size: "medium",
-    stat: "28", statLabel: "States Covered"
-  },
-  {
-    icon: BarChart3, title: "Live Analytics Dashboard", desc: "Real-time order tracking, revenue analytics, and procurement insights in one place.",
-    gradient: "from-rose-500 to-pink-600", size: "small"
-  },
-  {
-    icon: HeadphonesIcon, title: "Dedicated Account Manager", desc: "Premium vendors get a dedicated relationship manager to accelerate growth.",
-    gradient: "from-cyan-500 to-sky-600", size: "small"
-  },
+const smallCardsMeta = [
+  { icon: Globe, gradient: "from-violet-500 to-purple-600", bg: "from-violet-600/10 to-purple-600/5", border: "border-violet-500/15 hover:border-violet-500/30" },
+  { icon: Zap, gradient: "from-amber-500 to-orange-500", bg: "from-amber-600/10 to-orange-600/5", border: "border-amber-500/15 hover:border-amber-500/30" },
+  { icon: BarChart3, gradient: "from-rose-500 to-pink-600", bg: "from-rose-600/10 to-pink-600/5", border: "border-rose-500/15 hover:border-rose-500/30" },
 ];
 
 export default function Home() {
   const { data: productData, isLoading } = useListProducts({ limit: 8 });
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  const statsData = [
+    { value: "12,000+", label: t.stats.vendors },
+    { value: "2.4L+", label: t.stats.buyers },
+    { value: "₹850Cr+", label: t.stats.tradeVolume },
+    { value: "98.4%", label: t.stats.satisfaction },
+  ];
+
+  const dashboardMetrics = [
+    { label: t.dashboard.activeOrders, value: "3,842", change: "+12%", color: "#60a5fa", bg: "rgba(37,99,235,0.08)", border: "rgba(37,99,235,0.15)" },
+    { label: t.dashboard.tradeVolume, value: "₹850Cr+", change: "+28%", color: "#a78bfa", bg: "rgba(124,58,237,0.08)", border: "rgba(124,58,237,0.15)" },
+    { label: t.dashboard.verifiedVendors, value: "12,000+", change: "+340", color: "#34d399", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.15)" },
+    { label: t.dashboard.satisfaction, value: "98.4%", change: t.dashboard.excellent, color: "#fbbf24", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.15)" },
+  ];
+
+  const testimonials = testimonialMeta.map((meta, i) => ({
+    ...meta,
+    text: t.testimonials.texts[i],
+  }));
 
   return (
     <PublicLayout>
@@ -80,48 +69,35 @@ export default function Home() {
 
         {/* ── Deep layered background ── */}
         <div className="absolute inset-0 pointer-events-none">
-          {/* Base — near black */}
           <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #010308 0%, #020510 50%, #010208 100%)" }} />
-
-          {/* Fine dot grid */}
           <div className="absolute inset-0 opacity-[0.28]" style={{
             backgroundImage: `radial-gradient(circle, rgba(148,163,184,0.25) 1px, transparent 1px)`,
             backgroundSize: "28px 28px"
           }} />
-
-          {/* Aurora blob 1 — blue, top-right */}
           <motion.div
             className="absolute rounded-full blur-[120px]"
             style={{ width: 700, height: 700, top: -180, right: -100, background: "radial-gradient(circle, rgba(37,99,235,0.22) 0%, rgba(79,70,229,0.10) 50%, transparent 75%)" }}
             animate={{ scale: [1, 1.12, 1], opacity: [0.7, 1, 0.7] }}
             transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
           />
-          {/* Aurora blob 2 — violet, bottom-left */}
           <motion.div
             className="absolute rounded-full blur-[140px]"
             style={{ width: 600, height: 600, bottom: -100, left: -80, background: "radial-gradient(circle, rgba(124,58,237,0.20) 0%, rgba(139,92,246,0.08) 55%, transparent 80%)" }}
             animate={{ scale: [1, 1.08, 1], opacity: [0.6, 0.9, 0.6] }}
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
           />
-          {/* Aurora blob 3 — teal, center */}
           <motion.div
             className="absolute rounded-full blur-[160px]"
             style={{ width: 500, height: 400, top: "30%", left: "30%", background: "radial-gradient(circle, rgba(20,184,166,0.08) 0%, transparent 70%)" }}
             animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
             transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 4 }}
           />
-
-          {/* Top beam / spotlight */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-[350px]"
             style={{ background: "linear-gradient(to bottom, rgba(99,102,241,0.6) 0%, rgba(99,102,241,0.08) 80%, transparent 100%)" }} />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[200px]"
             style={{ background: "radial-gradient(ellipse at top, rgba(99,102,241,0.12) 0%, transparent 70%)" }} />
-
-          {/* Horizontal accent line */}
           <div className="absolute top-[42%] left-0 right-0 h-px"
             style={{ background: "linear-gradient(to right, transparent 0%, rgba(99,102,241,0.15) 30%, rgba(139,92,246,0.15) 70%, transparent 100%)" }} />
-
-          {/* Bottom vignette */}
           <div className="absolute bottom-0 left-0 right-0 h-48"
             style={{ background: "linear-gradient(to bottom, transparent, rgba(1,3,8,0.8))" }} />
         </div>
@@ -219,14 +195,14 @@ export default function Home() {
                 className="flex flex-wrap gap-x-6 gap-y-3"
               >
                 {[
-                  { label: "GST-Verified Suppliers", color: "text-emerald-400" },
-                  { label: "Escrow Payments", color: "text-blue-400" },
-                  { label: "Zero Commission", color: "text-violet-400" },
-                  { label: "Free to Join", color: "text-amber-400" },
-                ].map((t) => (
-                  <div key={t.label} className="flex items-center gap-2 text-[13px] text-white/40">
-                    <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${t.color}`} />
-                    <span>{t.label}</span>
+                  { label: t.trustPills.gstVerified, color: "text-emerald-400" },
+                  { label: t.trustPills.escrow, color: "text-blue-400" },
+                  { label: t.trustPills.zeroCommission, color: "text-violet-400" },
+                  { label: t.trustPills.freeToJoin, color: "text-amber-400" },
+                ].map((pill) => (
+                  <div key={pill.label} className="flex items-center gap-2 text-[13px] text-white/40">
+                    <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${pill.color}`} />
+                    <span>{pill.label}</span>
                   </div>
                 ))}
               </motion.div>
@@ -247,9 +223,7 @@ export default function Home() {
 
               {/* ── Main card ── */}
               <div className="relative w-full max-w-[370px]"
-                style={{
-                  filter: "drop-shadow(0 40px 80px rgba(79,70,229,0.18))"
-                }}
+                style={{ filter: "drop-shadow(0 40px 80px rgba(79,70,229,0.18))" }}
               >
                 <div className="rounded-3xl overflow-hidden"
                   style={{
@@ -267,7 +241,7 @@ export default function Home() {
                         style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}>
                         <Activity className="w-4 h-4 text-white" />
                       </div>
-                      <span className="text-white/70 text-xs font-bold tracking-wider uppercase">Live Marketplace</span>
+                      <span className="text-white/70 text-xs font-bold tracking-wider uppercase">{t.dashboard.liveMarketplace}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold px-2.5 py-1 rounded-full"
                       style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
@@ -275,19 +249,14 @@ export default function Home() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
                       </span>
-                      Live
+                      {t.dashboard.live}
                     </div>
                   </div>
 
                   <div className="p-5">
                     {/* Metric grid */}
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                      {[
-                        { label: "Active Orders", value: "3,842", change: "+12%", color: "#60a5fa", bg: "rgba(37,99,235,0.08)", border: "rgba(37,99,235,0.15)" },
-                        { label: "Trade Volume", value: "₹850Cr+", change: "+28%", color: "#a78bfa", bg: "rgba(124,58,237,0.08)", border: "rgba(124,58,237,0.15)" },
-                        { label: "Verified Vendors", value: "12,000+", change: "+340", color: "#34d399", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.15)" },
-                        { label: "Satisfaction", value: "98.4%", change: "Excellent", color: "#fbbf24", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.15)" },
-                      ].map((m) => (
+                      {dashboardMetrics.map((m) => (
                         <div key={m.label} className="rounded-2xl p-3.5"
                           style={{ background: m.bg, border: `1px solid ${m.border}` }}>
                           <p className="text-white/40 text-[9px] font-bold uppercase tracking-wider mb-1.5">{m.label}</p>
@@ -304,7 +273,7 @@ export default function Home() {
                     <div className="rounded-2xl p-4 mb-4"
                       style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">Monthly GMV — FY 2025</p>
+                        <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{t.dashboard.monthlyGMV}</p>
                         <p className="text-emerald-400 text-[10px] font-bold">↑ 34%</p>
                       </div>
                       <div className="flex items-end justify-between gap-1 h-[52px]">
@@ -335,9 +304,9 @@ export default function Home() {
                     {/* Activity feed */}
                     <div className="space-y-2">
                       {[
-                        { name: "TechCorp India", product: "Industrial Sensors ×500", time: "2m", color: "from-blue-500 to-indigo-600", value: "₹2.4L" },
-                        { name: "AgriFirst Ltd", product: "Drip Irrigation Kit ×200", time: "7m", color: "from-emerald-500 to-teal-600", value: "₹85K" },
-                        { name: "FashionHub", product: "Cotton Fabric ×1000m", time: "14m", color: "from-violet-500 to-purple-600", value: "₹1.1L" },
+                        { name: "TechCorp India", product: "Industrial Sensors ×500", time: "2", color: "from-blue-500 to-indigo-600", value: "₹2.4L" },
+                        { name: "AgriFirst Ltd", product: "Drip Irrigation Kit ×200", time: "7", color: "from-emerald-500 to-teal-600", value: "₹85K" },
+                        { name: "FashionHub", product: "Cotton Fabric ×1000m", time: "14", color: "from-violet-500 to-purple-600", value: "₹1.1L" },
                       ].map((a) => (
                         <div key={a.name} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
                           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -350,7 +319,7 @@ export default function Home() {
                           </div>
                           <div className="text-right flex-shrink-0">
                             <p className="text-emerald-400 text-[10px] font-bold">{a.value}</p>
-                            <p className="text-white/20 text-[9px]">{a.time} ago</p>
+                            <p className="text-white/20 text-[9px]">{a.time}m {t.dashboard.ago}</p>
                           </div>
                         </div>
                       ))}
@@ -370,11 +339,11 @@ export default function Home() {
                     boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset"
                   }}
                 >
-                  <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest">New Order</p>
+                  <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest">{t.dashboard.newOrder}</p>
                   <p className="text-white font-black text-base leading-tight">₹4,80,000</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                    <p className="text-emerald-400 text-[9px] font-bold">Escrow Protected</p>
+                    <p className="text-emerald-400 text-[9px] font-bold">{t.dashboard.escrowProtected}</p>
                   </div>
                 </motion.div>
 
@@ -396,8 +365,8 @@ export default function Home() {
                       <ShieldCheck className="w-3.5 h-3.5 text-white" />
                     </div>
                     <div>
-                      <p className="text-white/80 text-[11px] font-bold">GST Verified</p>
-                      <p className="text-white/35 text-[9px]">12,000+ Suppliers</p>
+                      <p className="text-white/80 text-[11px] font-bold">{t.dashboard.gstVerified}</p>
+                      <p className="text-white/35 text-[9px]">12,000+ {t.dashboard.suppliers}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -414,8 +383,8 @@ export default function Home() {
                     boxShadow: "0 4px 20px rgba(245,158,11,0.1)"
                   }}
                 >
-                  <p className="text-amber-400/70 text-[8px] font-bold uppercase tracking-widest">Quote Ready</p>
-                  <p className="text-white font-bold text-[11px]">18 vendors matched</p>
+                  <p className="text-amber-400/70 text-[8px] font-bold uppercase tracking-widest">{t.dashboard.quoteReady}</p>
+                  <p className="text-white font-bold text-[11px]">18 {t.dashboard.vendorsMatched}</p>
                 </motion.div>
               </div>
             </motion.div>
@@ -448,7 +417,7 @@ export default function Home() {
       <div className="relative overflow-hidden py-5" style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.06)", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
         <div className="flex items-center gap-8 mb-0">
           <div className="flex-shrink-0 px-6">
-            <span className="text-white/20 text-[10px] font-bold tracking-[0.18em] uppercase whitespace-nowrap">Trusted by</span>
+            <span className="text-white/20 text-[10px] font-bold tracking-[0.18em] uppercase whitespace-nowrap">{t.trusted.label}</span>
           </div>
           <div className="overflow-hidden flex-1">
             <motion.div
@@ -480,14 +449,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
             <div>
-              <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">Browse by Industry</p>
+              <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">{t.categories.browseByIndustry}</p>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
-                Explore Top<br />
-                <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">Wholesale Categories</span>
+                {t.categories.exploreTop}<br />
+                <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">{t.categories.wholesaleCategories}</span>
               </h2>
             </div>
             <Link href="/categories" className="group flex items-center gap-2 text-blue-400 font-semibold text-sm hover:text-blue-300 transition-colors whitespace-nowrap">
-              View All Categories
+              {t.categories.viewAll}
               <span className="w-8 h-8 rounded-full border border-blue-500/30 flex items-center justify-center group-hover:bg-blue-500/10 group-hover:border-blue-400/50 transition-all">
                 <ArrowUpRight className="w-4 h-4" />
               </span>
@@ -495,26 +464,25 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((cat, i) => (
+            {categoriesMeta.map((cat, i) => (
               <motion.div
                 key={i}
                 whileHover={{ y: -5, scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
               >
-                <Link href={`/products?category=${cat.name}`} className="group block h-full">
+                <Link href={`/products?category=${cat.key}`} className="group block h-full">
                   <div className={`relative rounded-2xl p-6 border ${cat.border} bg-gradient-to-br ${cat.gradient} hover:shadow-xl ${cat.glow} transition-all duration-300 h-full overflow-hidden`}>
-                    {/* Glow orb */}
                     <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${cat.gradient} blur-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500`} />
                     {cat.tag && (
                       <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/60 border border-white/10">
-                        {cat.tag}
+                        {cat.tag === "mostPopular" ? t.categories.mostPopular : t.categories.topSeller}
                       </span>
                     )}
                     <div className="text-4xl mb-4">{cat.emoji}</div>
-                    <h3 className="font-bold text-white text-base leading-snug mb-1">{cat.name}</h3>
-                    <p className="text-white/40 text-xs">{cat.count} products</p>
+                    <h3 className="font-bold text-white text-base leading-snug mb-1">{t.categories.names[i]}</h3>
+                    <p className="text-white/40 text-xs">{cat.count} {t.categories.products}</p>
                     <div className="mt-4 flex items-center gap-1 text-white/30 text-xs group-hover:text-white/60 transition-colors">
-                      <span>Explore</span> <ArrowRight className="w-3 h-3" />
+                      <span>{t.categories.explore}</span> <ArrowRight className="w-3 h-3" />
                     </div>
                   </div>
                 </Link>
@@ -532,15 +500,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
             <div>
-              <p className="text-indigo-400 font-bold text-xs uppercase tracking-widest mb-3">Trending Now</p>
+              <p className="text-indigo-400 font-bold text-xs uppercase tracking-widest mb-3">{t.products.trendingNow}</p>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
-                Bulk Products<br />
-                <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Ready to Order</span>
+                {t.products.headline1}<br />
+                <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">{t.products.headline2}</span>
               </h2>
-              <p className="text-white/35 mt-3 text-sm max-w-md">High-demand items from verified suppliers. MOQ-friendly, competitively priced.</p>
+              <p className="text-white/35 mt-3 text-sm max-w-md">{t.products.subtitle}</p>
             </div>
             <Link href="/products" className="group flex items-center gap-2 text-indigo-400 font-semibold text-sm hover:text-indigo-300 transition-colors whitespace-nowrap">
-              Browse Full Catalog
+              {t.home.browseCatalog}
               <span className="w-8 h-8 rounded-full border border-indigo-500/30 flex items-center justify-center group-hover:bg-indigo-500/10 group-hover:border-indigo-400/50 transition-all">
                 <ArrowUpRight className="w-4 h-4" />
               </span>
@@ -562,8 +530,8 @@ export default function Home() {
               <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
                 <Package className="w-8 h-8 text-white/20" />
               </div>
-              <h3 className="text-lg font-bold text-white/60">Catalog Loading Soon</h3>
-              <p className="text-white/30 text-sm mt-2">Vendors are adding products. Check back shortly.</p>
+              <h3 className="text-lg font-bold text-white/60">{t.products.catalogLoading}</h3>
+              <p className="text-white/30 text-sm mt-2">{t.products.catalogSubtext}</p>
             </div>
           )}
         </div>
@@ -576,13 +544,13 @@ export default function Home() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">Why Vendorkart</p>
+            <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">{t.features.sectionLabel}</p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
-              Built for B2B.<br />
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Engineered for Scale.</span>
+              {t.features.headline1}<br />
+              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">{t.features.headline2}</span>
             </h2>
             <p className="text-white/40 mt-4 max-w-lg mx-auto text-sm leading-relaxed">
-              Every feature built ground-up for wholesale sourcing, vendor management, and enterprise-grade trading.
+              {t.features.subtitle}
             </p>
           </div>
 
@@ -599,16 +567,16 @@ export default function Home() {
               </div>
               <div className="flex items-end gap-4 mb-4">
                 <span className="text-6xl font-black text-white">100%</span>
-                <span className="text-blue-300 font-semibold mb-2">Vendors Verified</span>
+                <span className="text-blue-300 font-semibold mb-2">{t.features.gstStat}</span>
               </div>
-              <h3 className="text-2xl font-extrabold text-white mb-3">GST-Verified Businesses Only</h3>
+              <h3 className="text-2xl font-extrabold text-white mb-3">{t.features.gstTitle}</h3>
               <p className="text-white/45 text-sm leading-relaxed max-w-md">
-                Every vendor and buyer undergoes strict GST, PAN, and business registration verification. Our trust engine runs continuous compliance checks — zero tolerance for fraud.
+                {t.features.gstDesc}
               </p>
               <div className="mt-6 flex gap-3">
-                <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/20 text-blue-300 bg-blue-500/8">GST Verified</span>
-                <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/20 text-blue-300 bg-blue-500/8">PAN Checked</span>
-                <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/20 text-blue-300 bg-blue-500/8">MCA Verified</span>
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/20 text-blue-300 bg-blue-500/8">{t.features.gstTag1}</span>
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/20 text-blue-300 bg-blue-500/8">{t.features.gstTag2}</span>
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/20 text-blue-300 bg-blue-500/8">{t.features.gstTag3}</span>
               </div>
             </motion.div>
 
@@ -621,43 +589,42 @@ export default function Home() {
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-5 shadow-lg shadow-emerald-500/20">
                 <Lock className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-extrabold text-white mb-3">Escrow Payment Protection</h3>
+              <h3 className="text-xl font-extrabold text-white mb-3">{t.features.escrowTitle}</h3>
               <p className="text-white/45 text-sm leading-relaxed">
-                Funds are held securely until delivery is confirmed by the buyer. Zero risk — always. Fully automated dispute resolution.
+                {t.features.escrowDesc}
               </p>
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-white/5 border border-white/8 p-3 text-center">
                   <p className="text-emerald-400 font-extrabold text-xl">₹0</p>
-                  <p className="text-white/35 text-xs mt-0.5">Buying Fee</p>
+                  <p className="text-white/35 text-xs mt-0.5">{t.features.buyingFeeLabel}</p>
                 </div>
                 <div className="rounded-xl bg-white/5 border border-white/8 p-3 text-center">
                   <p className="text-emerald-400 font-extrabold text-xl">24h</p>
-                  <p className="text-white/35 text-xs mt-0.5">Dispute SLA</p>
+                  <p className="text-white/35 text-xs mt-0.5">{t.features.disputeLabel}</p>
                 </div>
               </div>
             </motion.div>
 
             {/* Small cards row */}
-            {[
-              { icon: Globe, title: "Pan-India Network", desc: "Verified suppliers across all 28 states. Doorstep delivery nationwide.", gradient: "from-violet-500 to-purple-600", bg: "from-violet-600/10 to-purple-600/5", border: "border-violet-500/15 hover:border-violet-500/30", stat: "28 States" },
-              { icon: Zap, title: "Instant Quote Matching", desc: "Smart engine matches your bulk requirements to the best suppliers in seconds.", gradient: "from-amber-500 to-orange-500", bg: "from-amber-600/10 to-orange-600/5", border: "border-amber-500/15 hover:border-amber-500/30", stat: "<30 sec" },
-              { icon: BarChart3, title: "Live Analytics", desc: "Real-time order tracking, revenue analytics, and procurement insights.", gradient: "from-rose-500 to-pink-600", bg: "from-rose-600/10 to-pink-600/5", border: "border-rose-500/15 hover:border-rose-500/30", stat: "Real-time" },
-            ].map((f, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ scale: 1.02, y: -3 }} transition={{ type: "spring", stiffness: 250 }}
-                className={`relative rounded-3xl p-6 bg-gradient-to-br ${f.bg} border ${f.border} overflow-hidden group transition-all`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center shadow-lg`}>
-                    <f.icon className="w-5 h-5 text-white" />
+            {t.features.smallCards.map((card, i) => {
+              const meta = smallCardsMeta[i];
+              return (
+                <motion.div
+                  key={i}
+                  whileHover={{ scale: 1.02, y: -3 }} transition={{ type: "spring", stiffness: 250 }}
+                  className={`relative rounded-3xl p-6 bg-gradient-to-br ${meta.bg} border ${meta.border} overflow-hidden group transition-all`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center shadow-lg`}>
+                      <meta.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-white/25 text-xs font-bold border border-white/10 rounded-full px-2.5 py-1">{card.stat}</span>
                   </div>
-                  <span className="text-white/25 text-xs font-bold border border-white/10 rounded-full px-2.5 py-1">{f.stat}</span>
-                </div>
-                <h3 className="text-base font-extrabold text-white mb-2">{f.title}</h3>
-                <p className="text-white/40 text-xs leading-relaxed">{f.desc}</p>
-              </motion.div>
-            ))}
+                  <h3 className="text-base font-extrabold text-white mb-2">{card.title}</h3>
+                  <p className="text-white/40 text-xs leading-relaxed">{card.desc}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -669,15 +636,15 @@ export default function Home() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-blue-900/10 blur-[120px] rounded-full pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">Customer Stories</p>
+            <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">{t.testimonials.sectionLabel}</p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
-              Loved by{" "}
-              <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">2 Lakh+</span> Businesses
+              {t.testimonials.headline1}{" "}
+              <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">2 {language === "en" ? "Lakh+" : language === "hi" ? "लाख+" : "লক্ষ+"}</span> {t.testimonials.headline2}
             </h2>
-            <p className="text-white/35 mt-4 max-w-md mx-auto text-sm">Real businesses. Real savings. Real growth — powered by Vendorkart.</p>
+            <p className="text-white/35 mt-4 max-w-md mx-auto text-sm">{t.testimonials.subtitle}</p>
             <div className="flex items-center justify-center gap-1 mt-4">
               {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />)}
-              <span className="text-white/40 text-sm ml-2">4.9 / 5 average rating</span>
+              <span className="text-white/40 text-sm ml-2">4.9 / 5 {t.testimonials.rating}</span>
             </div>
           </div>
 
@@ -695,15 +662,15 @@ export default function Home() {
                   animate={{ y: col === 1 ? ["0%", "-50%"] : ["-50%", "0%"] }}
                   transition={{ duration: col === 1 ? 20 : 26, repeat: Infinity, ease: "linear" }}
                 >
-                  {doubled.map((t, i) => (
+                  {doubled.map((item, i) => (
                     <div key={i} className="bg-white/[0.03] backdrop-blur-sm border border-white/8 rounded-2xl p-5 hover:border-white/15 transition-colors">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-extrabold text-sm flex-shrink-0`}>
-                          {t.avatar}
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white font-extrabold text-sm flex-shrink-0`}>
+                          {item.avatar}
                         </div>
                         <div>
-                          <p className="font-bold text-white text-sm">{t.name}</p>
-                          <p className="text-white/35 text-xs">{t.role}</p>
+                          <p className="font-bold text-white text-sm">{item.name}</p>
+                          <p className="text-white/35 text-xs">{item.role}</p>
                         </div>
                         <div className="ml-auto flex">
                           {Array.from({ length: 5 }).map((_, si) => (
@@ -711,7 +678,7 @@ export default function Home() {
                           ))}
                         </div>
                       </div>
-                      <p className="text-white/55 text-sm leading-relaxed">"{t.text}"</p>
+                      <p className="text-white/55 text-sm leading-relaxed">"{item.text}"</p>
                     </div>
                   ))}
                 </motion.div>
@@ -733,30 +700,30 @@ export default function Home() {
             <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 0, transparent 50%)", backgroundSize: "24px 24px" }} />
 
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-0">
-              {/* Left */}
+              {/* Left — Buyers */}
               <div className="p-8 sm:p-12 lg:p-16">
-                <p className="text-blue-200/60 font-bold text-xs uppercase tracking-widest mb-4">For Buyers</p>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
-                  Source smarter.<br />Spend less.
+                <p className="text-blue-200/60 font-bold text-xs uppercase tracking-widest mb-4">{t.cta.forBuyers}</p>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight whitespace-pre-line">
+                  {t.cta.buyerHeadline}
                 </h2>
-                <p className="text-white/55 mb-8 leading-relaxed">Access 12,000+ verified suppliers, compare bulk quotes, and place orders with full escrow protection — all for free.</p>
+                <p className="text-white/55 mb-8 leading-relaxed">{t.cta.buyerDesc}</p>
                 <Button size="lg" className="h-13 px-8 text-base font-bold rounded-2xl bg-white text-indigo-700 hover:bg-white/90 shadow-2xl shadow-black/30 hover:-translate-y-0.5 transition-all" asChild>
-                  <Link href="/register?role=customer">Create Free Buyer Account <ArrowRight className="ml-2 w-5 h-5" /></Link>
+                  <Link href="/register?role=customer">{t.cta.buyerBtn} <ArrowRight className="ml-2 w-5 h-5" /></Link>
                 </Button>
               </div>
 
               {/* Divider */}
               <div className="hidden lg:block absolute left-1/2 top-8 bottom-8 w-px bg-white/10" />
 
-              {/* Right */}
+              {/* Right — Vendors */}
               <div className="p-8 sm:p-12 lg:p-16 lg:pl-16">
-                <p className="text-violet-200/60 font-bold text-xs uppercase tracking-widest mb-4">For Vendors</p>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
-                  Grow your B2B<br />sales 10x.
+                <p className="text-violet-200/60 font-bold text-xs uppercase tracking-widest mb-4">{t.cta.forVendors}</p>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight whitespace-pre-line">
+                  {t.cta.vendorHeadline}
                 </h2>
-                <p className="text-white/55 mb-8 leading-relaxed">Reach 2.4 lakh+ business buyers across India. List products, manage orders, and grow revenue — starting at just ₹999/mo.</p>
+                <p className="text-white/55 mb-8 leading-relaxed">{t.cta.vendorDesc}</p>
                 <Button size="lg" className="h-13 px-8 text-base font-bold rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white/15 hover:border-white/30 hover:-translate-y-0.5 transition-all" asChild>
-                  <Link href="/register?role=vendor">Start Selling Today <ArrowRight className="ml-2 w-5 h-5" /></Link>
+                  <Link href="/register?role=vendor">{t.cta.vendorBtn} <ArrowRight className="ml-2 w-5 h-5" /></Link>
                 </Button>
                 <div className="mt-6 flex gap-4">
                   {["Basic ₹999", "Standard ₹2499", "Premium ₹4999"].map(p => (
