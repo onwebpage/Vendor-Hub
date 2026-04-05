@@ -44,6 +44,8 @@ import VendorStore from "@/pages/public/VendorStore";
 import About from "@/pages/public/About";
 import Contact from "@/pages/public/Contact";
 import Pricing from "@/pages/public/Pricing";
+import Terms from "@/pages/public/Terms";
+import Privacy from "@/pages/public/Privacy";
 import NotFound from "@/pages/not-found";
 import ChatBot from "@/components/ChatBot";
 
@@ -70,6 +72,8 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 

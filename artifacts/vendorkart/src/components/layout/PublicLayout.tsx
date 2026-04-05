@@ -635,8 +635,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <ul className="space-y-3 text-sm">
                 <li><Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
                 <li><Link href="/login" className="hover:text-primary transition-colors">Login / Register</Link></li>
-                <li><span className="hover:text-primary transition-colors cursor-pointer">Terms of Service</span></li>
-                <li><span className="hover:text-primary transition-colors cursor-pointer">Privacy Policy</span></li>
+                <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>
@@ -667,8 +667,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               );
             })()}
             <div className="flex gap-6">
-              <span className="cursor-pointer hover:text-white transition-colors">Privacy</span>
-              <span className="cursor-pointer hover:text-white transition-colors">Terms</span>
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
               <span className="cursor-pointer hover:text-white transition-colors">Cookies</span>
             </div>
           </div>
