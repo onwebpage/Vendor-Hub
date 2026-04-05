@@ -218,7 +218,7 @@ export function useLanguage() {
 }
 
 export const LANGUAGE_OPTIONS: { code: Language; label: string; nativeLabel: string; flag: string }[] = [
-  { code: "en", label: "English",  nativeLabel: "English", flag: "🇬🇧" },
+  { code: "en", label: "English",  nativeLabel: "English", flag: "🇮🇳" },
   { code: "hi", label: "Hindi",    nativeLabel: "हिन्दी",   flag: "🇮🇳" },
-  { code: "bn", label: "Bengali",  nativeLabel: "বাংলা",    flag: "🇧🇩" },
+  { code: "bn", label: "Bengali",  nativeLabel: "বাংলা",    flag: "🇮🇳" },
 ];
