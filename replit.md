@@ -26,12 +26,11 @@ This is a **pnpm monorepo** with a unified Express + Vite dev server:
 
 ## Development
 
-Two separate dev processes run in parallel:
+One unified dev server runs on port 5000:
 
-- **"API Server" workflow** — Express API on port 8000 (`PORT=8000 SERVE_FRONTEND=false pnpm --filter @workspace/api-server run dev`)
-- **"artifacts/vendorkart: web" workflow** — Vite dev server on port 5000 with a proxy forwarding `/api/*` → `localhost:8000`
+- **"Start application" workflow** — Express API server (`pnpm dev`) with Vite middleware serving the frontend. Both API and frontend served on port 5000.
 
-The Vite proxy (in `artifacts/vendorkart/vite.config.ts`) makes all `/api/*` calls from the browser transparently reach the API server.
+The Express server uses Vite's middleware mode (`setupFrontend()` in `app.ts`) to serve the React app in development. API routes are at `/api/*`.
 
 In **production**, the unified Express server (`artifacts/api-server`) serves both the API and the built static frontend on port 5000 (`SERVE_FRONTEND` is not set to "false").
 
@@ -52,9 +51,12 @@ In **production**, the unified Express server (`artifacts/api-server`) serves bo
 - Dashboard, Reports, Vendors, Customers, Products, Orders, Categories
 - Payments, Coupons, Subscriptions, Commission Settings
 - Banners, Contact Info Cards, **Social Media Links** (`/admin/social-links`)
+- **Team Members** (`/admin/team`) — dynamic "Meet Our Team" section on About page
 - Email Logs, Contact Messages, Activity Logs
 
 Social links are stored in the `social_links` DB table (single-row settings). Admins manage them at `/admin/social-links`. Active links appear as icons in the public site footer. Public read endpoint: `GET /api/contact/social-links`.
+
+Team members are stored in the `team_members` DB table. Admins manage them at `/admin/team` with full CRUD, image upload (base64), reordering (up/down buttons), and show/hide toggle. Public read endpoint: `GET /api/team` (only returns visible members). The team section on `/about` is fully dynamic — it fetches from the DB and hides itself when empty.
 
 ## Deployment
 

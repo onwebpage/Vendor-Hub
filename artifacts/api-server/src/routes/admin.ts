@@ -4,9 +4,9 @@ import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, vendorSubscriptionsTable, commissionSettingsTable, activityLogsTable,
   contactMessagesTable, bannersTable, emailLogsTable, paymentsTable, categoriesTable, contactInfoTable,
-  socialLinksTable,
+  socialLinksTable, teamMembersTable,
 } from "@workspace/db/schema";
-import { eq, count, sum, sql } from "drizzle-orm";
+import { eq, count, sum, sql, asc } from "drizzle-orm";
 import { authenticate, requireRole, hashPassword } from "../lib/auth.js";
 import { slugify, uniqueSlug } from "../lib/slugify.js";
 import { logActivity } from "../lib/activity.js";
@@ -849,6 +849,81 @@ router.put("/social-links", async (req, res) => {
     return res.json(payload);
   } catch (err) {
     return res.status(500).json({ message: "Failed to update social links" });
+  }
+});
+
+// ─── TEAM MEMBERS ─────────────────────────────────────────────────────────────
+
+router.get("/team-members", async (_req, res) => {
+  try {
+    const members = await db.select().from(teamMembersTable)
+      .orderBy(asc(teamMembersTable.displayOrder), asc(teamMembersTable.id));
+    return res.json(members);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch team members" });
+  }
+});
+
+router.post("/team-members", async (req, res) => {
+  try {
+    const { name, position, description, imageUrl, linkedinUrl, twitterUrl, githubUrl, instagramUrl, displayOrder, isVisible } = req.body;
+    if (!name || !position) {
+      return res.status(400).json({ message: "Name and position are required" });
+    }
+    const [member] = await db.insert(teamMembersTable).values({
+      name,
+      position,
+      description: description || null,
+      imageUrl: imageUrl || null,
+      linkedinUrl: linkedinUrl || null,
+      twitterUrl: twitterUrl || null,
+      githubUrl: githubUrl || null,
+      instagramUrl: instagramUrl || null,
+      displayOrder: Number(displayOrder) || 0,
+      isVisible: isVisible !== false,
+    }).returning();
+    logActivity({ action: "team_member_created", resource: "team_member", details: `Created team member: ${name}` });
+    return res.status(201).json(member);
+  } catch (err) {
+    req.log.error({ err }, "Create team member error");
+    return res.status(500).json({ message: "Failed to create team member" });
+  }
+});
+
+router.put("/team-members/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { name, position, description, imageUrl, linkedinUrl, twitterUrl, githubUrl, instagramUrl, displayOrder, isVisible } = req.body;
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (name !== undefined) updates.name = name;
+    if (position !== undefined) updates.position = position;
+    if (description !== undefined) updates.description = description || null;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl || null;
+    if (linkedinUrl !== undefined) updates.linkedinUrl = linkedinUrl || null;
+    if (twitterUrl !== undefined) updates.twitterUrl = twitterUrl || null;
+    if (githubUrl !== undefined) updates.githubUrl = githubUrl || null;
+    if (instagramUrl !== undefined) updates.instagramUrl = instagramUrl || null;
+    if (displayOrder !== undefined) updates.displayOrder = Number(displayOrder);
+    if (isVisible !== undefined) updates.isVisible = isVisible;
+    const [member] = await db.update(teamMembersTable).set(updates).where(eq(teamMembersTable.id, id)).returning();
+    if (!member) return res.status(404).json({ message: "Team member not found" });
+    logActivity({ action: "team_member_updated", resource: "team_member", details: `Updated team member: ${member.name}` });
+    return res.json(member);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update team member" });
+  }
+});
+
+router.delete("/team-members/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [member] = await db.select().from(teamMembersTable).where(eq(teamMembersTable.id, id));
+    if (!member) return res.status(404).json({ message: "Team member not found" });
+    await db.delete(teamMembersTable).where(eq(teamMembersTable.id, id));
+    logActivity({ action: "team_member_deleted", resource: "team_member", details: `Deleted team member: ${member.name}` });
+    return res.json({ message: "Team member deleted" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete team member" });
   }
 });
 

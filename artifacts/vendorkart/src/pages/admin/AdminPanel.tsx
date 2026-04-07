@@ -9,7 +9,8 @@ import {
   Tags, CreditCard, Activity, ShieldAlert, MessageSquare,
   Mail, Phone, User, BookOpen, Building2, HeadphonesIcon, ChevronDown, ChevronUp,
   Image, Globe, Trash2, Plus, Percent, BarChart3, FileText, Zap, Crown, PieChart,
-  X, ImageIcon, Loader2, Pencil, AlertTriangle
+  X, ImageIcon, Loader2, Pencil, AlertTriangle, UserCircle2, Linkedin, Twitter,
+  Github, Instagram, GripVertical, ArrowUp, ArrowDown, EyeOff
 } from "lucide-react";
 import { useRef } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -2728,6 +2729,369 @@ function SocialLinksPanel() {
   );
 }
 
+// ─── TEAM MEMBERS ─────────────────────────────────────────────────────────────
+
+const AVATAR_GRADIENTS = [
+  "from-blue-500 to-indigo-600",
+  "from-violet-500 to-purple-600",
+  "from-emerald-500 to-teal-600",
+  "from-amber-500 to-orange-500",
+  "from-rose-500 to-pink-600",
+  "from-cyan-500 to-blue-600",
+];
+
+function getInitials(name: string) {
+  return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+}
+
+const BLANK_MEMBER = {
+  name: "",
+  position: "",
+  description: "",
+  imageUrl: "",
+  linkedinUrl: "",
+  twitterUrl: "",
+  githubUrl: "",
+  instagramUrl: "",
+  displayOrder: 0,
+  isVisible: true,
+};
+
+function TeamMemberForm({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  initial: typeof BLANK_MEMBER;
+  onSave: (data: typeof BLANK_MEMBER) => Promise<void>;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState({ ...initial });
+  const [imagePreview, setImagePreview] = useState(initial.imageUrl || "");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const setF = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const result = ev.target?.result as string;
+      setImagePreview(result);
+      setF("imageUrl", result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSave(form);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-white/3 rounded-2xl border border-indigo-500/25 p-6 space-y-5">
+      <h3 className="text-white font-bold text-base">{initial.name ? "Edit Team Member" : "Add Team Member"}</h3>
+
+      {/* Image Upload */}
+      <div className="flex items-start gap-5">
+        <div className="flex-shrink-0">
+          <div
+            className="w-20 h-20 rounded-2xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer relative group"
+            onClick={() => fileRef.current?.click()}
+          >
+            {imagePreview ? (
+              <img src={imagePreview} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className={`w-full h-full bg-gradient-to-br ${AVATAR_GRADIENTS[0]} flex items-center justify-center text-white font-extrabold text-xl`}>
+                {form.name ? getInitials(form.name) : <UserCircle2 className="w-8 h-8 opacity-50" />}
+              </div>
+            )}
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+              <ImageIcon className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageFile} />
+          <button type="button" onClick={() => fileRef.current?.click()} className="mt-1.5 text-[11px] text-indigo-400 hover:text-indigo-300 w-full text-center">
+            {imagePreview ? "Change" : "Upload"}
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Name *</label>
+              <Input value={form.name} onChange={e => setF("name", e.target.value)} placeholder="Arjun Kapoor" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Position / Role *</label>
+              <Input value={form.position} onChange={e => setF("position", e.target.value)} placeholder="Co-Founder & CEO" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+          </div>
+          <div>
+            <label className="text-white/50 text-xs mb-1 block">Image URL <span className="text-white/25">(or upload above)</span></label>
+            <Input
+              value={form.imageUrl.startsWith("data:") ? "" : form.imageUrl}
+              onChange={e => { setF("imageUrl", e.target.value); setImagePreview(e.target.value); }}
+              placeholder="https://example.com/photo.jpg"
+              className="bg-white/5 border-white/10 text-white rounded-xl h-9"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="text-white/50 text-xs mb-1 block">Short Description</label>
+        <textarea
+          value={form.description}
+          onChange={e => setF("description", e.target.value)}
+          placeholder="Brief bio or role summary..."
+          rows={2}
+          className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-indigo-500/50 placeholder:text-white/20"
+        />
+      </div>
+
+      {/* Social Links */}
+      <div>
+        <label className="text-white/50 text-xs mb-2 block">Social Links <span className="text-white/25">(optional)</span></label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-2">
+            <Linkedin className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <Input value={form.linkedinUrl} onChange={e => setF("linkedinUrl", e.target.value)} placeholder="LinkedIn URL" className="bg-white/5 border-white/10 text-white rounded-xl h-8 text-xs" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Twitter className="w-4 h-4 text-sky-400 flex-shrink-0" />
+            <Input value={form.twitterUrl} onChange={e => setF("twitterUrl", e.target.value)} placeholder="Twitter/X URL" className="bg-white/5 border-white/10 text-white rounded-xl h-8 text-xs" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Github className="w-4 h-4 text-white/50 flex-shrink-0" />
+            <Input value={form.githubUrl} onChange={e => setF("githubUrl", e.target.value)} placeholder="GitHub URL" className="bg-white/5 border-white/10 text-white rounded-xl h-8 text-xs" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Instagram className="w-4 h-4 text-pink-400 flex-shrink-0" />
+            <Input value={form.instagramUrl} onChange={e => setF("instagramUrl", e.target.value)} placeholder="Instagram URL" className="bg-white/5 border-white/10 text-white rounded-xl h-8 text-xs" />
+          </div>
+        </div>
+      </div>
+
+      {/* Display Order & Visibility */}
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3">
+          <label className="text-white/50 text-xs">Display Order</label>
+          <input
+            type="number"
+            min={0}
+            value={form.displayOrder}
+            onChange={e => setF("displayOrder", Number(e.target.value))}
+            className="w-16 h-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm px-2 text-center"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="checkbox" id="memberVisible" checked={form.isVisible} onChange={e => setF("isVisible", e.target.checked)} className="w-4 h-4 rounded" />
+          <label htmlFor="memberVisible" className="text-white/60 text-sm cursor-pointer">Visible on site</label>
+        </div>
+      </div>
+
+      <div className="flex gap-3 justify-end pt-2">
+        <Button type="button" variant="ghost" onClick={onCancel} className="rounded-xl text-white/50 h-9">Cancel</Button>
+        <Button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9 gap-2">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {initial.name ? "Save Changes" : "Add Member"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function TeamPanel() {
+  const { data: members, loading, refetch } = useAdminFetch<any[]>("/api/admin/team-members");
+  const { token } = useAdminAuthStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [list, setList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (members) setList(members);
+  }, [members]);
+
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+  const handleCreate = async (data: any) => {
+    setSaving(true);
+    await fetch(`${BASE}/api/admin/team-members`, { method: "POST", headers, body: JSON.stringify(data) });
+    setSaving(false);
+    setShowForm(false);
+    window.location.reload();
+  };
+
+  const handleEdit = async (data: any) => {
+    if (editingId == null) return;
+    setSaving(true);
+    await fetch(`${BASE}/api/admin/team-members/${editingId}`, { method: "PUT", headers, body: JSON.stringify(data) });
+    setSaving(false);
+    setEditingId(null);
+    window.location.reload();
+  };
+
+  const handleDelete = async (id: number) => {
+    await fetch(`${BASE}/api/admin/team-members/${id}`, { method: "DELETE", headers });
+    setDeleteConfirm(null);
+    window.location.reload();
+  };
+
+  const handleToggleVisibility = async (m: any) => {
+    await fetch(`${BASE}/api/admin/team-members/${m.id}`, {
+      method: "PUT", headers,
+      body: JSON.stringify({ isVisible: !m.isVisible }),
+    });
+    window.location.reload();
+  };
+
+  const handleReorder = async (id: number, direction: "up" | "down") => {
+    const idx = list.findIndex(m => m.id === id);
+    if (direction === "up" && idx === 0) return;
+    if (direction === "down" && idx === list.length - 1) return;
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    const newList = [...list];
+    const aOrder = newList[idx].displayOrder;
+    const bOrder = newList[swapIdx].displayOrder;
+    newList[idx] = { ...newList[idx], displayOrder: bOrder };
+    newList[swapIdx] = { ...newList[swapIdx], displayOrder: aOrder };
+    setList([...newList].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id));
+    await Promise.all([
+      fetch(`${BASE}/api/admin/team-members/${newList[idx].id}`, { method: "PUT", headers, body: JSON.stringify({ displayOrder: bOrder }) }),
+      fetch(`${BASE}/api/admin/team-members/${newList[swapIdx].id}`, { method: "PUT", headers, body: JSON.stringify({ displayOrder: aOrder }) }),
+    ]);
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-between items-center">
+        <p className="text-white/60 text-sm">Manage the "Meet Our Team" section on the About page.</p>
+        <Button onClick={() => { setShowForm(true); setEditingId(null); }} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9">
+          <Plus className="w-4 h-4" /> Add Member
+        </Button>
+      </div>
+
+      {showForm && editingId == null && (
+        <TeamMemberForm
+          initial={{ ...BLANK_MEMBER, displayOrder: (list.length) }}
+          onSave={handleCreate}
+          onCancel={() => setShowForm(false)}
+          saving={saving}
+        />
+      )}
+
+      {loading ? (
+        <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl bg-white/5" />)}</div>
+      ) : list.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white/3 rounded-3xl border border-white/8">
+          <UserCircle2 className="w-12 h-12 text-white/15 mb-3" />
+          <p className="text-white/40 text-sm font-medium">No team members yet</p>
+          <p className="text-white/25 text-xs mt-1">Add your first team member to show on the About page.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {list.map((m: any, idx: number) => (
+            <div key={m.id}>
+              {editingId === m.id ? (
+                <TeamMemberForm
+                  initial={{
+                    name: m.name, position: m.position, description: m.description || "",
+                    imageUrl: m.imageUrl || "", linkedinUrl: m.linkedinUrl || "",
+                    twitterUrl: m.twitterUrl || "", githubUrl: m.githubUrl || "",
+                    instagramUrl: m.instagramUrl || "", displayOrder: m.displayOrder, isVisible: m.isVisible,
+                  }}
+                  onSave={handleEdit}
+                  onCancel={() => setEditingId(null)}
+                  saving={saving}
+                />
+              ) : (
+                <div className={`bg-white/3 rounded-2xl border p-4 flex items-center gap-4 ${m.isVisible ? "border-indigo-500/20" : "border-white/8 opacity-60"}`}>
+                  {/* Avatar */}
+                  <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                    {m.imageUrl ? (
+                      <img src={m.imageUrl} alt={m.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]} flex items-center justify-center text-white font-extrabold text-lg`}>
+                        {getInitials(m.name)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-white font-bold text-sm">{m.name}</p>
+                      <Badge className={`text-[10px] border flex-shrink-0 ${m.isVisible ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-white/5 text-white/30 border-white/10"}`}>
+                        {m.isVisible ? "Visible" : "Hidden"}
+                      </Badge>
+                    </div>
+                    <p className="text-indigo-400 text-xs mt-0.5">{m.position}</p>
+                    {m.description && <p className="text-white/35 text-xs mt-1 line-clamp-1">{m.description}</p>}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {m.linkedinUrl && <Linkedin className="w-3 h-3 text-blue-400" />}
+                      {m.twitterUrl && <Twitter className="w-3 h-3 text-sky-400" />}
+                      {m.githubUrl && <Github className="w-3 h-3 text-white/40" />}
+                      {m.instagramUrl && <Instagram className="w-3 h-3 text-pink-400" />}
+                      <span className="text-white/20 text-[10px] ml-auto">Order: {m.displayOrder}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-1.5 flex-shrink-0">
+                    <div className="flex gap-1.5">
+                      <Button size="sm" onClick={() => handleReorder(m.id, "up")} disabled={idx === 0}
+                        className="h-7 w-7 p-0 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 border border-white/8 disabled:opacity-20">
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button size="sm" onClick={() => handleReorder(m.id, "down")} disabled={idx === list.length - 1}
+                        className="h-7 w-7 p-0 rounded-lg bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 border border-white/8 disabled:opacity-20">
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Button size="sm" onClick={() => handleToggleVisibility(m)}
+                        className={`h-7 px-2 text-[11px] rounded-lg border ${m.isVisible ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20"}`}>
+                        {m.isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </Button>
+                      <Button size="sm" onClick={() => { setEditingId(m.id); setShowForm(false); }}
+                        className="h-7 px-2 text-[11px] rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button size="sm" onClick={() => setDeleteConfirm(m.id)}
+                        className="h-7 px-2 text-[11px] rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Delete confirm */}
+              {deleteConfirm === m.id && (
+                <div className="mt-2 bg-red-500/8 border border-red-500/25 rounded-xl p-4 flex items-center gap-4">
+                  <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-white/70 text-sm flex-1">Delete <strong className="text-white">{m.name}</strong>? This cannot be undone.</p>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(null)} className="h-7 rounded-lg text-white/40 text-xs">Cancel</Button>
+                    <Button size="sm" onClick={() => handleDelete(m.id)} className="h-7 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs">Delete</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const SECTIONS: Record<string, { title: string; component: React.ElementType }> = {
   "/admin": { title: "Dashboard Overview", component: Overview },
@@ -2745,6 +3109,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/banners": { title: "Banner & Ads Management", component: BannersPanel },
   "/admin/contact-info": { title: "Contact Info Cards", component: ContactInfoPanel },
   "/admin/social-links": { title: "Social Media Links", component: SocialLinksPanel },
+  "/admin/team": { title: "Team Members", component: TeamPanel },
   "/admin/emails": { title: "Email System", component: EmailLogsPanel },
   "/admin/contact": { title: "Contact Messages", component: ContactMessagesPanel },
   "/admin/activity": { title: "Activity Logs", component: ActivityLogsPanel },

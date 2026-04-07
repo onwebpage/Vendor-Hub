@@ -16,6 +16,7 @@ import couponsRouter from "./coupons.js";
 import addressesRouter from "./addresses.js";
 import adminRouter from "./admin.js";
 import contactRouter from "./contact.js";
+import teamRouter from "./team.js";
 
 const router = Router();
 
@@ -36,5 +37,6 @@ router.use("/coupons", couponsRouter);
 router.use("/addresses", addressesRouter);
 router.use("/admin", adminRouter);
 router.use("/contact", contactRouter);
+router.use("/team", teamRouter);
 
 export default router;

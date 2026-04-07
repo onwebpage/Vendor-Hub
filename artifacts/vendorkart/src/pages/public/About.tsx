@@ -3,7 +3,9 @@ import { Link } from "wouter";
 import {
   Shield, Zap, Globe, Users, TrendingUp, Award,
   CheckCircle2, ArrowRight, Building2, Target,
+  Linkedin, Twitter, Github, Instagram, ExternalLink,
 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 
@@ -41,12 +43,32 @@ const values = [
   },
 ];
 
-const team = [
-  { name: "Arjun Kapoor", role: "Co-Founder & CEO", initials: "AK", color: "from-blue-500 to-indigo-600" },
-  { name: "Priya Nair", role: "Co-Founder & CTO", initials: "PN", color: "from-violet-500 to-purple-600" },
-  { name: "Rohit Sharma", role: "Head of Operations", initials: "RS", color: "from-emerald-500 to-teal-600" },
-  { name: "Ananya Gupta", role: "Head of Vendor Relations", initials: "AG", color: "from-amber-500 to-orange-500" },
+const AVATAR_GRADIENTS = [
+  "from-blue-500 to-indigo-600",
+  "from-violet-500 to-purple-600",
+  "from-emerald-500 to-teal-600",
+  "from-amber-500 to-orange-500",
+  "from-rose-500 to-pink-600",
+  "from-cyan-500 to-blue-600",
 ];
+
+function getInitials(name: string) {
+  return name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function useTeamMembers() {
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/team")
+      .then(r => r.json())
+      .then(data => { setMembers(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return { members, loading };
+}
 
 const milestones = [
   { year: "2020", event: "Vendorkart founded with 50 vendors in Mumbai" },
@@ -57,6 +79,8 @@ const milestones = [
 ];
 
 export default function About() {
+  const { members, loading: teamLoading } = useTeamMembers();
+
   return (
     <PublicLayout>
       {/* Hero */}
@@ -192,32 +216,86 @@ export default function About() {
       </section>
 
       {/* Team */}
-      <section className="py-20 bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-primary font-bold text-xs uppercase tracking-widest mb-3">The People Behind Vendorkart</p>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground">Meet Our Team</h2>
+      {(teamLoading || members.length > 0) && (
+        <section className="py-20 bg-background">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-14">
+              <p className="text-primary font-bold text-xs uppercase tracking-widest mb-3">The People Behind Vendorkart</p>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground">Meet Our Team</h2>
+            </div>
+
+            {teamLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="text-center animate-pulse">
+                    <div className="w-28 h-28 rounded-3xl bg-muted mx-auto mb-4" />
+                    <div className="h-4 bg-muted rounded w-3/4 mx-auto mb-2" />
+                    <div className="h-3 bg-muted rounded w-1/2 mx-auto" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                {members.map((member, i) => (
+                  <motion.div
+                    key={member.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.08 }}
+                    className="text-center group"
+                  >
+                    <div className="relative inline-block mb-4">
+                      <div className={`w-28 h-28 rounded-3xl overflow-hidden mx-auto shadow-lg transition-transform group-hover:scale-105 duration-300 ${member.imageUrl ? "" : `bg-gradient-to-br ${AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length]}`}`}>
+                        {member.imageUrl ? (
+                          <img src={member.imageUrl} alt={member.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white font-extrabold text-3xl">
+                            {getInitials(member.name)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-foreground text-sm">{member.name}</h3>
+                    <p className="text-muted-foreground text-xs mt-1">{member.position}</p>
+                    {member.description && (
+                      <p className="text-muted-foreground/70 text-xs mt-2 line-clamp-2 leading-relaxed">{member.description}</p>
+                    )}
+                    {(member.linkedinUrl || member.twitterUrl || member.githubUrl || member.instagramUrl) && (
+                      <div className="flex items-center justify-center gap-2 mt-3">
+                        {member.linkedinUrl && (
+                          <a href={member.linkedinUrl} target="_blank" rel="noopener noreferrer"
+                            className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-blue-500 hover:bg-blue-50 transition-colors">
+                            <Linkedin className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {member.twitterUrl && (
+                          <a href={member.twitterUrl} target="_blank" rel="noopener noreferrer"
+                            className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-sky-500 hover:bg-sky-50 transition-colors">
+                            <Twitter className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {member.githubUrl && (
+                          <a href={member.githubUrl} target="_blank" rel="noopener noreferrer"
+                            className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors">
+                            <Github className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {member.instagramUrl && (
+                          <a href={member.instagramUrl} target="_blank" rel="noopener noreferrer"
+                            className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-pink-500 hover:bg-pink-50 transition-colors">
+                            <Instagram className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {team.map((member, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center"
-              >
-                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${member.color} flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-4 shadow-lg`}>
-                  {member.initials}
-                </div>
-                <h3 className="font-bold text-foreground text-sm">{member.name}</h3>
-                <p className="text-muted-foreground text-xs mt-1">{member.role}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="py-20 bg-primary text-primary-foreground">

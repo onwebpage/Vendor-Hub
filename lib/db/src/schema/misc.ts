@@ -162,6 +162,24 @@ export const socialLinksTable = pgTable("social_links", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const teamMembersTable = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  position: text("position").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  linkedinUrl: text("linkedin_url"),
+  twitterUrl: text("twitter_url"),
+  githubUrl: text("github_url"),
+  instagramUrl: text("instagram_url"),
+  displayOrder: integer("display_order").notNull().default(0),
+  isVisible: boolean("is_visible").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type TeamMember = typeof teamMembersTable.$inferSelect;
+
 export const insertReviewSchema = createInsertSchema(reviewsTable).omit({ id: true, createdAt: true });
 export const insertCouponSchema = createInsertSchema(couponsTable).omit({ id: true, createdAt: true });
 export const insertSupportTicketSchema = createInsertSchema(supportTicketsTable).omit({ id: true, createdAt: true, updatedAt: true });
