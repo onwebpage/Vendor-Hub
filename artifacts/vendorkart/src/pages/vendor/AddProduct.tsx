@@ -315,7 +315,7 @@ export default function AddProduct() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <FormLabel className="mb-0">Product Images</FormLabel>
+                    <label className="text-sm font-medium leading-none mb-0">Product Images</label>
                     <Badge variant="outline" className="text-xs font-normal">
                       {imageFields.length} / {maxImages} images
                     </Badge>
