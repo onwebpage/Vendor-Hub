@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { useGetProduct, useAddToCart, useGetWishlist, useAddToWishlist, useRemoveFromWishlist } from "@workspace/api-client-react";
-import { Store, Star, ShieldCheck, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, Heart, RotateCcw } from "lucide-react";
+import { Store, Star, ShieldCheck, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, Heart, RotateCcw, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -343,28 +343,37 @@ export default function ProductDetail() {
               </div>
 
               {/* Vendor Info Box */}
-              <div className="bg-secondary/30 rounded-2xl p-5 border border-border/50 mb-8 flex items-start gap-4">
-                <div className="w-12 h-12 bg-white rounded-full border border-border flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
-                  {vendor?.logo ? <img src={vendor.logo} className="w-full h-full object-cover" /> : <Store className="w-6 h-6 text-muted-foreground" />}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm text-muted-foreground mb-1">Sold by</div>
-                  <h3 className="font-bold text-lg leading-none mb-2">{vendor?.businessName}</h3>
-                  <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
-                    <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-green-500" /> Verified Supplier</span>
-                    <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-500" /> {vendor?.rating ? parseFloat(String(vendor.rating)).toFixed(1) : 'New'}</span>
+              <div className="bg-secondary/30 rounded-2xl border border-border/50 mb-8 overflow-hidden">
+                <Link href={product.vendorSlug ? `/vendors/${product.vendorSlug}` : "#"}>
+                  <div className="flex items-start gap-4 p-5 hover:bg-secondary/50 transition-colors cursor-pointer group">
+                    <div className="w-12 h-12 bg-white rounded-full border border-border flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                      {vendor?.logo ? <img src={vendor.logo} className="w-full h-full object-cover" /> : <Store className="w-6 h-6 text-muted-foreground" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm text-muted-foreground mb-1">Sold by</div>
+                      <h3 className="font-bold text-lg leading-none mb-2 group-hover:text-primary transition-colors flex items-center gap-1.5">
+                        {vendor?.businessName}
+                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </h3>
+                      <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                        <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-green-500" /> Verified Supplier</span>
+                        <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-500" /> {vendor?.rating ? parseFloat(String(vendor.rating)).toFixed(1) : 'New'}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </Link>
                 {vendorWaHref && (
-                  <a
-                    href={vendorWaHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1ebe5c] transition-colors shrink-0"
-                  >
-                    <WaIcon />
-                    WhatsApp Vendor
-                  </a>
+                  <div className="px-5 pb-4">
+                    <a
+                      href={vendorWaHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1ebe5c] transition-colors"
+                    >
+                      <WaIcon />
+                      WhatsApp Vendor
+                    </a>
+                  </div>
                 )}
               </div>
 

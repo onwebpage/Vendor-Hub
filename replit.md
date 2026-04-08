@@ -58,6 +58,15 @@ Social links are stored in the `social_links` DB table (single-row settings). Ad
 
 Team members are stored in the `team_members` DB table. Admins manage them at `/admin/team` with full CRUD, image upload (base64), reordering (up/down buttons), and show/hide toggle. Public read endpoint: `GET /api/team` (only returns visible members). The team section on `/about` is fully dynamic — it fetches from the DB and hides itself when empty.
 
+## Vendor Product Management
+
+- **Adding products**: Approved vendors can add products via `/vendor-dashboard/products`. Products are automatically set to `status: "approved"` upon creation and appear immediately on the public site.
+- **Vendor must be approved**: Vendors register as `"pending"` and need admin approval before adding products (`PUT /api/admin/vendors/:id/approve`).
+- **Product visibility**: `GET /api/products` only returns `status: "approved"` products. `enrichProduct()` in `products.ts` attaches `vendorSlug` and `vendorName` to each product.
+- **Vendor store page**: `/vendors/:slug` — products are enriched with `categoryName` via a category join. The `productCount` in the vendor header is dynamically computed from the live product list (not the stale DB field).
+- **Vendor info on product detail**: The vendor info box on `/products/:id` is a clickable link to `/vendors/:vendorSlug`.
+- **Category filter on vendor store**: Uses `p.categoryName` (joined field), not the non-existent `p.category` field.
+
 ## Deployment
 
 - **Target**: Autoscale

@@ -156,11 +156,11 @@ export default function VendorStore() {
   const rating = vendor.rating ? parseFloat(String(vendor.rating)) : 0;
   const initials = vendor.businessName.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
 
-  // Extract unique categories from products
-  const productCategories = ["all", ...Array.from(new Set(products.map((p: any) => p.category).filter(Boolean)))];
+  // Extract unique categories from products using categoryName
+  const productCategories = ["all", ...Array.from(new Set(products.map((p: any) => p.categoryName).filter(Boolean)))];
   const filteredProducts = activeCategory === "all"
     ? products
-    : products.filter((p: any) => p.category === activeCategory);
+    : products.filter((p: any) => p.categoryName === activeCategory);
 
   return (
     <PublicLayout>

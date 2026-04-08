@@ -17,7 +17,6 @@ router.get("/", async (_req, res) => {
     }));
     return res.json(result);
   } catch (err) {
-    req.log.error({ err }, "List categories error");
     return res.status(500).json({ message: "Failed to list categories" });
   }
 });

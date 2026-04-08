@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { vendorsTable, usersTable, productsTable, reviewsTable, ordersTable } from "@workspace/db/schema";
+import { vendorsTable, usersTable, productsTable, reviewsTable, ordersTable, categoriesTable } from "@workspace/db/schema";
 import { eq, and, ilike, count, sql } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 
@@ -186,9 +186,20 @@ router.get("/slug/:slug", async (req, res) => {
     if (!vendor) return res.status(404).json({ message: "Vendor not found" });
     if (vendor.status !== "approved") return res.status(403).json({ message: "This store is not available" });
 
-    const products = await db.select().from(productsTable)
+    const rawProducts = await db.select().from(productsTable)
       .where(and(eq(productsTable.vendorId, vendor.id), eq(productsTable.status, "approved")))
-      .limit(20);
+      .limit(50);
+
+    const allCategories = await db.select().from(categoriesTable);
+    const categoryMap = Object.fromEntries(allCategories.map(c => [c.id, c.name]));
+
+    const products = rawProducts.map(p => ({
+      ...p,
+      price: Number(p.price),
+      comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
+      rating: p.rating ? Number(p.rating) : 0,
+      categoryName: categoryMap[p.categoryId] ?? null,
+    }));
 
     const reviews = await db.select({
       id: reviewsTable.id,
@@ -205,7 +216,7 @@ router.get("/slug/:slug", async (req, res) => {
       .orderBy(sql`${reviewsTable.createdAt} DESC`)
       .limit(10);
 
-    return res.json({ vendor, products, reviews, categories: [] });
+    return res.json({ vendor: { ...vendor, productCount: products.length }, products, reviews, categories: [] });
   } catch (err) {
     return res.status(500).json({ message: "Failed to get vendor store" });
   }
