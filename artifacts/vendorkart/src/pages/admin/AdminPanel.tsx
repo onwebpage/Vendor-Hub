@@ -1796,6 +1796,56 @@ const formatBillingCycle = (cycle: string) => {
   return map[cycle] ?? cycle.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 };
 
+const billingCycleColors: Record<string, string> = {
+  monthly: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+  quarterly: "bg-violet-500/15 text-violet-300 border-violet-500/30",
+  half_yearly: "bg-teal-500/15 text-teal-300 border-teal-500/30",
+  yearly: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+};
+
+function PlanPreviewCard({ vals }: { vals: any }) {
+  const cycle = vals.billingCycle || "monthly";
+  const cycleColor = billingCycleColors[cycle] ?? "bg-white/10 text-white/60 border-white/20";
+  const features = (vals.featuresRaw || "").split("\n").map((s: string) => s.trim()).filter(Boolean);
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/3 p-4 space-y-3">
+      <p className="text-white/30 text-[10px] uppercase tracking-widest font-semibold mb-2">Live Preview</p>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-base font-extrabold text-white truncate">{vals.name || <span className="text-white/20">Plan Name</span>}</p>
+          <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cycleColor}`}>
+            {formatBillingCycle(cycle)} billing
+          </span>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-xl font-extrabold text-white">
+            {Number(vals.price) === 0 ? "Free" : `₹${Number(vals.price || 0).toLocaleString("en-IN")}`}
+          </p>
+          {Number(vals.price) > 0 && <p className="text-white/30 text-[10px]">/{formatBillingCycle(cycle).toLowerCase()}</p>}
+        </div>
+      </div>
+      <div className="space-y-1 text-xs text-white/40">
+        <p>Products: <span className="text-white/70 font-semibold">{Number(vals.maxProducts) === -1 ? "Unlimited" : vals.maxProducts}</span></p>
+        <p>Categories: <span className="text-white/70 font-semibold">{Number(vals.maxCategories) === -1 ? "All" : vals.maxCategories}</span></p>
+        <div className="flex gap-3 pt-0.5 flex-wrap">
+          {vals.canUploadBanner && <span className="text-emerald-400">✓ Banner</span>}
+          {vals.isFeatured && <span className="text-emerald-400">✓ Featured</span>}
+          {vals.can360View && <span className="text-emerald-400">✓ 360° View</span>}
+          {!vals.isActive && <span className="text-red-400">✗ Inactive</span>}
+        </div>
+        {features.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {features.slice(0, 3).map((f: string, i: number) => (
+              <span key={i} className="px-1.5 py-0.5 rounded-md bg-white/5 text-white/50 text-[10px]">{f}</span>
+            ))}
+            {features.length > 3 && <span className="text-white/30 text-[10px]">+{features.length - 3} more</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SubscriptionPlansPanel() {
   const { data: plans, loading } = useAdminFetch<any[]>("/api/admin/subscription-plans");
   const { token } = useAdminAuthStore();
@@ -1933,7 +1983,9 @@ function SubscriptionPlansPanel() {
                     <p className={`text-lg font-extrabold capitalize truncate ${planColors[plan.slug] ?? "text-white"}`}>{plan.name}</p>
                     {!plan.isActive && <Badge className="text-[10px] bg-white/5 text-white/30 border border-white/10 flex-shrink-0">Inactive</Badge>}
                   </div>
-                  <p className="text-white/40 text-xs mt-0.5">{formatBillingCycle(plan.billingCycle)} billing</p>
+                  <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${billingCycleColors[plan.billingCycle] ?? "bg-white/10 text-white/60 border-white/20"}`}>
+                    {formatBillingCycle(plan.billingCycle)} billing
+                  </span>
                 </div>
                 <p className="text-2xl font-extrabold text-white flex-shrink-0">{Number(plan.price) === 0 ? "Free" : `₹${Number(plan.price).toLocaleString("en-IN")}`}</p>
               </div>
@@ -1969,6 +2021,7 @@ function SubscriptionPlansPanel() {
               <button type="button" onClick={() => setIsCreating(false)}><X className="w-5 h-5 text-white/40 hover:text-white" /></button>
             </div>
             <PlanFormFields vals={newPlan} set={setN} />
+            <PlanPreviewCard vals={newPlan} />
             <div className="flex gap-3 justify-end pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsCreating(false)} className="rounded-xl text-white/50 h-9">Cancel</Button>
               <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">Create Plan</Button>
@@ -1987,6 +2040,7 @@ function SubscriptionPlansPanel() {
               <button type="button" onClick={() => setEditing(null)}><X className="w-5 h-5 text-white/40 hover:text-white" /></button>
             </div>
             <PlanFormFields vals={editing} set={(k, v) => setEditing((p: any) => ({ ...p, [k]: v }))} />
+            <PlanPreviewCard vals={editing} />
             <div className="flex gap-3 justify-end pt-2">
               <Button type="button" variant="ghost" onClick={() => setEditing(null)} className="rounded-xl text-white/50 h-9">Cancel</Button>
               <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">Save Changes</Button>
