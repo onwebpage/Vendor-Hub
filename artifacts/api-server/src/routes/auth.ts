@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { hashPassword, generateToken, authenticate } from "../lib/auth.js";
 import { uniqueSlug } from "../lib/slugify.js";
 import { logEmail } from "../lib/email-log.js";
-import { sendEmail } from "../lib/email.js";
+import { sendEmail, sendOtpEmail } from "../lib/email.js";
 import crypto from "crypto";
 
 const router = Router();
@@ -42,29 +42,19 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const token = generateToken(user.id, user.role);
-    const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
+    const otp = generateOtp();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000);
+    await db.update(usersTable)
+      .set({ twoFactorCode: otp, twoFactorExpiry: expiry })
+      .where(eq(usersTable.id, user.id));
 
-    if (role === "vendor") {
-      logEmail({
-        recipient: email,
-        recipientType: "vendor",
-        subject: "Welcome to Vendorkart – Registration Received",
-        body: `Dear ${name}, thank you for registering as a vendor on Vendorkart. Your account is under review. You'll be notified once approved.`,
-        type: "vendor_registered",
-        relatedId: user.id,
-      });
-      logEmail({
-        recipient: "admin@vendorkart.in",
-        recipientType: "admin",
-        subject: `New Vendor Registration – ${businessName || name}`,
-        body: `A new vendor "${businessName || name}" (${email}) has registered and is pending approval.`,
-        type: "new_vendor_registration",
-        relatedId: user.id,
-      });
+    const emailSent = await sendOtpEmail({ to: email, otp, purpose: "signup" });
+    if (!emailSent) {
+      req.log.info({ otp, userId: user.id }, "Signup OTP (Resend not configured, code logged)");
     }
 
-    return res.status(201).json({ user: userOut, token, message: "Registered successfully" });
+    const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
+    return res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code." });
   } catch (err) {
     req.log.error({ err }, "Register error");
     return res.status(500).json({ message: "Registration failed" });
@@ -85,29 +75,16 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ message: "Account is deactivated" });
     }
 
-    if (user.twoFactorEnabled) {
+    if (user.role !== "admin") {
       const otp = generateOtp();
       const expiry = new Date(Date.now() + 10 * 60 * 1000);
       await db.update(usersTable)
         .set({ twoFactorCode: otp, twoFactorExpiry: expiry })
         .where(eq(usersTable.id, user.id));
 
-      const emailSent = await sendEmail({
-        to: user.email,
-        subject: "Your Vendorkart login verification code",
-        text: `Your one-time verification code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
-      });
-
+      const emailSent = await sendOtpEmail({ to: user.email, otp, purpose: "login" });
       if (!emailSent) {
-        req.log.info({ otp, userId: user.id }, "2FA OTP generated (SMTP not configured, code logged)");
-        logEmail({
-          recipient: user.email,
-          recipientType: user.role === "vendor" ? "vendor" : "customer",
-          subject: "Your Vendorkart login verification code",
-          body: `Your one-time verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
-          type: "two_factor_otp",
-          relatedId: user.id,
-        });
+        req.log.info({ otp, userId: user.id }, "Login OTP (Resend not configured, code logged)");
       }
 
       const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");

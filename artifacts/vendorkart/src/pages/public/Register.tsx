@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ShoppingBag, Loader2, Store, User, MapPin } from "lucide-react";
+import { ShoppingBag, Loader2, Store, User, MapPin, ShieldCheck, MailCheck } from "lucide-react";
 import { useRegister } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +47,70 @@ export default function Register() {
   
   const { mutateAsync: registerMutation, isPending } = useRegister();
 
+  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [pendingToken, setPendingToken] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingAddress, setPendingAddress] = useState<null | Record<string, string>>(null);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const updated = [...otp];
+    updated[index] = value.slice(-1);
+    setOtp(updated);
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) otpRefs.current[index - 1]?.focus();
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) { setOtp(pasted.split("")); otpRefs.current[5]?.focus(); }
+    e.preventDefault();
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otp.join("");
+    if (code.length !== 6) {
+      toast({ variant: "destructive", title: "Enter the full 6-digit code" });
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendingToken, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Verification failed");
+
+      login(data.user, data.token);
+
+      if (pendingAddress && data.token) {
+        try {
+          await fetch("/api/addresses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.token}` },
+            body: JSON.stringify(pendingAddress),
+          });
+        } catch {}
+      }
+
+      toast({ title: "Email verified!", description: "Welcome to Vendorkart." });
+      if (data.user.role === "vendor") setLocation("/vendor-dashboard");
+      else setLocation("/customer-dashboard");
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Verification failed", description: error.message });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -64,34 +128,28 @@ export default function Register() {
 
     try {
       const response = await registerMutation({ data: { ...data, role: role as any } });
-      login(response.user, response.token);
 
-      if (role === 'customer' && (data.addressLine1 || data.city || data.pincode)) {
-        try {
-          await fetch('/api/addresses', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${response.token}`,
-            },
-            body: JSON.stringify({
-              name: data.name,
-              phone: data.phone || '',
-              addressLine1: data.addressLine1 || '',
-              city: data.city || '',
-              state: data.state || '',
-              pincode: data.pincode || '',
-              country: 'India',
-              isDefault: true,
-            }),
+      if ((response as any).requiresEmailVerification) {
+        setPendingToken((response as any).pendingToken);
+        setPendingEmail(data.email);
+        if (role === 'customer' && (data.addressLine1 || data.city || data.pincode)) {
+          setPendingAddress({
+            name: data.name,
+            phone: data.phone || '',
+            addressLine1: data.addressLine1 || '',
+            city: data.city || '',
+            state: data.state || '',
+            pincode: data.pincode || '',
+            country: 'India',
+            isDefault: 'true',
           });
-        } catch {
         }
+        setStep('otp');
+        toast({ title: "Check your email!", description: "We've sent a 6-digit code to verify your account." });
+        return;
       }
 
       toast({ title: "Account created!", description: "Welcome to Vendorkart." });
-      if (response.user.role === 'vendor') setLocation('/vendor-dashboard');
-      else setLocation('/customer-dashboard');
       
     } catch (error: any) {
       toast({ 
@@ -115,6 +173,57 @@ export default function Register() {
             </span>
           </Link>
 
+          {step === 'otp' ? (
+            <div>
+              <div className="text-center mb-8">
+                <div className="mx-auto w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                  <MailCheck className="w-7 h-7 text-primary" />
+                </div>
+                <h2 className="text-2xl font-display font-bold tracking-tight text-foreground">Verify your email</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  We sent a 6-digit code to <strong className="text-foreground">{pendingEmail}</strong>
+                </p>
+              </div>
+
+              <div className="flex justify-center gap-2 mb-8" onPaste={handleOtpPaste}>
+                {otp.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={el => { otpRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={e => handleOtpChange(i, e.target.value)}
+                    onKeyDown={e => handleOtpKeyDown(i, e)}
+                    className="w-12 h-14 text-center text-2xl font-bold border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  />
+                ))}
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={otpLoading || otp.join("").length !== 6}
+                className="w-full h-14 text-lg rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40"
+              >
+                {otpLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ShieldCheck className="w-5 h-5 mr-2" />}
+                Verify &amp; Create Account
+              </Button>
+
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                Wrong email?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setStep('form'); setOtp(["", "", "", "", "", ""]); }}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Go back
+                </button>
+              </div>
+            </div>
+          ) : (
+          <>
           <div className="text-center mb-8">
             <h2 className="text-3xl font-display font-bold tracking-tight text-foreground">Create an account</h2>
             <p className="mt-2 text-muted-foreground">Join the B2B marketplace today.</p>
@@ -277,6 +386,8 @@ export default function Register() {
               Log in instead
             </Link>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>

@@ -22,7 +22,7 @@ This is a **pnpm monorepo** with a unified Express + Vite dev server:
 - **Backend**: Express 5, Node.js 22, Pino logger
 - **Database**: PostgreSQL via `pg` driver, Drizzle ORM
 - **Payments**: Razorpay
-- **Email**: Nodemailer
+- **Email**: Resend API (secret: `RESENDAPIKEY`; from address configurable via `RESEND_FROM` env var, defaults to `Vendorkart <onboarding@resend.dev>`)
 
 ## Development
 
@@ -37,6 +37,8 @@ In **production**, the unified Express server (`artifacts/api-server`) serves bo
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (stored as Replit secret)
+- `RESENDAPIKEY` — Resend API key for transactional emails (stored as Replit secret)
+- `RESEND_FROM` — (optional) Custom from address e.g. `Vendorkart <hello@yourdomain.com>`
 - `PORT` — Server port (set to 5000)
 
 ## Replit Setup Notes
