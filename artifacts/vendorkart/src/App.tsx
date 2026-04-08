@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -69,7 +69,7 @@ function Router() {
       <Route path="/products" component={Products} />
       <Route path="/products/:id" component={ProductDetail} />
       <Route path="/vendors" component={Vendors} />
-      <Route path="/vendors/:slug" component={VendorStore} />
+      <Route path="/vendors/:slug">{(params) => <Redirect to={`/${params.slug}`} />}</Route>
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/pricing" component={Pricing} />
@@ -107,6 +107,9 @@ function Router() {
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/admin" component={AdminPanel} />
       <Route path="/admin/:rest*" component={AdminPanel} />
+
+      {/* Vendor store — must be last before 404 */}
+      <Route path="/:slug" component={VendorStore} />
 
       <Route component={NotFound} />
     </Switch>

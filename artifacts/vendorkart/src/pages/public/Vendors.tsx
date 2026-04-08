@@ -125,7 +125,7 @@ function VendorCard({ vendor }: { vendor: any }) {
         </div>
 
         {/* CTA */}
-        <Link href={`/vendors/${vendor.slug}`}>
+        <Link href={`/${vendor.slug}`}>
           <Button className="w-full rounded-xl h-10 text-sm font-semibold group-hover:bg-primary transition-colors" variant="secondary">
             View Store <ArrowRight className="ml-1.5 w-4 h-4" />
           </Button>

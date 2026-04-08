@@ -203,7 +203,7 @@ export default function StoreSettings() {
 
   const slug = (profile as any)?.slug;
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const storeUrl = slug ? `${window.location.origin}${base}/vendors/${slug}` : null;
+  const storeUrl = slug ? `${window.location.origin}${base}/${slug}` : null;
 
   const handleCopyUrl = () => {
     if (!storeUrl) return;

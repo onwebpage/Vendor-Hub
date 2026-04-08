@@ -456,8 +456,18 @@ function VendorsPanel() {
                         </>
                       )}
                       {v.status === "approved" && (
-                        <Button size="sm" onClick={() => handleAction(v.id, "suspend")}
-                          className="h-6 px-2 text-[10px] rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">Suspend</Button>
+                        <>
+                          {v.slug && (
+                            <a href={`/${v.slug}`} target="_blank" rel="noopener noreferrer">
+                              <Button size="sm"
+                                className="h-6 px-2 text-[10px] rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 flex items-center gap-0.5">
+                                <ArrowUpRight className="w-3 h-3" />Store
+                              </Button>
+                            </a>
+                          )}
+                          <Button size="sm" onClick={() => handleAction(v.id, "suspend")}
+                            className="h-6 px-2 text-[10px] rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">Suspend</Button>
+                        </>
                       )}
                       {v.status === "suspended" && (
                         <Button size="sm" onClick={() => handleAction(v.id, "approve")}

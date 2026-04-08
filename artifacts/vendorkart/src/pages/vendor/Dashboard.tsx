@@ -24,7 +24,7 @@ const fadeIn = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, 
 function StoreUrlBar({ slug }: { slug: string }) {
   const [copied, setCopied] = React.useState(false);
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const storeUrl = `${window.location.origin}${base}/vendors/${slug}`;
+  const storeUrl = `${window.location.origin}${base}/${slug}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(storeUrl).then(() => {
@@ -62,7 +62,7 @@ function StoreUrlBar({ slug }: { slug: string }) {
 function StatusBanner({ status, rejectionReason, slug }: { status: string; rejectionReason?: string | null; slug?: string }) {
   if (status === "approved") {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-    const storeUrl = slug ? `${window.location.origin}${base}/vendors/${slug}` : null;
+    const storeUrl = slug ? `${window.location.origin}${base}/${slug}` : null;
     return (
       <motion.div {...fadeIn} className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 to-emerald-400/5 p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="p-2.5 rounded-xl bg-emerald-500/15 flex-shrink-0">

@@ -344,7 +344,7 @@ export default function ProductDetail() {
 
               {/* Vendor Info Box */}
               <div className="bg-secondary/30 rounded-2xl border border-border/50 mb-8 overflow-hidden">
-                <Link href={product.vendorSlug ? `/vendors/${product.vendorSlug}` : "#"}>
+                <Link href={product.vendorSlug ? `/${product.vendorSlug}` : "#"}>
                   <div className="flex items-start gap-4 p-5 hover:bg-secondary/50 transition-colors cursor-pointer group">
                     <div className="w-12 h-12 bg-white rounded-full border border-border flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                       {vendor?.logo ? <img src={vendor.logo} className="w-full h-full object-cover" /> : <Store className="w-6 h-6 text-muted-foreground" />}
