@@ -162,29 +162,40 @@ export default function VendorStore() {
     ? products
     : products.filter((p: any) => p.categoryName === activeCategory);
 
+  // Pick a consistent accent color from the vendor name for the no-banner gradient
+  const accentColors: [string, string][] = [
+    ["#6366f1", "#8b5cf6"], ["#0ea5e9", "#6366f1"], ["#10b981", "#0ea5e9"],
+    ["#f59e0b", "#ef4444"], ["#ec4899", "#8b5cf6"], ["#14b8a6", "#3b82f6"],
+  ];
+  const colorPair = accentColors[(vendor.businessName.charCodeAt(0) || 0) % accentColors.length];
+
   return (
     <PublicLayout>
       {/* Banner / Cover Image */}
-      <div className="relative h-60 sm:h-72 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 overflow-hidden">
+      <div className="relative overflow-hidden" style={{ height: vendor.banner ? "220px" : "160px" }}>
         {vendor.banner ? (
-          <img src={vendor.banner} alt={vendor.businessName} className="w-full h-full object-cover opacity-40" />
+          <>
+            <img src={vendor.banner} alt={vendor.businessName} className="w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)" }} />
+          </>
         ) : (
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 opacity-[0.04]" style={{
-              backgroundImage: `linear-gradient(rgba(99,102,241,1) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,1) 1px, transparent 1px)`,
-              backgroundSize: "40px 40px"
+          <div className="absolute inset-0" style={{
+            background: `linear-gradient(135deg, ${colorPair[0]}22 0%, ${colorPair[1]}33 50%, ${colorPair[0]}18 100%)`,
+            backgroundColor: "hsl(var(--muted))",
+          }}>
+            <div className="absolute inset-0 opacity-[0.06]" style={{
+              backgroundImage: `radial-gradient(circle, ${colorPair[0]} 1px, transparent 1px)`,
+              backgroundSize: "28px 28px",
             }} />
-            <div className="absolute top-8 left-12 w-40 h-40 rounded-full blur-3xl opacity-20"
-              style={{ background: "radial-gradient(circle, #6366f1, transparent)" }} />
-            <div className="absolute bottom-4 right-12 w-32 h-32 rounded-full blur-3xl opacity-15"
-              style={{ background: "radial-gradient(circle, #3b82f6, transparent)" }} />
+            <div className="absolute top-6 left-16 w-48 h-48 rounded-full blur-3xl opacity-25"
+              style={{ background: `radial-gradient(circle, ${colorPair[0]}, transparent)` }} />
+            <div className="absolute bottom-0 right-20 w-36 h-36 rounded-full blur-3xl opacity-20"
+              style={{ background: `radial-gradient(circle, ${colorPair[1]}, transparent)` }} />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)" }} />
-
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 z-10">
           <Link href="/vendors">
-            <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/10 rounded-xl">
+            <Button variant="ghost" size="sm" className="rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm border border-white/20">
               <ArrowLeft className="w-4 h-4 mr-1.5" /> All Vendors
             </Button>
           </Link>
@@ -193,36 +204,39 @@ export default function VendorStore() {
 
       {/* Vendor Header */}
       <div className="bg-card border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-5 -mt-12 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10 relative z-10">
             {/* Logo */}
             {vendor.logo ? (
               <img
                 src={vendor.logo}
                 alt={vendor.businessName}
-                className="w-24 h-24 rounded-2xl border-4 border-background object-cover shadow-2xl flex-shrink-0"
+                className="w-20 h-20 rounded-2xl border-4 border-background object-cover shadow-xl flex-shrink-0"
               />
             ) : (
-              <div className="w-24 h-24 rounded-2xl border-4 border-background bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-2xl shadow-2xl flex-shrink-0">
+              <div
+                className="w-20 h-20 rounded-2xl border-4 border-background flex items-center justify-center text-white font-extrabold text-xl shadow-xl flex-shrink-0"
+                style={{ background: `linear-gradient(135deg, ${colorPair[0]}, ${colorPair[1]})` }}
+              >
                 {initials}
               </div>
             )}
 
-            <div className="flex-1 min-w-0 pt-2 sm:pt-0">
+            <div className="flex-1 min-w-0 pt-1 sm:pt-0 pb-1">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="text-2xl font-display font-bold text-foreground">{vendor.businessName}</h1>
-                <BadgeCheck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                <h1 className="text-xl font-display font-bold text-foreground">{vendor.businessName}</h1>
+                <BadgeCheck className="w-4.5 h-4.5 text-emerald-500 flex-shrink-0" />
                 {vendor.isFeatured && (
-                  <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/25 text-[10px]">Featured</Badge>
+                  <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-[10px] font-semibold">Featured</Badge>
                 )}
                 {vendor.subscriptionPlan && vendor.subscriptionPlan !== "free" && (
-                  <Badge className="bg-violet-500/15 text-violet-400 border-violet-500/25 text-[10px] capitalize">
+                  <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/25 text-[10px] font-semibold capitalize">
                     <Award className="w-2.5 h-2.5 mr-1" />{vendor.subscriptionPlan}
                   </Badge>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 {(vendor.city || vendor.state) && (
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5" />
@@ -241,7 +255,7 @@ export default function VendorStore() {
                   {vendor.productCount || products.length} Products
                 </span>
                 {vendor.gstNumber && (
-                  <span className="flex items-center gap-1 text-emerald-500">
+                  <span className="flex items-center gap-1 text-emerald-600 font-medium">
                     <BadgeCheck className="w-3.5 h-3.5" /> GST Verified
                   </span>
                 )}
