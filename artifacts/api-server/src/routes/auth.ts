@@ -48,13 +48,15 @@ router.post("/register", async (req, res) => {
       .set({ twoFactorCode: otp, twoFactorExpiry: expiry })
       .where(eq(usersTable.id, user.id));
 
-    const emailSent = await sendOtpEmail({ to: email, otp, purpose: "signup" });
-    if (!emailSent) {
-      req.log.info({ otp, userId: user.id }, "Signup OTP (Resend not configured, code logged)");
-    }
-
     const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
-    return res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code." });
+    res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code." });
+
+    sendOtpEmail({ to: email, otp, purpose: "signup" }).then(sent => {
+      if (!sent) req.log.info({ otp, userId: user.id }, "Signup OTP email failed or not configured");
+    }).catch(err => {
+      req.log.error({ err, otp, userId: user.id }, "Signup OTP email error");
+    });
+    return;
   } catch (err) {
     req.log.error({ err }, "Register error");
     return res.status(500).json({ message: "Registration failed" });
@@ -82,13 +84,15 @@ router.post("/login", async (req, res) => {
         .set({ twoFactorCode: otp, twoFactorExpiry: expiry })
         .where(eq(usersTable.id, user.id));
 
-      const emailSent = await sendOtpEmail({ to: user.email, otp, purpose: "login" });
-      if (!emailSent) {
-        req.log.info({ otp, userId: user.id }, "Login OTP (Resend not configured, code logged)");
-      }
-
       const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
-      return res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email" });
+      res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email" });
+
+      sendOtpEmail({ to: user.email, otp, purpose: "login" }).then(sent => {
+        if (!sent) req.log.info({ otp, userId: user.id }, "Login OTP email failed or not configured");
+      }).catch(err => {
+        req.log.error({ err, otp, userId: user.id }, "Login OTP email error");
+      });
+      return;
     }
 
     const token = generateToken(user.id, user.role);

@@ -10,6 +10,8 @@ const transporter = GMAIL_USER && GMAIL_APP_PASSWORD
         user: GMAIL_USER,
         pass: GMAIL_APP_PASSWORD,
       },
+      connectionTimeout: 10000,
+      socketTimeout: 10000,
     })
   : null;
 
