@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ShoppingBag, ArrowRight, Loader2, Store, User, ShieldCheck, MailCheck } from "lucide-react";
-import { useLogin } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ export default function Login() {
   const [otpLoading, setOtpLoading] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const { mutateAsync: loginMutation, isPending } = useLogin();
+  const [isPending, setIsPending] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -46,11 +45,18 @@ export default function Login() {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
+    setIsPending(true);
     try {
-      const response = await loginMutation({ data });
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const response = await res.json();
+      if (!res.ok) throw new Error(response.message || "Login failed");
 
-      if ((response as any).requires2FA) {
-        setPendingToken((response as any).pendingToken);
+      if (response.requires2FA) {
+        setPendingToken(response.pendingToken);
         setStep('otp');
         toast({ title: "Check your email", description: "A 6-digit verification code has been sent to your email." });
         return;
@@ -73,6 +79,8 @@ export default function Login() {
         title: "Login failed",
         description: error.message || "Please check your credentials and try again.",
       });
+    } finally {
+      setIsPending(false);
     }
   };
 

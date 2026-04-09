@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ShoppingBag, Loader2, Store, User, MapPin, ShieldCheck, MailCheck } from "lucide-react";
-import { useRegister } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -44,8 +43,7 @@ export default function Register() {
   const { toast } = useToast();
   const login = useAuthStore(s => s.login);
   const [role, setRole] = useState<'customer' | 'vendor'>(initialRole);
-  
-  const { mutateAsync: registerMutation, isPending } = useRegister();
+  const [isPending, setIsPending] = useState(false);
 
   const [step, setStep] = useState<'form' | 'otp'>('form');
   const [pendingToken, setPendingToken] = useState("");
@@ -126,11 +124,18 @@ export default function Register() {
       return;
     }
 
+    setIsPending(true);
     try {
-      const response = await registerMutation({ data: { ...data, role: role as any } });
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, role }),
+      });
+      const response = await res.json();
+      if (!res.ok) throw new Error(response.message || "Registration failed");
 
-      if ((response as any).requiresEmailVerification) {
-        setPendingToken((response as any).pendingToken);
+      if (response.requiresEmailVerification) {
+        setPendingToken(response.pendingToken);
         setPendingEmail(data.email);
         if (role === 'customer' && (data.addressLine1 || data.city || data.pincode)) {
           setPendingAddress({
@@ -157,6 +162,8 @@ export default function Register() {
         title: "Registration failed", 
         description: error.message || "Please check your details and try again." 
       });
+    } finally {
+      setIsPending(false);
     }
   };
 
