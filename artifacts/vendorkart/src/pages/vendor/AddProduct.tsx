@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCreateProduct, useListCategories, useGetVendorProfile, useGetCurrentSubscription } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
+import { useVendorBase } from "@/lib/use-vendor-base";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +54,7 @@ async function fetchMyProductCount() {
 
 export default function AddProduct() {
   const [, setLocation] = useLocation();
+  const { base: dashboardBase } = useVendorBase();
   const { toast } = useToast();
   const { data: categories } = useListCategories();
   const { data: vendorProfile, isLoading: profileLoading, isError: profileError } = useGetVendorProfile();
@@ -132,7 +134,7 @@ export default function AddProduct() {
       
       await createProduct({ data: apiData as any });
       toast({ title: "Success", description: "Product added successfully." });
-      setLocation("/vendor-dashboard/products");
+      setLocation(`${dashboardBase}/products`);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to add product" });
     }
@@ -160,7 +162,7 @@ export default function AddProduct() {
           <p className="text-muted-foreground mb-6 leading-relaxed">
             Please log in again and try accessing this page.
           </p>
-          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+          <Button variant="outline" onClick={() => setLocation(dashboardBase)}>
             Back to Dashboard
           </Button>
         </div>
@@ -179,7 +181,7 @@ export default function AddProduct() {
           <p className="text-muted-foreground mb-6 leading-relaxed">
             Your vendor account is still under review by the admin. You will be able to add products once your account is approved.
           </p>
-          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+          <Button variant="outline" onClick={() => setLocation(dashboardBase)}>
             Back to Dashboard
           </Button>
         </div>
@@ -200,7 +202,7 @@ export default function AddProduct() {
           <p className="text-muted-foreground mb-6 leading-relaxed">
             {vendorProfile.rejectionReason || "Your vendor account is not active. Please contact support for assistance."}
           </p>
-          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+          <Button variant="outline" onClick={() => setLocation(dashboardBase)}>
             Back to Dashboard
           </Button>
         </div>
@@ -219,7 +221,7 @@ export default function AddProduct() {
           <p className="text-muted-foreground mb-6 leading-relaxed">
             You must be an approved vendor to add products.
           </p>
-          <Button variant="outline" onClick={() => setLocation("/vendor-dashboard")}>
+          <Button variant="outline" onClick={() => setLocation(dashboardBase)}>
             Back to Dashboard
           </Button>
         </div>
@@ -242,10 +244,10 @@ export default function AddProduct() {
             Upgrade to a higher subscription plan to list more products.
           </p>
           <div className="flex gap-3 justify-center">
-            <Button variant="outline" onClick={() => setLocation("/vendor-dashboard/products")}>
+            <Button variant="outline" onClick={() => setLocation(`${dashboardBase}/products`)}>
               View Products
             </Button>
-            <Button onClick={() => setLocation("/vendor-dashboard/subscription")}>
+            <Button onClick={() => setLocation(`${dashboardBase}/subscription`)}>
               Upgrade Plan
             </Button>
           </div>
@@ -465,7 +467,7 @@ export default function AddProduct() {
                   <p className="font-semibold text-sm">360° Product View — Premium Feature</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Upgrade your subscription to unlock interactive 360° product views for your customers.</p>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="ml-auto rounded-xl shrink-0" onClick={() => setLocation("/vendor-dashboard/subscription")}>
+                <Button type="button" variant="outline" size="sm" className="ml-auto rounded-xl shrink-0" onClick={() => setLocation(`${dashboardBase}/subscription`)}>
                   Upgrade
                 </Button>
               </div>
@@ -560,7 +562,7 @@ export default function AddProduct() {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
-              <Button type="button" variant="ghost" className="h-11 sm:h-12 px-5 sm:px-6 order-2 sm:order-1" onClick={() => setLocation("/vendor-dashboard/products")}>Cancel</Button>
+              <Button type="button" variant="ghost" className="h-11 sm:h-12 px-5 sm:px-6 order-2 sm:order-1" onClick={() => setLocation(`${dashboardBase}/products`)}>Cancel</Button>
               <Button type="submit" className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl shadow-lg shadow-primary/25 order-1 sm:order-2" disabled={isPending}>
                 {isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                 Save Product

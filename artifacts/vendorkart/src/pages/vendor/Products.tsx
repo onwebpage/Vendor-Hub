@@ -2,6 +2,7 @@ import React from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useVendorBase } from "@/lib/use-vendor-base";
 import {
   Package, Plus, Trash2, AlertCircle, ImageOff, Search,
   CheckCircle2, Clock, XCircle, Loader2, MoreVertical,
@@ -232,6 +233,7 @@ function ProductRow({ product, onDelete }: { product: any; onDelete: (id: number
 }
 
 export default function VendorProducts() {
+  const { base: dashboardBase } = useVendorBase();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = React.useState("");
@@ -282,7 +284,7 @@ export default function VendorProducts() {
               {products.length} product{products.length !== 1 ? "s" : ""} in your store
             </p>
           </div>
-          <Link href="/vendor-dashboard/add-product">
+          <Link href={`${dashboardBase}/add-product`}>
             <Button className="gap-2 rounded-xl h-11 px-5 shadow-lg shadow-primary/20">
               <Plus className="w-4 h-4" /> Add Product
             </Button>
@@ -403,7 +405,7 @@ export default function VendorProducts() {
               </p>
             </div>
             {!search && activeFilter === "All" && (
-              <Link href="/vendor-dashboard/add-product">
+              <Link href={`${dashboardBase}/add-product`}>
                 <Button className="gap-2 rounded-xl h-11 px-6 shadow-lg shadow-primary/20">
                   <Plus className="w-4 h-4" /> Add Your First Product
                 </Button>

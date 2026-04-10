@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
+import { useVendorBase } from "@/lib/use-vendor-base";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell
@@ -59,7 +60,7 @@ function StoreUrlBar({ slug }: { slug: string }) {
   );
 }
 
-function StatusBanner({ status, rejectionReason, slug }: { status: string; rejectionReason?: string | null; slug?: string }) {
+function StatusBanner({ status, rejectionReason, slug, dashboardBase }: { status: string; rejectionReason?: string | null; slug?: string; dashboardBase: string }) {
   if (status === "approved") {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     const storeUrl = slug ? `${window.location.origin}${base}/${slug}` : null;
@@ -80,7 +81,7 @@ function StatusBanner({ status, rejectionReason, slug }: { status: string; rejec
               </Button>
             </a>
           )}
-          <Link href="/vendor-dashboard/add-product">
+          <Link href={`${dashboardBase}/add-product`}>
             <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl border-0 gap-1.5">
               <Plus className="w-4 h-4" /> Add Product
             </Button>
@@ -425,6 +426,7 @@ function QuickAction({ icon: Icon, label, href, disabled, color }: {
 
 export default function VendorDashboard() {
   const { data: profile, isLoading } = useGetVendorProfile();
+  const { base: dashboardBase } = useVendorBase();
 
   if (isLoading) {
     return (
@@ -490,10 +492,10 @@ export default function VendorDashboard() {
   ];
 
   const quickActions = [
-    { icon: Plus, label: "Add New Product", href: "/vendor-dashboard/add-product", color: "bg-primary/10 text-primary", disabled: !isApproved },
-    { icon: Package, label: "Manage Products", href: "/vendor-dashboard/products", color: "bg-blue-500/10 text-blue-500", disabled: !isApproved },
-    { icon: ShoppingBag, label: "View Orders", href: "/vendor-dashboard/orders", color: "bg-violet-500/10 text-violet-500", disabled: !isApproved },
-    { icon: Store, label: "Store Settings", href: "/vendor-dashboard/store-settings", color: "bg-slate-500/10 text-slate-500", disabled: false },
+    { icon: Plus, label: "Add New Product", href: `${dashboardBase}/add-product`, color: "bg-primary/10 text-primary", disabled: !isApproved },
+    { icon: Package, label: "Manage Products", href: `${dashboardBase}/products`, color: "bg-blue-500/10 text-blue-500", disabled: !isApproved },
+    { icon: ShoppingBag, label: "View Orders", href: `${dashboardBase}/orders`, color: "bg-violet-500/10 text-violet-500", disabled: !isApproved },
+    { icon: Store, label: "Store Settings", href: `${dashboardBase}/store-settings`, color: "bg-slate-500/10 text-slate-500", disabled: false },
   ];
 
   const initials = (profile?.businessName || "?")
@@ -505,14 +507,14 @@ export default function VendorDashboard() {
         {/* Header */}
         <motion.div {...fadeIn} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">Vendor Hub</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">{profile?.businessName || "My Store"}</h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              {isApproved ? "Manage your store, products, and incoming orders." : "Your vendor dashboard — approval needed to go live."}
+              {isApproved ? "Manage your store, products, and incoming orders." : "Complete your setup — approval needed to go live."}
             </p>
           </div>
           {isApproved ? (
             <Button className="rounded-xl h-11 px-6 shadow-md shadow-primary/20 gap-2" asChild>
-              <Link href="/vendor-dashboard/add-product">
+              <Link href={`${dashboardBase}/add-product`}>
                 <Plus className="w-4 h-4" /> Add Product
               </Link>
             </Button>
@@ -525,7 +527,7 @@ export default function VendorDashboard() {
         </motion.div>
 
         {/* Status Banner */}
-        <StatusBanner status={profile?.status ?? "pending"} rejectionReason={profile?.rejectionReason} slug={(profile as any)?.slug} />
+        <StatusBanner status={profile?.status ?? "pending"} rejectionReason={profile?.rejectionReason} slug={(profile as any)?.slug} dashboardBase={dashboardBase} />
 
         {/* Store Profile Card */}
         <motion.div {...fadeIn} className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
@@ -559,7 +561,7 @@ export default function VendorDashboard() {
                 )}
               </div>
               <Button variant="outline" size="sm" className="rounded-xl gap-2" asChild>
-                <Link href="/vendor-dashboard/store-settings">
+                <Link href={`${dashboardBase}/store-settings`}>
                   <Store className="w-3.5 h-3.5" /> Edit Store
                 </Link>
               </Button>
@@ -676,7 +678,7 @@ export default function VendorDashboard() {
                     </div>
                   ))}
                   <div className="pt-2 border-t border-border/50">
-                    <Link href="/vendor-dashboard/store-settings">
+                    <Link href={`${dashboardBase}/store-settings`}>
                       <Button variant="outline" size="sm" className="w-full rounded-xl gap-2 text-xs">
                         Complete Store Profile <ArrowRight className="w-3 h-3" />
                       </Button>

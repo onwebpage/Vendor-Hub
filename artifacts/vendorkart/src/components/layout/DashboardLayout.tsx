@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { useAuthStore } from "@/lib/auth-store";
+import { useVendorBase } from "@/lib/use-vendor-base";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, ShoppingBag, Package, Users, Settings, 
@@ -19,10 +20,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
   const [isDesktopExpanded, setDesktopExpanded] = React.useState(true);
   const [isMobileOpen, setMobileOpen] = React.useState(false);
+  const { base: vendorBase } = useVendorBase();
 
   React.useEffect(() => {
     setMobileOpen(false);
   }, [location]);
+
+  React.useEffect(() => {
+    if (user?.role === 'vendor' && vendorBase !== '/vendor-dashboard' && location.startsWith('/vendor-dashboard')) {
+      const subPath = location.replace('/vendor-dashboard', '');
+      setLocation(vendorBase + subPath, { replace: true });
+    }
+  }, [vendorBase, location, user?.role]);
 
   if (!user) {
     setLocation("/login");
@@ -45,15 +54,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         ];
       case "vendor":
         return [
-          { icon: LayoutDashboard, label: "Dashboard",       href: "/vendor-dashboard" },
-          { icon: Package,         label: "Products",         href: "/vendor-dashboard/products" },
-          { icon: ShoppingBag,     label: "Orders",           href: "/vendor-dashboard/orders" },
-          { icon: Tag,             label: "Categories",       href: "/vendor-dashboard/categories" },
-          { icon: CreditCard,      label: "Payments",         href: "/vendor-dashboard/payments" },
-          { icon: Store,           label: "Store Settings",   href: "/vendor-dashboard/store-settings" },
-          { icon: Bell,            label: "Notifications",    href: "/vendor-dashboard/notifications" },
-          { icon: Crown,           label: "Subscription",     href: "/vendor-dashboard/subscription" },
-          { icon: LifeBuoy,        label: "Support",          href: "/vendor-dashboard/support" },
+          { icon: LayoutDashboard, label: "Dashboard",       href: vendorBase },
+          { icon: Package,         label: "Products",         href: `${vendorBase}/products` },
+          { icon: ShoppingBag,     label: "Orders",           href: `${vendorBase}/orders` },
+          { icon: Tag,             label: "Categories",       href: `${vendorBase}/categories` },
+          { icon: CreditCard,      label: "Payments",         href: `${vendorBase}/payments` },
+          { icon: Store,           label: "Store Settings",   href: `${vendorBase}/store-settings` },
+          { icon: Bell,            label: "Notifications",    href: `${vendorBase}/notifications` },
+          { icon: Crown,           label: "Subscription",     href: `${vendorBase}/subscription` },
+          { icon: LifeBuoy,        label: "Support",          href: `${vendorBase}/support` },
         ];
       case "admin":
         return [
@@ -196,7 +205,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Menu className="h-5 w-5" />
             </Button>
             <h1 className="text-base md:text-xl font-display font-bold capitalize hidden sm:block">
-              {location.split('/').pop()?.replace(/-/g, ' ') || 'Overview'}
+              {navItems.find(item => item.href === location)?.label ||
+               location.split('/').pop()?.replace(/-/g, ' ') || 'Overview'}
             </h1>
           </div>
 

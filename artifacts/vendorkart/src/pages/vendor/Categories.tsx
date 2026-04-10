@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { useVendorBase } from "@/lib/use-vendor-base";
 
 const categoryColors = [
   "from-blue-500/15 to-blue-400/5 border-blue-500/20",
@@ -24,6 +25,7 @@ const iconColors = [
 ];
 
 export default function VendorCategories() {
+  const { base: dashboardBase } = useVendorBase();
   const [search, setSearch] = React.useState("");
   const { data: categories = [], isLoading, isError } = useListCategories();
 
@@ -89,7 +91,7 @@ export default function VendorCategories() {
                   {cat.description && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{cat.description}</p>
                   )}
-                  <Link href={`/vendor-dashboard/add-product`}>
+                  <Link href={`${dashboardBase}/add-product`}>
                     <p className="text-xs font-semibold mt-3 text-primary hover:underline">
                       Add product in this category →
                     </p>

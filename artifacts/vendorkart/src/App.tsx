@@ -90,7 +90,20 @@ function Router() {
       <Route path="/customer-dashboard/profile" component={CustomerProfile} />
       <Route path="/customer-dashboard/:rest*" component={CustomerDashboard} />
 
-      {/* Vendor */}
+      {/* Vendor — slug-based routes */}
+      <Route path="/vendor/:slug" component={VendorDashboard} />
+      <Route path="/vendor/:slug/add-product" component={AddProduct} />
+      <Route path="/vendor/:slug/products" component={VendorProducts} />
+      <Route path="/vendor/:slug/orders" component={VendorOrders} />
+      <Route path="/vendor/:slug/categories" component={VendorCategories} />
+      <Route path="/vendor/:slug/payments" component={VendorPayments} />
+      <Route path="/vendor/:slug/store-settings" component={StoreSettings} />
+      <Route path="/vendor/:slug/notifications" component={VendorNotifications} />
+      <Route path="/vendor/:slug/subscription" component={VendorSubscription} />
+      <Route path="/vendor/:slug/support" component={VendorSupport} />
+      <Route path="/vendor/:slug/:rest*" component={VendorDashboard} />
+
+      {/* Vendor — legacy fallback routes (redirect handled in VendorDashboard) */}
       <Route path="/vendor-dashboard" component={VendorDashboard} />
       <Route path="/vendor-dashboard/add-product" component={AddProduct} />
       <Route path="/vendor-dashboard/products" component={VendorProducts} />
