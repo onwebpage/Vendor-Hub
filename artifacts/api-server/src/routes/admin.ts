@@ -4,7 +4,7 @@ import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, vendorSubscriptionsTable, commissionSettingsTable, activityLogsTable,
   contactMessagesTable, bannersTable, emailLogsTable, paymentsTable, categoriesTable, contactInfoTable,
-  socialLinksTable, teamMembersTable, officeLocationsTable,
+  socialLinksTable, teamMembersTable, officeLocationsTable, legalPagesTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql, asc } from "drizzle-orm";
 import { authenticate, requireRole, hashPassword } from "../lib/auth.js";
@@ -842,6 +842,32 @@ router.delete("/office-locations/:id", async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ message: "Failed to delete office location" });
+  }
+});
+
+router.get("/legal-pages", async (_req, res) => {
+  try {
+    const pages = await db.select().from(legalPagesTable);
+    return res.json(pages);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch legal pages" });
+  }
+});
+
+router.put("/legal-pages/:slug", async (req, res) => {
+  try {
+    const { title, subtitle, content } = req.body;
+    const [page] = await db.update(legalPagesTable).set({
+      title,
+      subtitle: subtitle || null,
+      content,
+      updatedAt: new Date(),
+    }).where(eq(legalPagesTable.slug, req.params.slug)).returning();
+    if (!page) return res.status(404).json({ message: "Page not found" });
+    logActivity({ action: "legal_page_updated", resource: "legal_pages", details: `Updated legal page: ${req.params.slug}` });
+    return res.json(page);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update legal page" });
   }
 });
 

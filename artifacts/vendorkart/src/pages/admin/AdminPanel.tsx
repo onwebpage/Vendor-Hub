@@ -3310,6 +3310,182 @@ function OfficeLocationsPanel() {
   );
 }
 
+// ─── LEGAL PAGES ──────────────────────────────────────────────────────────────
+const LEGAL_PAGES_META = [
+  { slug: "terms",                    label: "Terms & Conditions",       color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+  { slug: "privacy",                  label: "Privacy Policy",           color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+  { slug: "refund-policy",            label: "Refund Policy",            color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+  { slug: "subscription-refund-policy", label: "Subscription Refund Policy", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+  { slug: "vendor-policy",            label: "Vendor Policy",            color: "text-rose-400 bg-rose-500/10 border-rose-500/20" },
+];
+
+function LegalPagesPanel() {
+  const { token } = useAdminAuthStore();
+  const [activeSlug, setActiveSlug] = useState(LEGAL_PAGES_META[0].slug);
+  const [pages, setPages] = useState<Record<string, any>>({});
+  const [form, setForm] = useState<{ title: string; subtitle: string; content: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [preview, setPreview] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${BASE}/api/admin/legal-pages`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then((data: any[]) => {
+        const map: Record<string, any> = {};
+        for (const p of data) map[p.slug] = p;
+        setPages(map);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [token]);
+
+  useEffect(() => {
+    const p = pages[activeSlug];
+    if (p) setForm({ title: p.title, subtitle: p.subtitle ?? "", content: p.content });
+    else setForm(null);
+  }, [activeSlug, pages]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${BASE}/api/admin/legal-pages/${activeSlug}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const updated = await res.json();
+      setPages(p => ({ ...p, [activeSlug]: updated }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const activeMeta = LEGAL_PAGES_META.find(m => m.slug === activeSlug)!;
+
+  return (
+    <div className="space-y-6">
+      <p className="text-white/60 text-sm">Edit the content of each legal/policy page shown on the public site.</p>
+
+      {/* Page selector */}
+      <div className="flex flex-wrap gap-2">
+        {LEGAL_PAGES_META.map(meta => (
+          <button
+            key={meta.slug}
+            onClick={() => { setActiveSlug(meta.slug); setPreview(false); setSaved(false); }}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+              activeSlug === meta.slug
+                ? meta.color
+                : "text-white/40 border-white/10 hover:text-white/60 hover:border-white/20"
+            }`}
+          >
+            {meta.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-2xl bg-white/5" />)}
+        </div>
+      ) : !form ? (
+        <div className="flex flex-col items-center justify-center py-16 bg-white/3 rounded-3xl border border-white/8">
+          <FileText className="w-10 h-10 text-white/15 mb-3" />
+          <p className="text-white/40 text-sm">Page not found in database</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSave} className="space-y-5">
+          <div className="bg-white/3 rounded-2xl border border-white/8 p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className={`font-bold text-base ${activeMeta.color.split(" ")[0]}`}>{activeMeta.label}</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPreview(!preview)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    preview ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30" : "text-white/40 border-white/10 hover:text-white/70"
+                  }`}
+                >
+                  {preview ? "Edit" : "Preview"}
+                </button>
+                {saved && <span className="text-emerald-400 text-xs font-semibold">Saved!</span>}
+                <Button type="submit" disabled={saving} className="h-8 px-4 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-700">
+                  {saving ? "Saving…" : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-white/50 text-xs mb-1 block">Page Title</label>
+                <Input
+                  value={form.title}
+                  onChange={e => setForm(f => f ? { ...f, title: e.target.value } : f)}
+                  className="bg-white/5 border-white/10 text-white rounded-xl h-9"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-white/50 text-xs mb-1 block">Subtitle / Description</label>
+                <Input
+                  value={form.subtitle}
+                  onChange={e => setForm(f => f ? { ...f, subtitle: e.target.value } : f)}
+                  placeholder="Short description shown under the title"
+                  className="bg-white/5 border-white/10 text-white rounded-xl h-9"
+                />
+              </div>
+            </div>
+
+            {preview ? (
+              <div>
+                <label className="text-white/50 text-xs mb-2 block">Preview</label>
+                <div
+                  className="min-h-[400px] bg-white/3 border border-white/8 rounded-xl p-6 text-white/80 text-sm leading-relaxed overflow-auto legal-admin-preview"
+                  dangerouslySetInnerHTML={{ __html: form.content }}
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="text-white/50 text-xs mb-1 block">
+                  Content <span className="text-white/20">(HTML — use &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;&lt;li&gt;, &lt;strong&gt;)</span>
+                </label>
+                <textarea
+                  value={form.content}
+                  onChange={e => setForm(f => f ? { ...f, content: e.target.value } : f)}
+                  rows={22}
+                  className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm font-mono placeholder:text-white/20 resize-y focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                  placeholder="<h2>Section Title</h2>&#10;<p>Your content here...</p>"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="bg-amber-500/5 border border-amber-500/15 rounded-2xl p-4">
+            <p className="text-amber-300/70 text-xs leading-relaxed">
+              <strong className="text-amber-300">Tip:</strong> Content uses HTML. Use <code className="bg-white/8 px-1 rounded">&lt;h2&gt;</code> for section headings, <code className="bg-white/8 px-1 rounded">&lt;p&gt;</code> for paragraphs, and <code className="bg-white/8 px-1 rounded">&lt;ul&gt;&lt;li&gt;</code> for bullet lists. Click "Preview" to see how it looks before saving.
+            </p>
+          </div>
+        </form>
+      )}
+
+      <style>{`
+        .legal-admin-preview h2 { font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
+        .legal-admin-preview h2:first-child { margin-top: 0; }
+        .legal-admin-preview p { margin-bottom: 0.5rem; }
+        .legal-admin-preview ul { margin: 0.25rem 0 0.5rem 1rem; list-style: disc; }
+        .legal-admin-preview li { margin-bottom: 0.25rem; }
+        .legal-admin-preview strong { color: white; font-weight: 600; }
+      `}</style>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const SECTIONS: Record<string, { title: string; component: React.ElementType }> = {
   "/admin": { title: "Dashboard Overview", component: Overview },
@@ -3325,6 +3501,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/subscription-payments": { title: "Subscription Payments", component: SubscriptionPaymentsPanel },
   "/admin/commission": { title: "Commission Settings", component: CommissionPanel },
   "/admin/banners": { title: "Banner & Ads Management", component: BannersPanel },
+  "/admin/legal-pages": { title: "Legal Pages", component: LegalPagesPanel },
   "/admin/contact-info": { title: "Contact Info Cards", component: ContactInfoPanel },
   "/admin/office-locations": { title: "Office Locations", component: OfficeLocationsPanel },
   "/admin/social-links": { title: "Social Media Links", component: SocialLinksPanel },

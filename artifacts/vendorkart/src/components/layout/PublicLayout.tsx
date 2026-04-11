@@ -690,6 +690,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/login" className="hover:text-primary transition-colors">Login / Register</Link></li>
                 <li><Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
                 <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/refund-policy" className="hover:text-primary transition-colors">Refund Policy</Link></li>
+                <li><Link href="/subscription-refund-policy" className="hover:text-primary transition-colors">Subscription Refund</Link></li>
+                <li><Link href="/vendor-policy" className="hover:text-primary transition-colors">Vendor Policy</Link></li>
               </ul>
             </div>
           </div>

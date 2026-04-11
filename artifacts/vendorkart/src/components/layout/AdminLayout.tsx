@@ -24,6 +24,7 @@ const NAV = [
   { icon: Clock, label: "Sub Payments", href: "/admin/subscription-payments" },
   { icon: Percent, label: "Commission", href: "/admin/commission" },
   { icon: Image, label: "Banners", href: "/admin/banners" },
+  { icon: FileText, label: "Legal Pages", href: "/admin/legal-pages" },
   { icon: Phone, label: "Contact Info", href: "/admin/contact-info" },
   { icon: MapPin, label: "Office Locations", href: "/admin/office-locations" },
   { icon: Share2, label: "Social Links", href: "/admin/social-links" },

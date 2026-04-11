@@ -46,6 +46,9 @@ import Contact from "@/pages/public/Contact";
 import Pricing from "@/pages/public/Pricing";
 import Terms from "@/pages/public/Terms";
 import Privacy from "@/pages/public/Privacy";
+import RefundPolicy from "@/pages/public/RefundPolicy";
+import SubscriptionRefundPolicy from "@/pages/public/SubscriptionRefundPolicy";
+import VendorPolicy from "@/pages/public/VendorPolicy";
 import NotFound from "@/pages/not-found";
 import ChatBot from "@/components/ChatBot";
 import { LanguageProvider } from "@/lib/language-context";
@@ -75,6 +78,9 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/refund-policy" component={RefundPolicy} />
+      <Route path="/subscription-refund-policy" component={SubscriptionRefundPolicy} />
+      <Route path="/vendor-policy" component={VendorPolicy} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 

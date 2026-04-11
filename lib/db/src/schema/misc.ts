@@ -162,6 +162,17 @@ export const socialLinksTable = pgTable("social_links", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const legalPagesTable = pgTable("legal_pages", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  content: text("content").notNull().default(""),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type LegalPage = typeof legalPagesTable.$inferSelect;
+
 export const officeLocationsTable = pgTable("office_locations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
