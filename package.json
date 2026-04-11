@@ -7,7 +7,7 @@
     "node": ">=22.x"
   },
   "scripts": {
-    "predev": "npx kill-port 5000 || exit 0",
+    "predev": "npx --yes kill-port 5000 || exit 0",
     "dev": "pnpm --filter @workspace/api-server run dev",
     "build": "pnpm -r --if-present run build",
     "build:render": "pnpm --filter @workspace/vendorkart run build && pnpm --filter @workspace/api-server run build",
