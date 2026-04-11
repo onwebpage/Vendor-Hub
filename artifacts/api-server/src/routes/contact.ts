@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { contactMessagesTable, contactInfoTable, socialLinksTable } from "@workspace/db/schema";
+import { contactMessagesTable, contactInfoTable, socialLinksTable, officeLocationsTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 
 const router = Router();
@@ -23,6 +23,17 @@ router.get("/social-links", async (_req, res) => {
     return res.json(links);
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch social links" });
+  }
+});
+
+router.get("/office-locations", async (_req, res) => {
+  try {
+    const locations = await db.select().from(officeLocationsTable)
+      .where(eq(officeLocationsTable.isActive, true))
+      .orderBy(sql`${officeLocationsTable.sortOrder} ASC`);
+    return res.json(locations);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch office locations" });
   }
 });
 

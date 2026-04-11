@@ -3156,6 +3156,160 @@ function TeamPanel() {
   );
 }
 
+// ─── OFFICE LOCATIONS ─────────────────────────────────────────────────────────
+const BLANK_OFFICE = { name: "", addressLine1: "", addressLine2: "", city: "", state: "", pincode: "", country: "India", isActive: true, sortOrder: 0 };
+
+function OfficeLocationsPanel() {
+  const { data: locations, loading } = useAdminFetch<any[]>("/api/admin/office-locations");
+  const { token } = useAdminAuthStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState<typeof BLANK_OFFICE>({ ...BLANK_OFFICE });
+  const setF = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const openCreate = () => { setEditing(null); setForm({ ...BLANK_OFFICE }); setShowForm(true); };
+  const openEdit = (loc: any) => {
+    setEditing(loc);
+    setForm({ name: loc.name, addressLine1: loc.addressLine1, addressLine2: loc.addressLine2 ?? "", city: loc.city, state: loc.state, pincode: loc.pincode, country: loc.country, isActive: loc.isActive, sortOrder: loc.sortOrder });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = { ...form, addressLine2: form.addressLine2 || null };
+    if (editing) {
+      await fetch(`${BASE}/api/admin/office-locations/${editing.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await fetch(`${BASE}/api/admin/office-locations`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    setShowForm(false);
+    setEditing(null);
+    window.location.reload();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this office location?")) return;
+    await fetch(`${BASE}/api/admin/office-locations/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    window.location.reload();
+  };
+
+  const handleToggle = async (loc: any) => {
+    await fetch(`${BASE}/api/admin/office-locations/${loc.id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ...loc, isActive: !loc.isActive }),
+    });
+    window.location.reload();
+  };
+
+  const list = locations ?? [];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-between items-center">
+        <p className="text-white/60 text-sm">Manage office locations shown on the public Contact page.</p>
+        <Button onClick={openCreate} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9">
+          <Plus className="w-4 h-4" /> Add Location
+        </Button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-white/3 rounded-2xl border border-indigo-500/25 p-6 space-y-4">
+          <h3 className="text-white font-bold">{editing ? "Edit Location" : "New Office Location"}</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="text-white/50 text-xs mb-1 block">Office Name *</label>
+              <Input value={form.name} onChange={e => setF("name", e.target.value)} placeholder="Mumbai Headquarters" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div className="col-span-2">
+              <label className="text-white/50 text-xs mb-1 block">Address Line 1 *</label>
+              <Input value={form.addressLine1} onChange={e => setF("addressLine1", e.target.value)} placeholder="Bandra Kurla Complex" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div className="col-span-2">
+              <label className="text-white/50 text-xs mb-1 block">Address Line 2 (optional)</label>
+              <Input value={form.addressLine2} onChange={e => setF("addressLine2", e.target.value)} placeholder="Building No. 4, Floor 3" className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">City *</label>
+              <Input value={form.city} onChange={e => setF("city", e.target.value)} placeholder="Mumbai" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">State *</label>
+              <Input value={form.state} onChange={e => setF("state", e.target.value)} placeholder="Maharashtra" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Pincode *</label>
+              <Input value={form.pincode} onChange={e => setF("pincode", e.target.value)} placeholder="400051" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Country</label>
+              <Input value={form.country} onChange={e => setF("country", e.target.value)} placeholder="India" className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Sort Order</label>
+              <Input type="number" value={form.sortOrder} onChange={e => setF("sortOrder", Number(e.target.value))} className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="olActive" checked={form.isActive} onChange={e => setF("isActive", e.target.checked)} className="w-4 h-4" />
+            <label htmlFor="olActive" className="text-white/60 text-sm cursor-pointer">Active (visible on Contact page)</label>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button type="button" variant="ghost" onClick={() => { setShowForm(false); setEditing(null); }} className="rounded-xl text-white/50 h-9">Cancel</Button>
+            <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">{editing ? "Save Changes" : "Create Location"}</Button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl bg-white/5" />)}</div>
+      ) : list.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 bg-white/3 rounded-3xl border border-white/8">
+          <MapPin className="w-10 h-10 text-white/15 mb-3" />
+          <p className="text-white/40 text-sm">No office locations yet. Add your first one.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {list.map((loc: any) => (
+            <div key={loc.id} className={`bg-white/3 rounded-2xl border p-5 flex items-start gap-4 ${loc.isActive ? "border-indigo-500/20" : "border-white/8"}`}>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-white font-bold text-sm truncate">{loc.name}</p>
+                  <Badge className={`text-[10px] border flex-shrink-0 ${loc.isActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-white/5 text-white/30 border-white/10"}`}>{loc.isActive ? "Live" : "Hidden"}</Badge>
+                </div>
+                <p className="text-white/60 text-xs">{loc.addressLine1}{loc.addressLine2 ? `, ${loc.addressLine2}` : ""}</p>
+                <p className="text-white/40 text-xs mt-0.5">{loc.city}, {loc.state} {loc.pincode} · {loc.country}</p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button size="sm" onClick={() => openEdit(loc)} className="h-7 px-2 text-[11px] rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20">
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button size="sm" onClick={() => handleToggle(loc)} className={`h-7 px-3 text-[11px] rounded-lg border ${loc.isActive ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20"}`}>
+                  {loc.isActive ? "Hide" : "Show"}
+                </Button>
+                <Button size="sm" onClick={() => handleDelete(loc.id)} className="h-7 px-2 text-[11px] rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const SECTIONS: Record<string, { title: string; component: React.ElementType }> = {
   "/admin": { title: "Dashboard Overview", component: Overview },
@@ -3172,6 +3326,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/commission": { title: "Commission Settings", component: CommissionPanel },
   "/admin/banners": { title: "Banner & Ads Management", component: BannersPanel },
   "/admin/contact-info": { title: "Contact Info Cards", component: ContactInfoPanel },
+  "/admin/office-locations": { title: "Office Locations", component: OfficeLocationsPanel },
   "/admin/social-links": { title: "Social Media Links", component: SocialLinksPanel },
   "/admin/team": { title: "Team Members", component: TeamPanel },
   "/admin/emails": { title: "Email System", component: EmailLogsPanel },

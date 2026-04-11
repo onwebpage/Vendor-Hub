@@ -162,6 +162,23 @@ export const socialLinksTable = pgTable("social_links", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const officeLocationsTable = pgTable("office_locations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  addressLine1: text("address_line1").notNull(),
+  addressLine2: text("address_line2"),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  pincode: text("pincode").notNull(),
+  country: text("country").notNull().default("India"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type OfficeLocation = typeof officeLocationsTable.$inferSelect;
+
 export const teamMembersTable = pgTable("team_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),

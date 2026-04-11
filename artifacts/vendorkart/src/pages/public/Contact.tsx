@@ -46,6 +46,30 @@ function useContactInfo() {
   return items;
 }
 
+interface OfficeLocation {
+  id: number;
+  name: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+function useOfficeLocations() {
+  const [locations, setLocations] = useState<OfficeLocation[]>([]);
+  useEffect(() => {
+    fetch("/api/contact/office-locations")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setLocations(d); })
+      .catch(() => {});
+  }, []);
+  return locations;
+}
+
 const supportTypes = [
   { icon: MessageSquare, title: "General Inquiry", desc: "Questions about Vendorkart, pricing, or features", color: "text-blue-400" },
   { icon: Building2, title: "Vendor Support", desc: "Help with your vendor account, listings, or orders", color: "text-violet-400" },
@@ -55,6 +79,7 @@ const supportTypes = [
 export default function Contact() {
   const { toast } = useToast();
   const contactInfoItems = useContactInfo();
+  const officeLocations = useOfficeLocations();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -169,14 +194,40 @@ export default function Contact() {
                 })}
               </div>
 
-              {/* Map placeholder */}
-              <div className="rounded-2xl border border-border overflow-hidden bg-muted h-48 flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-muted-foreground text-sm">Bandra Kurla Complex, Mumbai</p>
-                  <p className="text-muted-foreground/60 text-xs">Maharashtra, India 400051</p>
+              {/* Office Locations */}
+              {officeLocations.length > 0 ? (
+                <div className="space-y-3">
+                  {officeLocations.map((loc, i) => (
+                    <motion.div
+                      key={loc.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.08 }}
+                      className="rounded-2xl border border-border bg-muted p-5 flex items-start gap-4"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <MapPin className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-foreground font-bold text-sm mb-1">{loc.name}</p>
+                        <p className="text-muted-foreground text-sm">{loc.addressLine1}</p>
+                        {loc.addressLine2 && <p className="text-muted-foreground text-sm">{loc.addressLine2}</p>}
+                        <p className="text-muted-foreground/70 text-xs mt-0.5">{loc.city}, {loc.state} {loc.pincode}</p>
+                        {loc.country !== "India" && <p className="text-muted-foreground/60 text-xs">{loc.country}</p>}
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="rounded-2xl border border-border overflow-hidden bg-muted h-48 flex items-center justify-center">
+                  <div className="text-center">
+                    <MapPin className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                    <p className="text-muted-foreground text-sm">Bandra Kurla Complex, Mumbai</p>
+                    <p className="text-muted-foreground/60 text-xs">Maharashtra, India 400051</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Contact Form */}

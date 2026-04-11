@@ -4,7 +4,7 @@ import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
   subscriptionPlansTable, vendorSubscriptionsTable, commissionSettingsTable, activityLogsTable,
   contactMessagesTable, bannersTable, emailLogsTable, paymentsTable, categoriesTable, contactInfoTable,
-  socialLinksTable, teamMembersTable,
+  socialLinksTable, teamMembersTable, officeLocationsTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql, asc } from "drizzle-orm";
 import { authenticate, requireRole, hashPassword } from "../lib/auth.js";
@@ -775,6 +775,73 @@ router.delete("/contact-info/:id", async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ message: "Failed to delete contact info" });
+  }
+});
+
+router.get("/office-locations", async (_req, res) => {
+  try {
+    const locations = await db.select().from(officeLocationsTable).orderBy(sql`${officeLocationsTable.sortOrder} ASC`);
+    return res.json(locations);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch office locations" });
+  }
+});
+
+router.post("/office-locations", async (req, res) => {
+  try {
+    const { name, addressLine1, addressLine2, city, state, pincode, country, isActive, sortOrder } = req.body;
+    if (!name || !addressLine1 || !city || !state || !pincode) {
+      return res.status(400).json({ message: "Name, address, city, state, and pincode are required" });
+    }
+    const [location] = await db.insert(officeLocationsTable).values({
+      name,
+      addressLine1,
+      addressLine2: addressLine2 || null,
+      city,
+      state,
+      pincode,
+      country: country ?? "India",
+      isActive: isActive ?? true,
+      sortOrder: sortOrder ?? 0,
+    }).returning();
+    logActivity({ action: "office_location_created", resource: "office_locations", details: `Created office: ${name}` });
+    return res.json(location);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to create office location" });
+  }
+});
+
+router.put("/office-locations/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { name, addressLine1, addressLine2, city, state, pincode, country, isActive, sortOrder } = req.body;
+    const [location] = await db.update(officeLocationsTable).set({
+      name,
+      addressLine1,
+      addressLine2: addressLine2 || null,
+      city,
+      state,
+      pincode,
+      country,
+      isActive,
+      sortOrder,
+      updatedAt: new Date(),
+    }).where(eq(officeLocationsTable.id, id)).returning();
+    logActivity({ action: "office_location_updated", resource: "office_locations", details: `Updated office #${id}: ${name}` });
+    return res.json(location);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update office location" });
+  }
+});
+
+router.delete("/office-locations/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    await db.delete(officeLocationsTable).where(eq(officeLocationsTable.id, id));
+    logActivity({ action: "office_location_deleted", resource: "office_locations", details: `Deleted office #${id}` });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete office location" });
   }
 });
 
