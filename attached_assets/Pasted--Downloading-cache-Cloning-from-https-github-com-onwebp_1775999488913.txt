@@ -1,0 +1,48 @@
+==> Downloading cache...
+==> Cloning from https://github.com/onwebpage/Vendor-Hub
+==> Checking out commit 94cd7763ba45a550bcd5170b7223084e403284d2 in branch main
+==> Downloaded 159MB in 2s. Extraction took 14s.
+==> Requesting Node.js version >=22.x
+==> Using Node.js version 25.9.0 via /opt/render/project/src/package.json
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npx pnpm@10.33.0 install --frozen-lockfile && npx pnpm@10.33.0 run build:render'...
+> workspace@0.0.0 build:render /opt/render/project/src
+> pnpm --filter @workspace/vendorkart run build && pnpm --filter @workspace/api-server run build
+> @workspace/vendorkart@0.0.0 build /opt/render/project/src/artifacts/vendorkart
+> vite build --config vite.config.ts
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 2920 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                     0.76 kB │ gzip:   0.43 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+dist/public/assets/index-BNxyZ4KY.css    269.20 kB │ gzip:  34.51 kB
+- Using dynamic import() to code-split the application
+dist/public/assets/index-DpFYfbYF.js   1,622.66 kB │ gzip: 447.09 kB
+✓ built in 7.53s
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+> node ./build.mjs
+✘ [ERROR] Expected ":" but found "otpEmailHtml"
+    src/lib/email.ts:15:9:
+      15 │ function otpEmailHtml(otp: string, purpose: "login" | "signup"): s...
+         │          ~~~~~~~~~~~~
+         ╵          :
+1 error
+Error: Build failed with 1 error:
+src/lib/email.ts:15:9: ERROR: Expected ":" but found "otpEmailHtml"
+    at failureErrorWithLog (/opt/render/project/src/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1467:15)
+    at /opt/render/project/src/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:926:25
+    at /opt/render/project/src/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1345:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: [Getter/Setter],
+  warnings: [Getter/Setter]
+}
+/opt/render/project/src/artifacts/api-server:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/api-server@0.0.0 build: `node ./build.mjs`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
