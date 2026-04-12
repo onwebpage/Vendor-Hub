@@ -1,10 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, vendorsTable } from "@workspace/db/schema";
+import { usersTable, vendorsTable, emailLogsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword, generateToken, authenticate } from "../lib/auth.js";
 import { uniqueSlug } from "../lib/slugify.js";
-import { logEmail } from "../lib/email-log.js";
 import { sendEmail, sendOtpEmail } from "../lib/email.js";
 import crypto from "crypto";
 
@@ -52,7 +51,16 @@ router.post("/register", async (req, res) => {
     res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code." });
 
     sendOtpEmail({ to: email, otp, purpose: "signup" }).then(sent => {
-      if (!sent) req.log.info({ otp, userId: user.id }, "Signup OTP email failed or not configured");
+      req.log.info({ sent, otp, userId: user.id }, "Signup OTP email attempted");
+      db.insert(emailLogsTable).values({
+        recipient: email,
+        recipientType: "customer",
+        subject: "Verify your Vendorkart account",
+        body: `Signup OTP for ${email}: ${otp} (expires in 10 minutes)`,
+        type: "otp_signup",
+        status: sent ? "sent" : "failed",
+        relatedId: user.id,
+      }).catch(() => {});
     }).catch(err => {
       req.log.error({ err, otp, userId: user.id }, "Signup OTP email error");
     });
@@ -88,7 +96,16 @@ router.post("/login", async (req, res) => {
       res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email" });
 
       sendOtpEmail({ to: user.email, otp, purpose: "login" }).then(sent => {
-        if (!sent) req.log.info({ otp, userId: user.id }, "Login OTP email failed or not configured");
+        req.log.info({ sent, otp, userId: user.id }, "Login OTP email attempted");
+        db.insert(emailLogsTable).values({
+          recipient: user.email,
+          recipientType: "customer",
+          subject: "Your Vendorkart login code",
+          body: `Login OTP for ${user.email}: ${otp} (expires in 10 minutes)`,
+          type: "otp_login",
+          status: sent ? "sent" : "failed",
+          relatedId: user.id,
+        }).catch(() => {});
       }).catch(err => {
         req.log.error({ err, otp, userId: user.id }, "Login OTP email error");
       });
