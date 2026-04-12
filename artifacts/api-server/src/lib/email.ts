@@ -1,10 +1,15 @@
-import nodemailer from "nodemailer";
+import { createRequire } from "node:module";
 
 const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 
-const transporter = GMAIL_USER && GMAIL_APP_PASSWORD
-  ? nodemailer.createTransport({
+let transporter: { sendMail: (opts: object) => Promise<void> } | null = null;
+
+if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+  try {
+    const _require = createRequire(import.meta.url);
+    const nodemailer = _require("nodemailer");
+    transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
       secure: false,
@@ -14,8 +19,11 @@ const transporter = GMAIL_USER && GMAIL_APP_PASSWORD
       },
       connectionTimeout: 15000,
       socketTimeout: 15000,
-    })
-  : null;
+    });
+  } catch {
+    transporter = null;
+  }
+}
 
 export async function sendEmail(params: {
   to: string;

@@ -4,13 +4,60 @@ import { usersTable, vendorsTable, emailLogsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword, generateToken, authenticate } from "../lib/auth.js";
 import { uniqueSlug } from "../lib/slugify.js";
-import { sendEmail, sendOtpEmail } from "../lib/email.js";
+import { sendOtpEmail } from "../lib/email.js";
 import crypto from "crypto";
 
 const router = Router();
 
 function generateOtp(): string {
   return String(Math.floor(100000 + crypto.randomInt(900000)));
+}
+
+function fireOtpEmail(params: {
+  to: string;
+  otp: string;
+  purpose: "login" | "signup";
+  userId: number;
+  logContext: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
+}) {
+  setImmediate(() => {
+    const subject =
+      params.purpose === "signup"
+        ? "Verify your Vendorkart account"
+        : "Your Vendorkart login code";
+    const body =
+      params.purpose === "signup"
+        ? `Signup OTP for ${params.to}: ${params.otp} (expires in 10 minutes)`
+        : `Login OTP for ${params.to}: ${params.otp} (expires in 10 minutes)`;
+    const logType = params.purpose === "signup" ? "otp_signup" : "otp_login";
+
+    Promise.resolve()
+      .then(() => sendOtpEmail({ to: params.to, otp: params.otp, purpose: params.purpose }))
+      .then((sent) => {
+        params.logContext.info(
+          { sent, otp: params.otp, userId: params.userId },
+          `${params.purpose} OTP email attempted`,
+        );
+        return db
+          .insert(emailLogsTable)
+          .values({
+            recipient: params.to,
+            recipientType: "customer",
+            subject,
+            body,
+            type: logType,
+            status: sent ? "sent" : "failed",
+            relatedId: params.userId,
+          })
+          .catch(() => {});
+      })
+      .catch((err: unknown) => {
+        params.logContext.error(
+          { err, otp: params.otp, userId: params.userId },
+          `${params.purpose} OTP email error`,
+        );
+      });
+  });
 }
 
 router.post("/register", async (req, res) => {
@@ -49,22 +96,14 @@ router.post("/register", async (req, res) => {
 
     const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
     const isDevMode = process.env.NODE_ENV !== "production";
-    res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code.", ...(isDevMode && { devOtp: otp }) });
-
-    sendOtpEmail({ to: email, otp, purpose: "signup" }).then(sent => {
-      req.log.info({ sent, otp, userId: user.id }, "Signup OTP email attempted");
-      db.insert(emailLogsTable).values({
-        recipient: email,
-        recipientType: "customer",
-        subject: "Verify your Vendorkart account",
-        body: `Signup OTP for ${email}: ${otp} (expires in 10 minutes)`,
-        type: "otp_signup",
-        status: sent ? "sent" : "failed",
-        relatedId: user.id,
-      }).catch(() => {});
-    }).catch(err => {
-      req.log.error({ err, otp, userId: user.id }, "Signup OTP email error");
+    res.status(201).json({
+      requiresEmailVerification: true,
+      pendingToken,
+      message: "Check your email for a verification code.",
+      ...(isDevMode && { devOtp: otp }),
     });
+
+    fireOtpEmail({ to: email, otp, purpose: "signup", userId: user.id, logContext: req.log });
     return;
   } catch (err) {
     req.log.error({ err }, "Register error");
@@ -95,22 +134,14 @@ router.post("/login", async (req, res) => {
 
       const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
       const isDevMode = process.env.NODE_ENV !== "production";
-      res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email", ...(isDevMode && { devOtp: otp }) });
-
-      sendOtpEmail({ to: user.email, otp, purpose: "login" }).then(sent => {
-        req.log.info({ sent, otp, userId: user.id }, "Login OTP email attempted");
-        db.insert(emailLogsTable).values({
-          recipient: user.email,
-          recipientType: "customer",
-          subject: "Your Vendorkart login code",
-          body: `Login OTP for ${user.email}: ${otp} (expires in 10 minutes)`,
-          type: "otp_login",
-          status: sent ? "sent" : "failed",
-          relatedId: user.id,
-        }).catch(() => {});
-      }).catch(err => {
-        req.log.error({ err, otp, userId: user.id }, "Login OTP email error");
+      res.json({
+        requires2FA: true,
+        pendingToken,
+        message: "Verification code sent to your email",
+        ...(isDevMode && { devOtp: otp }),
       });
+
+      fireOtpEmail({ to: user.email, otp, purpose: "login", userId: user.id, logContext: req.log });
       return;
     }
 
