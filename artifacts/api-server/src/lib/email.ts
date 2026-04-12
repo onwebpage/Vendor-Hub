@@ -1,19 +1,37 @@
-import nodemailer from "nodemailer";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_ADDRESS = process.env.EMAIL_FROM ?? "Vendorkart <onboarding@resend.dev>";
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
-
-const transporter = GMAIL_USER && GMAIL_APP_PASSWORD
-  ? nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: GMAIL_USER,
-        pass: GMAIL_APP_PASSWORD,
+async function resendSend(payload: {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<boolean> {
+  if (!RESEND_API_KEY) {
+    console.warn("[email] RESEND_API_KEY not set — email not sent to:", payload.to);
+    return false;
+  }
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      connectionTimeout: 10000,
-      socketTimeout: 10000,
-    })
-  : null;
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("[email] Resend API error:", res.status, body);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[email] Resend fetch failed:", err);
+    return false;
+  }
+}
 
 function otpEmailHtml(otp: string, purpose: "login" | "signup"): string {
   const title = purpose === "signup" ? "Verify Your Email" : "Your Login Verification Code";
@@ -122,28 +140,18 @@ export async function sendOtpEmail(params: {
   otp: string;
   purpose: "login" | "signup";
 }): Promise<boolean> {
-  if (!transporter) {
-    console.warn("[email] Gmail not configured — OTP not sent, code:", params.otp);
-    return false;
-  }
   const subject =
     params.purpose === "signup"
       ? "Verify your Vendorkart account"
       : "Your Vendorkart login code";
 
-  try {
-    await transporter.sendMail({
-      from: `Vendorkart <${GMAIL_USER}>`,
-      to: params.to,
-      subject,
-      html: otpEmailHtml(params.otp, params.purpose),
-      text: `Your Vendorkart verification code is: ${params.otp}\n\nThis code expires in 10 minutes. Never share it with anyone.`,
-    });
-    return true;
-  } catch (err) {
-    console.error("[email] Failed to send email via Gmail:", err);
-    return false;
-  }
+  return resendSend({
+    from: FROM_ADDRESS,
+    to: params.to,
+    subject,
+    html: otpEmailHtml(params.otp, params.purpose),
+    text: `Your Vendorkart verification code is: ${params.otp}\n\nThis code expires in 10 minutes. Never share it with anyone.`,
+  });
 }
 
 export async function sendEmail(params: {
@@ -152,22 +160,13 @@ export async function sendEmail(params: {
   text: string;
   html?: string;
 }): Promise<boolean> {
-  if (!transporter) {
-    console.warn("[email] Gmail not configured — email not sent to:", params.to);
-    return false;
-  }
-  try {
-    await transporter.sendMail({
-      from: `Vendorkart <${GMAIL_USER}>`,
-      to: params.to,
-      subject: params.subject,
-      html: params.html ?? `<pre style="font-family:sans-serif">${params.text}</pre>`,
-      text: params.text,
-    });
-    return true;
-  } catch {
-    return false;
-  }
+  return resendSend({
+    from: FROM_ADDRESS,
+    to: params.to,
+    subject: params.subject,
+    html: params.html ?? `<pre style="font-family:sans-serif">${params.text}</pre>`,
+    text: params.text,
+  });
 }
 
-export const smtpConfigured = !!(GMAIL_USER && GMAIL_APP_PASSWORD);
+export const smtpConfigured = !!RESEND_API_KEY;
