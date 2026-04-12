@@ -58,7 +58,12 @@ export default function Login() {
       if (response.requires2FA) {
         setPendingToken(response.pendingToken);
         setStep('otp');
-        toast({ title: "Check your email", description: "A 6-digit verification code has been sent to your email." });
+        if (response.devOtp) {
+          setOtp(String(response.devOtp).split(""));
+          toast({ title: "Dev mode: code auto-filled", description: `OTP: ${response.devOtp}` });
+        } else {
+          toast({ title: "Check your email", description: "A 6-digit verification code has been sent to your email." });
+        }
         return;
       }
 

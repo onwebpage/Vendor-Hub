@@ -48,7 +48,8 @@ router.post("/register", async (req, res) => {
       .where(eq(usersTable.id, user.id));
 
     const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
-    res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code." });
+    const isDevMode = process.env.NODE_ENV !== "production";
+    res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code.", ...(isDevMode && { devOtp: otp }) });
 
     sendOtpEmail({ to: email, otp, purpose: "signup" }).then(sent => {
       req.log.info({ sent, otp, userId: user.id }, "Signup OTP email attempted");
@@ -93,7 +94,8 @@ router.post("/login", async (req, res) => {
         .where(eq(usersTable.id, user.id));
 
       const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
-      res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email" });
+      const isDevMode = process.env.NODE_ENV !== "production";
+      res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email", ...(isDevMode && { devOtp: otp }) });
 
       sendOtpEmail({ to: user.email, otp, purpose: "login" }).then(sent => {
         req.log.info({ sent, otp, userId: user.id }, "Login OTP email attempted");
