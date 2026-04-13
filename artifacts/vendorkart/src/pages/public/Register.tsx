@@ -47,11 +47,14 @@ export default function Register() {
     e?.preventDefault();
     if (!email.trim() || !name.trim()) return;
     setLoading(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), name: name.trim(), role }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
@@ -60,8 +63,10 @@ export default function Register() {
       setResendCountdown(60);
       toast({ title: "OTP sent", description: "Check your email for the 6-digit code." });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      const msg = err.name === "AbortError" ? "Request timed out. Please try again." : err.message;
+      toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   }
