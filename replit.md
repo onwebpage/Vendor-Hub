@@ -21,8 +21,9 @@ This is a **pnpm monorepo** with a unified Express + Vite dev server:
 - **Frontend**: React 19, TypeScript, Vite 7, Tailwind CSS 4, Radix UI, TanStack Query, Zustand, Wouter
 - **Backend**: Express 5, Node.js 22, Pino logger
 - **Database**: PostgreSQL via `pg` driver, Drizzle ORM
+- **Auth**: Custom JWT-based OTP authentication (no Clerk). 6-digit OTP via Resend email, 10-min expiry, JWT tokens (7-day) signed with `JWT_SECRET`.
 - **Payments**: Razorpay
-- **Email**: Resend API (secret: `RESENDAPIKEY`; from address configurable via `RESEND_FROM` env var, defaults to `Vendorkart <onboarding@resend.dev>`)
+- **Email**: Resend API (secret: `RESEND_API_KEY`; from address configurable via `RESEND_FROM_EMAIL` env var, defaults to `VendorKart <onboarding@resend.dev>`)
 
 ## Development
 
@@ -37,9 +38,21 @@ In **production**, the unified Express server (`artifacts/api-server`) serves bo
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (stored as Replit secret)
-- `RESENDAPIKEY` — Resend API key for transactional emails (stored as Replit secret)
-- `RESEND_FROM` — (optional) Custom from address e.g. `Vendorkart <hello@yourdomain.com>`
+- `JWT_SECRET` — Secret key for signing JWT auth tokens (env var, auto-generated on first setup)
+- `RESEND_API_KEY` — Resend API key for OTP emails (stored as Replit secret). Without it, OTPs are printed to server logs (dev only).
+- `RESEND_FROM_EMAIL` — (optional) Custom from address e.g. `VendorKart <hello@yourdomain.com>`, defaults to `VendorKart <onboarding@resend.dev>`
 - `PORT` — Server port (set to 5000)
+
+## Auth System
+
+Custom email-OTP flow (Clerk has been fully removed):
+- `POST /api/auth/send-otp` — Accepts `{ email, name?, role? }`. Generates a 6-digit OTP, stores it in-memory for 10 minutes, sends it via Resend. In dev (no `RESEND_API_KEY`), prints OTP to server console.
+- `POST /api/auth/verify-otp` — Accepts `{ email, otp }`. Verifies OTP, creates the user if new, returns a JWT token + user object.
+- `GET /api/auth/me` — Returns the authenticated user (requires `Authorization: Bearer <token>`).
+- `PUT /api/auth/me` — Updates `name`/`phone` for the authenticated user.
+- Frontend stores the JWT in `localStorage` (`vendorkart_token`) and injects it into all API calls via `setAuthTokenGetter` in `lib/api-client-react`.
+- OTP in-memory store: `artifacts/api-server/src/lib/otp.ts` (Map, 5 max attempts, auto-cleared on verify/expiry).
+- JWT auth middleware: `artifacts/api-server/src/lib/auth.ts` (`authenticate`, `requireRole`, `optionalAuth`).
 
 ## Replit Setup Notes
 
