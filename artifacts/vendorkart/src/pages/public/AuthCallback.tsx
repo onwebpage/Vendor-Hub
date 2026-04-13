@@ -34,7 +34,8 @@ export default function AuthCallback() {
           else if (data.user.role === "vendor") setLocation("/vendor-dashboard");
           else setLocation("/customer-dashboard");
         }
-      } catch {
+      } catch (err) {
+        console.error("Sync error:", err);
         setLocation("/login");
       }
     }

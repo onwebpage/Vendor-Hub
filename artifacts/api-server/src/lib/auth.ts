@@ -1,5 +1,12 @@
-import { Request, Response, NextFunction } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { createClerkClient } from "@clerk/backend";
+import { db } from "@workspace/db";
+import { usersTable } from "@workspace/db/schema";
+import { eq } from "drizzle-orm";
+
+if (!process.env.CLERK_SECRET_KEY) {
+  console.warn("CLERK_SECRET_KEY is not set! Authentication will fail.");
+}
 
 export const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -14,13 +21,23 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   const token = authHeader.slice(7);
   try {
     const payload = await clerkClient.verifyToken(token);
-    (req as any).userId = payload.sub; // Clerk user ID
-    (req as any).clerkUserId = payload.sub;
+    const clerkUserId = payload.sub;
+    
+    // Fetch user from DB to get their role
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
+    
+    (req as any).userId = clerkUserId;
+    (req as any).clerkUserId = clerkUserId;
+    (req as any).user = user;
+    (req as any).userRole = user?.role || "customer";
+    
     next();
-  } catch {
+  } catch (err) {
+    console.error("Auth error:", err);
     res.status(401).json({ message: "Invalid token" });
   }
 }
+
 
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -38,9 +55,14 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     clerkClient.verifyToken(token)
-      .then(payload => {
-        (req as any).userId = payload.sub;
-        (req as any).clerkUserId = payload.sub;
+      .then(async payload => {
+        const clerkUserId = payload.sub;
+        const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
+        
+        (req as any).userId = clerkUserId;
+        (req as any).clerkUserId = clerkUserId;
+        (req as any).user = user;
+        (req as any).userRole = user?.role || "customer";
       })
       .catch(() => {})
       .finally(() => next());
@@ -48,3 +70,4 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
     next();
   }
 }
+
