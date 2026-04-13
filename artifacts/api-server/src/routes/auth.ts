@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, vendorsTable, emailLogsTable } from "@workspace/db/schema";
+import { usersTable, vendorsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword, generateToken, authenticate } from "../lib/auth.js";
 import { uniqueSlug } from "../lib/slugify.js";
@@ -13,51 +13,11 @@ function generateOtp(): string {
   return String(Math.floor(100000 + crypto.randomInt(900000)));
 }
 
-function fireOtpEmail(params: {
-  to: string;
-  otp: string;
-  purpose: "login" | "signup";
-  userId: number;
-  logContext: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
-}) {
-  console.log(`[Auth] Preparing to send ${params.purpose} OTP to ${params.to}`);
+function fireOtpEmail(to: string, otp: string, purpose: "login" | "signup", userId: number, log: any) {
   setImmediate(() => {
-    const subject =
-      params.purpose === "signup"
-        ? "Verify your Vendorkart account"
-        : "Your Vendorkart login code";
-    const body =
-      params.purpose === "signup"
-        ? `Signup OTP for ${params.to}: ${params.otp} (expires in 10 minutes)`
-        : `Login OTP for ${params.to}: ${params.otp} (expires in 10 minutes)`;
-    const logType = params.purpose === "signup" ? "otp_signup" : "otp_login";
-
-    Promise.resolve()
-      .then(() => sendOtpEmail({ to: params.to, otp: params.otp, purpose: params.purpose }))
-      .then((sent) => {
-        params.logContext.info(
-          { sent, otp: params.otp, userId: params.userId },
-          `${params.purpose} OTP email attempted`,
-        );
-        return db
-          .insert(emailLogsTable)
-          .values({
-            recipient: params.to,
-            recipientType: "customer",
-            subject,
-            body,
-            type: logType,
-            status: sent ? "sent" : "failed",
-            relatedId: params.userId,
-          })
-          .catch(() => {});
-      })
-      .catch((err: unknown) => {
-        params.logContext.error(
-          { err, otp: params.otp, userId: params.userId },
-          `${params.purpose} OTP email error`,
-        );
-      });
+    sendOtpEmail({ to, otp, purpose })
+      .then(sent => log.info({ sent, userId }, `${purpose} OTP email attempted`))
+      .catch(err => log.error({ err, userId }, `${purpose} OTP email error`));
   });
 }
 
@@ -71,40 +31,26 @@ router.post("/register", async (req, res) => {
     if (existing.length > 0) {
       return res.status(409).json({ message: "Email already registered" });
     }
-    const hashed = hashPassword(password);
     const [user] = await db.insert(usersTable).values({
-      name, email, password: hashed, role, phone,
+      name, email, password: hashPassword(password), role, phone,
     }).returning();
 
     if (role === "vendor") {
       const slug = uniqueSlug(businessName || name);
       await db.insert(vendorsTable).values({
-        userId: user.id,
-        businessName: businessName || name,
-        slug,
-        description: businessDescription,
-        email,
-        phone,
-        status: "pending",
+        userId: user.id, businessName: businessName || name, slug,
+        description: businessDescription, email, phone, status: "pending",
       });
     }
 
     const otp = generateOtp();
-    const expiry = new Date(Date.now() + 10 * 60 * 1000);
     await db.update(usersTable)
-      .set({ twoFactorCode: otp, twoFactorExpiry: expiry })
+      .set({ twoFactorCode: otp, twoFactorExpiry: new Date(Date.now() + 10 * 60 * 1000) })
       .where(eq(usersTable.id, user.id));
 
     const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
-    const isDevMode = process.env.NODE_ENV !== "production";
-    res.status(201).json({
-      requiresEmailVerification: true,
-      pendingToken,
-      message: "Check your email for a verification code.",
-      ...(isDevMode && { devOtp: otp }),
-    });
-
-    fireOtpEmail({ to: email, otp, purpose: "signup", userId: user.id, logContext: req.log });
+    res.status(201).json({ requiresEmailVerification: true, pendingToken, message: "Check your email for a verification code." });
+    fireOtpEmail(email, otp, "signup", user.id, req.log);
     return;
   } catch (err) {
     req.log.error({ err }, "Register error");
@@ -128,21 +74,13 @@ router.post("/login", async (req, res) => {
 
     if (user.role !== "admin") {
       const otp = generateOtp();
-      const expiry = new Date(Date.now() + 10 * 60 * 1000);
       await db.update(usersTable)
-        .set({ twoFactorCode: otp, twoFactorExpiry: expiry })
+        .set({ twoFactorCode: otp, twoFactorExpiry: new Date(Date.now() + 10 * 60 * 1000) })
         .where(eq(usersTable.id, user.id));
 
       const pendingToken = Buffer.from(JSON.stringify({ pendingUserId: user.id, iat: Date.now() })).toString("base64");
-      const isDevMode = process.env.NODE_ENV !== "production";
-      res.json({
-        requires2FA: true,
-        pendingToken,
-        message: "Verification code sent to your email",
-        ...(isDevMode && { devOtp: otp }),
-      });
-
-      fireOtpEmail({ to: user.email, otp, purpose: "login", userId: user.id, logContext: req.log });
+      res.json({ requires2FA: true, pendingToken, message: "Verification code sent to your email" });
+      fireOtpEmail(user.email, otp, "login", user.id, req.log);
       return;
     }
 
@@ -155,91 +93,48 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/verify-2fa", async (req, res) => {
+router.post("/verify-otp", async (req, res) => {
   try {
     const { pendingToken, code } = req.body;
     if (!pendingToken || !code) {
-      return res.status(400).json({ message: "Pending token and code are required" });
+      return res.status(400).json({ message: "Token and code are required" });
     }
-
     let pendingUserId: number;
     try {
       const payload = JSON.parse(Buffer.from(pendingToken, "base64").toString("utf8"));
       pendingUserId = payload.pendingUserId;
-      if (!pendingUserId) throw new Error("Invalid token");
+      if (!pendingUserId) throw new Error();
     } catch {
-      return res.status(400).json({ message: "Invalid pending token" });
+      return res.status(400).json({ message: "Invalid token" });
     }
 
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, pendingUserId)).limit(1);
     if (!user) return res.status(404).json({ message: "User not found" });
-
     if (!user.twoFactorCode || !user.twoFactorExpiry) {
-      return res.status(400).json({ message: "No verification code pending. Please log in again." });
+      return res.status(400).json({ message: "No verification code pending. Please try again." });
     }
     if (new Date() > user.twoFactorExpiry) {
-      return res.status(400).json({ message: "Verification code has expired. Please log in again." });
+      return res.status(400).json({ message: "Code expired. Please try again." });
     }
     if (user.twoFactorCode !== code.trim()) {
-      return res.status(401).json({ message: "Invalid verification code." });
+      return res.status(401).json({ message: "Invalid code." });
     }
 
-    await db.update(usersTable)
-      .set({ twoFactorCode: null, twoFactorExpiry: null })
-      .where(eq(usersTable.id, user.id));
-
+    await db.update(usersTable).set({ twoFactorCode: null, twoFactorExpiry: null }).where(eq(usersTable.id, user.id));
     const token = generateToken(user.id, user.role);
     const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
-    return res.json({ user: userOut, token, message: "Login successful" });
+    return res.json({ user: userOut, token, message: "Verified successfully" });
   } catch (err) {
-    req.log.error({ err }, "Verify 2FA error");
+    req.log.error({ err }, "Verify OTP error");
     return res.status(500).json({ message: "Verification failed" });
   }
 });
 
-router.post("/2fa/enable", authenticate, async (req, res) => {
-  try {
-    const userId = (req as any).userId;
-    await db.update(usersTable)
-      .set({ twoFactorEnabled: true, updatedAt: new Date() })
-      .where(eq(usersTable.id, userId));
-    return res.json({ message: "Two-factor authentication enabled" });
-  } catch (err) {
-    req.log.error({ err }, "Enable 2FA error");
-    return res.status(500).json({ message: "Failed to enable two-factor authentication" });
-  }
-});
-
-router.post("/2fa/disable", authenticate, async (req, res) => {
-  try {
-    const userId = (req as any).userId;
-    const { password } = req.body;
-    if (!password) return res.status(400).json({ message: "Password required to disable 2FA" });
-
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.password !== hashPassword(password)) {
-      return res.status(401).json({ message: "Incorrect password" });
-    }
-
-    await db.update(usersTable)
-      .set({ twoFactorEnabled: false, twoFactorCode: null, twoFactorExpiry: null, updatedAt: new Date() })
-      .where(eq(usersTable.id, userId));
-    return res.json({ message: "Two-factor authentication disabled" });
-  } catch (err) {
-    req.log.error({ err }, "Disable 2FA error");
-    return res.status(500).json({ message: "Failed to disable two-factor authentication" });
-  }
-});
-
-router.post("/logout", (_req, res) => {
-  return res.json({ message: "Logged out successfully" });
-});
+router.post("/logout", (_req, res) => res.json({ message: "Logged out successfully" }));
 
 router.get("/me", authenticate, async (req, res) => {
   try {
-    const userId = (req as any).userId;
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, (req as any).userId)).limit(1);
     if (!user) return res.status(404).json({ message: "User not found" });
     const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
     return res.json(userOut);
@@ -251,11 +146,10 @@ router.get("/me", authenticate, async (req, res) => {
 
 router.put("/me", authenticate, async (req, res) => {
   try {
-    const userId = (req as any).userId;
     const { name, phone } = req.body;
     const [user] = await db.update(usersTable)
       .set({ name, phone, updatedAt: new Date() })
-      .where(eq(usersTable.id, userId))
+      .where(eq(usersTable.id, (req as any).userId))
       .returning();
     if (!user) return res.status(404).json({ message: "User not found" });
     const { password: _, twoFactorCode: __, twoFactorExpiry: ___, ...userOut } = user;
@@ -268,22 +162,13 @@ router.put("/me", authenticate, async (req, res) => {
 
 router.post("/change-password", authenticate, async (req, res) => {
   try {
-    const userId = (req as any).userId;
     const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Current and new password are required" });
-    }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ message: "New password must be at least 6 characters" });
-    }
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!currentPassword || !newPassword) return res.status(400).json({ message: "Both passwords are required" });
+    if (newPassword.length < 6) return res.status(400).json({ message: "New password must be at least 6 characters" });
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, (req as any).userId)).limit(1);
     if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.password !== hashPassword(currentPassword)) {
-      return res.status(401).json({ message: "Current password is incorrect" });
-    }
-    await db.update(usersTable)
-      .set({ password: hashPassword(newPassword), updatedAt: new Date() })
-      .where(eq(usersTable.id, userId));
+    if (user.password !== hashPassword(currentPassword)) return res.status(401).json({ message: "Current password is incorrect" });
+    await db.update(usersTable).set({ password: hashPassword(newPassword), updatedAt: new Date() }).where(eq(usersTable.id, (req as any).userId));
     return res.json({ message: "Password changed successfully" });
   } catch (err) {
     req.log.error({ err }, "Change password error");
