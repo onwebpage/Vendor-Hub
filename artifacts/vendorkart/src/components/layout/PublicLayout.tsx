@@ -522,8 +522,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" className="font-semibold" onClick={() => setLocation("/login")}>{t.nav.login}</Button>
-                  <Button size="sm" className="rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-primary/35 transition-all" onClick={() => setLocation("/register")}>{t.nav.signUp}</Button>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm" className="font-semibold">{t.nav.login}</Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm" className="rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-primary/35 transition-all">{t.nav.signUp}</Button>
+                  </Link>
                 </div>
               )}
             </div>
@@ -636,8 +640,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="rounded-xl h-11" onClick={() => { setLocation("/login"); closeAll(); }}>{t.nav.login}</Button>
-                  <Button className="rounded-xl h-11" onClick={() => { setLocation("/register"); closeAll(); }}>{t.nav.signUp}</Button>
+                  <Link href="/login" onClick={closeAll} className="w-full">
+                    <Button variant="outline" className="rounded-xl h-11 w-full">{t.nav.login}</Button>
+                  </Link>
+                  <Link href="/register" onClick={closeAll} className="w-full">
+                    <Button className="rounded-xl h-11 w-full">{t.nav.signUp}</Button>
+                  </Link>
                 </div>
               )}
             </div>
