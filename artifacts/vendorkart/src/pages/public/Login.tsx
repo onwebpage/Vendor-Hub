@@ -67,6 +67,10 @@ export default function Login() {
         return;
       }
 
+      if (!response.user || !response.token) {
+        throw new Error(response.message || "Login failed");
+      }
+
       if (response.user.role !== role && response.user.role !== 'admin') {
         toast({ title: "Note", description: `Logged in as ${response.user.role}.` });
       }

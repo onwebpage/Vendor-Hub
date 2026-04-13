@@ -1,19 +1,21 @@
-import "dotenv/config";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname_lib = path.dirname(fileURLToPath(import.meta.url));
-import { config } from "dotenv";
-config({ path: path.resolve(__dirname_lib, "../../../../.env") });
 import { createRequire } from "node:module";
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+type Transporter = { sendMail: (opts: object) => Promise<void> };
 
-let transporter: { sendMail: (opts: object) => Promise<void> } | null = null;
+let transporter: Transporter | null | "uninitialized" = "uninitialized";
 
-if (GMAIL_USER && GMAIL_APP_PASSWORD) {
-  console.log(`[Email] Initializing SMTP transporter for ${GMAIL_USER} (Port: 465, SSL: true)`);
+function getTransporter(): Transporter | null {
+  if (transporter !== "uninitialized") return transporter;
+
+  const GMAIL_USER = process.env.GMAIL_USER;
+  const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    console.error(`[Email] Missing credentials — GMAIL_USER: ${GMAIL_USER ? "SET" : "NOT SET"}, GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD ? "SET" : "NOT SET"}`);
+    transporter = null;
+    return null;
+  }
+
   try {
     const _require = createRequire(import.meta.url);
     const nodemailer = _require("nodemailer");
@@ -30,10 +32,12 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
       greetingTimeout: 15000,
       family: 4,
     });
-    console.log("[Email] Transporter created successfully");
+    console.log(`[Email] Transporter initialized for ${GMAIL_USER}`);
+    return transporter;
   } catch (err) {
     console.error("[Email] Failed to initialize transporter:", err);
     transporter = null;
+    return null;
   }
 }
 
@@ -43,22 +47,23 @@ export async function sendEmail(params: {
   text: string;
   html?: string;
 }): Promise<boolean> {
-  if (!transporter) {
-    console.error(`[Email] Cannot send email - Transporter not initialized. GMAIL_USER: ${GMAIL_USER}, GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD ? "SET" : "NOT SET"}`);
+  const t = getTransporter();
+  if (!t) {
+    console.error("[Email] Cannot send email — transporter not initialized");
     return false;
   }
   try {
-    await transporter.sendMail({
-      from: GMAIL_USER,
+    await t.sendMail({
+      from: process.env.GMAIL_USER,
       to: params.to,
       subject: params.subject,
       text: params.text,
       html: params.html,
     });
-    console.log(`Email successfully sent to ${params.to}`);
+    console.log(`[Email] Successfully sent to ${params.to}`);
     return true;
   } catch (err) {
-    console.error(`Failed to send email to ${params.to}:`, err);
+    console.error(`[Email] Failed to send to ${params.to}:`, err);
     return false;
   }
 }
