@@ -9,11 +9,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
+import { getAuthToken } from "@workspace/api-client-react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 async function fetchMyOrders() {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const res = await fetch(`${API}/api/vendors/my-orders`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });

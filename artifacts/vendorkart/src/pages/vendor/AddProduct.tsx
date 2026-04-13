@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateProduct, useListCategories, useGetVendorProfile, useGetCurrentSubscription } from "@workspace/api-client-react";
+import { useCreateProduct, useListCategories, useGetVendorProfile, useGetCurrentSubscription, getAuthToken } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useVendorBase } from "@/lib/use-vendor-base";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ type ProductFormValues = z.infer<typeof productSchema>;
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 async function fetchMyProductCount() {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const res = await fetch(`${API}/api/vendors/my-products`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });

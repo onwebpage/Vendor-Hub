@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthToken } from "@workspace/api-client-react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 async function fetchNotifications() {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const res = await fetch(`${API}/api/notifications`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
@@ -19,7 +20,7 @@ async function fetchNotifications() {
 }
 
 async function markRead(id: number) {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const res = await fetch(`${API}/api/notifications/${id}/read`, {
     method: "PUT",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -29,7 +30,7 @@ async function markRead(id: number) {
 }
 
 async function markAllRead(notifications: any[]) {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const unread = notifications.filter((n) => !n.isRead);
   await Promise.all(
     unread.map((n) =>

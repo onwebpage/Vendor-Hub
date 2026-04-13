@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useVendorBase } from "@/lib/use-vendor-base";
+import { getAuthToken } from "@workspace/api-client-react";
 import {
   Package, Plus, Trash2, AlertCircle, ImageOff, Search,
   CheckCircle2, Clock, XCircle, Loader2, MoreVertical,
@@ -25,7 +26,7 @@ import {
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 async function fetchMyProducts() {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const res = await fetch(`${API}/api/vendors/my-products`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
@@ -34,7 +35,7 @@ async function fetchMyProducts() {
 }
 
 async function deleteProduct(id: number) {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const res = await fetch(`${API}/api/products/${id}`, {
     method: "DELETE",
     headers: token ? { Authorization: `Bearer ${token}` } : {},

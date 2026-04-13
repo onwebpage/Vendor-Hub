@@ -53,9 +53,18 @@ app.use("/api", router);
 export async function setupFrontend(httpServer: HttpServer) {
   if (isDev) {
     const { createServer: createViteServer } = await import("vite");
+
+    const replitDomain = process.env.REPLIT_DEV_DOMAIN;
+    const appOrigin = replitDomain
+      ? `https://${replitDomain}`
+      : `http://localhost:${process.env.PORT || 5000}`;
+
     const vite = await createViteServer({
       root: path.resolve(__dirname, "../../vendorkart"),
       envDir: path.resolve(__dirname, "../../../"),
+      define: {
+        "import.meta.env.VITE_APP_ORIGIN": JSON.stringify(appOrigin),
+      },
       server: {
         middlewareMode: true,
         allowedHosts: true,

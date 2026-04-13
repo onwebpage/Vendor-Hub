@@ -1,7 +1,7 @@
 import React from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
-import { useGetVendorProfile } from "@workspace/api-client-react";
+import { useGetVendorProfile, getAuthToken } from "@workspace/api-client-react";
 import {
   IndianRupee, TrendingUp, Package, ShoppingBag, CheckCircle2, Clock,
   AlertCircle, BarChart3, ArrowUpRight, CreditCard,
@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 const API = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 async function fetchMyOrders() {
-  const token = localStorage.getItem("vendorkart_token");
+  const token = await getAuthToken();
   const res = await fetch(`${API}/api/vendors/my-orders`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
