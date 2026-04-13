@@ -20,6 +20,7 @@ function fireOtpEmail(params: {
   userId: number;
   logContext: { info: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
 }) {
+  console.log(`[Auth] Preparing to send ${params.purpose} OTP to ${params.to}`);
   setImmediate(() => {
     const subject =
       params.purpose === "signup"

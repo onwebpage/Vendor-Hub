@@ -1,3 +1,10 @@
+import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname_lib = path.dirname(fileURLToPath(import.meta.url));
+import { config } from "dotenv";
+config({ path: path.resolve(__dirname_lib, "../../../.env") });
 import { createRequire } from "node:module";
 
 const GMAIL_USER = process.env.GMAIL_USER;
@@ -32,6 +39,7 @@ export async function sendEmail(params: {
   html?: string;
 }): Promise<boolean> {
   if (!transporter) {
+    console.error(`[Email] Cannot send email - Transporter not initialized. GMAIL_USER: ${GMAIL_USER}, GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD ? "SET" : "NOT SET"}`);
     return false;
   }
   try {
@@ -42,8 +50,10 @@ export async function sendEmail(params: {
       text: params.text,
       html: params.html,
     });
+    console.log(`Email successfully sent to ${params.to}`);
     return true;
-  } catch {
+  } catch (err) {
+    console.error(`Failed to send email to ${params.to}:`, err);
     return false;
   }
 }
