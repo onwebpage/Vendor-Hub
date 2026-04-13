@@ -13,13 +13,14 @@ const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 let transporter: { sendMail: (opts: object) => Promise<void> } | null = null;
 
 if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+  console.log(`[Email] Initializing SMTP transporter for ${GMAIL_USER} (Port: 465, SSL: true)`);
   try {
     const _require = createRequire(import.meta.url);
     const nodemailer = _require("nodemailer");
     transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
+      port: 465,
+      secure: true,
       auth: {
         user: GMAIL_USER,
         pass: GMAIL_APP_PASSWORD.replace(/\s/g, ""),
