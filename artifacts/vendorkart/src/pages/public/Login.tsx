@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Mail, ArrowRight, RotateCcw, Loader2 } from "lucide-react";
+import { ShoppingBag, Mail, ArrowRight, RotateCcw, Loader2, User, Store } from "lucide-react";
 import { OTPInput, REGEXP_ONLY_DIGITS } from "input-otp";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ export default function Login() {
   const { toast } = useToast();
 
   const [step, setStep] = useState<"email" | "otp">("email");
+  const [role, setRole] = useState<"customer" | "vendor">("customer");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,7 +46,7 @@ export default function Login() {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), role }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
@@ -105,7 +106,37 @@ export default function Login() {
             <form onSubmit={sendOtp} className="space-y-5">
               <div className="text-center mb-6">
                 <h1 className="text-2xl font-display font-bold mb-1">Welcome back</h1>
-                <p className="text-muted-foreground text-sm">Enter your email to receive a sign-in code</p>
+                <p className="text-muted-foreground text-sm">
+                  Sign in to your {role === "vendor" ? "Vendor" : "Customer"} dashboard
+                </p>
+              </div>
+
+              {/* Role selector */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setRole("customer")}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    role === "customer"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <User className="h-4 w-4" />
+                  Customer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("vendor")}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    role === "vendor"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Store className="h-4 w-4" />
+                  Vendor
+                </button>
               </div>
 
               <div className="space-y-2">

@@ -8,6 +8,9 @@ import { generateOtp, setOtp, verifyOtp } from "../lib/otp.js";
 import { uniqueSlug } from "../lib/slugify.js";
 import { sendEmail } from "../lib/email.js";
 
+const ADMIN_EMAIL = "admin@vendorkart.com";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+
 const router = Router();
 
 function buildOtpHtml(otp: string): string {
@@ -117,6 +120,33 @@ router.post("/verify-otp", async (req, res) => {
   } catch (err) {
     console.error("Verify OTP error:", err);
     return res.status(500).json({ message: "Failed to verify OTP" });
+  }
+});
+
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body as { email?: string; password?: string };
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, ADMIN_EMAIL)).limit(1);
+    if (!user) {
+      [user] = await db.insert(usersTable).values({
+        name: "Admin",
+        email: ADMIN_EMAIL,
+        role: "admin",
+      }).returning();
+    } else if (user.role !== "admin") {
+      [user] = await db.update(usersTable).set({ role: "admin" }).where(eq(usersTable.email, ADMIN_EMAIL)).returning();
+    }
+    const token = signToken({ userId: user.id, email: user.email, role: user.role });
+    return res.json({ token, user });
+  } catch (err) {
+    console.error("Admin login error:", err);
+    return res.status(500).json({ message: "Login failed" });
   }
 });
 
