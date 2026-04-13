@@ -1,4 +1,4 @@
-import { createRequire } from "node:module";
+import nodemailer from "nodemailer";
 
 type Transporter = { sendMail: (opts: object) => Promise<void> };
 
@@ -16,29 +16,21 @@ function getTransporter(): Transporter | null {
     return null;
   }
 
-  try {
-    const _require = createRequire(import.meta.url);
-    const nodemailer = _require("nodemailer");
-    transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: GMAIL_USER,
-        pass: GMAIL_APP_PASSWORD.replace(/\s/g, ""),
-      },
-      connectionTimeout: 15000,
-      socketTimeout: 15000,
-      greetingTimeout: 15000,
-      family: 4,
-    });
-    console.log(`[Email] Transporter initialized for ${GMAIL_USER}`);
-    return transporter;
-  } catch (err) {
-    console.error("[Email] Failed to initialize transporter:", err);
-    transporter = null;
-    return null;
-  }
+  transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASSWORD.replace(/\s/g, ""),
+    },
+    connectionTimeout: 15000,
+    socketTimeout: 15000,
+    greetingTimeout: 15000,
+    family: 4,
+  });
+  console.log(`[Email] Transporter initialized for ${GMAIL_USER}`);
+  return transporter;
 }
 
 export async function sendEmail(params: {
