@@ -1,20 +1,31 @@
 import { Request, Response, NextFunction } from "express";
-import { createClerkClient, verifyToken } from "@clerk/backend";
+import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
-if (!process.env.CLERK_SECRET_KEY) {
-  console.warn("CLERK_SECRET_KEY is not set! Authentication will fail.");
+const JWT_SECRET =
+  process.env.JWT_SECRET || "vendorkart-dev-secret-please-set-jwt-secret-in-production";
+
+if (!process.env.JWT_SECRET) {
+  console.warn("JWT_SECRET is not set — using insecure dev default. Set JWT_SECRET in production.");
 }
 
-export const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY,
-});
+export interface JwtPayload {
+  userId: number;
+  email: string;
+  role: string;
+}
 
-const secretKey = process.env.CLERK_SECRET_KEY!;
+export function signToken(payload: JwtPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+}
 
-export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function authenticate(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ message: "Unauthorized" });
@@ -22,24 +33,25 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   }
   const token = authHeader.slice(7);
   try {
-    const payload = await verifyToken(token, { secretKey });
-    const clerkUserId = payload.sub;
-    
-    // Fetch user from DB to get their role and numeric ID
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
-    
-    (req as any).userId = user?.id;           // DB integer ID — used by all route handlers
-    (req as any).clerkUserId = clerkUserId;   // Clerk string ID — used by /sync route
+    const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, payload.userId))
+      .limit(1);
+    if (!user) {
+      res.status(401).json({ message: "User not found" });
+      return;
+    }
+    (req as any).userId = user.id;
     (req as any).user = user;
-    (req as any).userRole = user?.role || "customer";
-    
+    (req as any).userRole = user.role;
     next();
   } catch (err) {
     console.error("Auth error:", err);
-    res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ message: "Invalid or expired token" });
   }
 }
-
 
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -52,22 +64,32 @@ export function requireRole(...roles: string[]) {
   };
 }
 
-export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+export function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
-    verifyToken(token, { secretKey })
-      .then(async payload => {
-        const clerkUserId = payload.sub;
-        const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
-        
-        (req as any).userId = user?.id;
-        (req as any).clerkUserId = clerkUserId;
-        (req as any).user = user;
-        (req as any).userRole = user?.role || "customer";
-      })
-      .catch(() => {})
-      .finally(() => next());
+    (async () => {
+      try {
+        const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+        const [user] = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.id, payload.userId))
+          .limit(1);
+        if (user) {
+          (req as any).userId = user.id;
+          (req as any).user = user;
+          (req as any).userRole = user.role;
+        }
+      } catch {
+      } finally {
+        next();
+      }
+    })();
   } else {
     next();
   }

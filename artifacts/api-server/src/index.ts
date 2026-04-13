@@ -27,11 +27,13 @@ if (process.env["SERVE_FRONTEND"] !== "false") {
 
 httpServer.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening on 0.0.0.0");
-  logger.info({
-    CLERK_PUBLISHABLE_KEY: process.env.VITE_CLERK_PUBLISHABLE_KEY ? "PRESENT" : "MISSING ❌",
-    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY ? "PRESENT" : "MISSING ❌",
-  }, "Clerk Auth Config");
-
+  logger.info(
+    {
+      JWT_SECRET: process.env.JWT_SECRET ? "PRESENT" : "MISSING (using dev default) ⚠️",
+      RESEND_API_KEY: process.env.RESEND_API_KEY ? "PRESENT" : "MISSING (OTP emails disabled) ⚠️",
+    },
+    "Auth Config",
+  );
 });
 
 function shutdown(signal: string) {

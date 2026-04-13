@@ -9,6 +9,8 @@ channel = "stable-25_05"
 
 [userenv.shared]
 PORT = "5000"
+JWT_SECRET = "d999849f26d79547f4c27bb904d967110ca96336c666d803557f69e001d46e6b3c0023d6c4bff54e7363ff145a7eaa65e245467cdac5fd0f32f93bc219b890ed"
+RESEND_FROM_EMAIL = "VendorKart <onboarding@resend.dev>"
 
 [workflows]
 runButton = "Project"

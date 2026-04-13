@@ -1,6 +1,5 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { useClerk } from "@clerk/react";
 
 import { useAuthStore } from "@/lib/auth-store";
 import { useVendorBase } from "@/lib/use-vendor-base";
@@ -20,7 +19,6 @@ interface NavItem {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { user, logout: storeLogout } = useAuthStore();
-  const { signOut } = useClerk();
   const [isDesktopExpanded, setDesktopExpanded] = React.useState(true);
   const [isMobileOpen, setMobileOpen] = React.useState(false);
   const { base: vendorBase } = useVendorBase();
@@ -86,8 +84,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = getNavItems();
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
     storeLogout();
     setLocation("/");
   };

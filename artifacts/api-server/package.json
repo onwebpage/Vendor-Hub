@@ -10,7 +10,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@clerk/backend": "^3.2.8",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "compression": "^1.8.1",
@@ -20,9 +19,11 @@
     "drizzle-orm": "catalog:",
     "express": "^5",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "pino": "^9",
     "pino-http": "^10",
     "razorpay": "^2.9.6",
+    "resend": "^4.5.1",
     "vite": "catalog:"
   },
   "devDependencies": {
@@ -30,6 +31,7 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "catalog:",
     "esbuild": "^0.27.3",
     "esbuild-plugin-pino": "^2.3.3",
