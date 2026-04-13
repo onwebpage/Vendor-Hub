@@ -52,8 +52,16 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      const response = await res.json();
-      if (!res.ok) throw new Error(response.message || "Login failed");
+      const response = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: response.message || "Invalid email or password.",
+        });
+        return;
+      }
 
       if (response.requires2FA) {
         setPendingToken(response.pendingToken);
@@ -68,11 +76,8 @@ export default function Login() {
       }
 
       if (!response.user || !response.token) {
-        throw new Error(response.message || "Login failed");
-      }
-
-      if (response.user.role !== role && response.user.role !== 'admin') {
-        toast({ title: "Note", description: `Logged in as ${response.user.role}.` });
+        toast({ variant: "destructive", title: "Login failed", description: response.message || "Unexpected error." });
+        return;
       }
 
       login(response.user, response.token);

@@ -131,8 +131,12 @@ export default function Register() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, role }),
       });
-      const response = await res.json();
-      if (!res.ok) throw new Error(response.message || "Registration failed");
+      const response = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Registration failed", description: response.message || "Please check your details and try again." });
+        return;
+      }
 
       if (response.requiresEmailVerification) {
         setPendingToken(response.pendingToken);
@@ -150,18 +154,19 @@ export default function Register() {
           });
         }
         setStep('otp');
-        toast({ title: "Check your email!", description: "We've sent a 6-digit code to verify your account." });
+        if (response.devOtp) {
+          setOtp(String(response.devOtp).split(""));
+          toast({ title: "Dev mode: code auto-filled", description: `OTP: ${response.devOtp}` });
+        } else {
+          toast({ title: "Check your email!", description: "We've sent a 6-digit code to verify your account." });
+        }
         return;
       }
 
       toast({ title: "Account created!", description: "Welcome to Vendorkart." });
-      
+
     } catch (error: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Registration failed", 
-        description: error.message || "Please check your details and try again." 
-      });
+      toast({ variant: "destructive", title: "Registration failed", description: error.message || "Please check your details and try again." });
     } finally {
       setIsPending(false);
     }
