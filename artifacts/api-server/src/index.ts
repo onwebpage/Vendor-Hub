@@ -1,3 +1,4 @@
+import "dotenv/config";
 import http from "node:http";
 import { pool } from "@workspace/db";
 import app, { setupFrontend } from "./app";
