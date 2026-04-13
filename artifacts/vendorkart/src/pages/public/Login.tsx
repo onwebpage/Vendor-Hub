@@ -1,8 +1,24 @@
-import { SignIn } from "@clerk/react";
-import { Link } from "wouter";
+import { SignIn, useAuth } from "@clerk/react";
+import { Link, useLocation } from "wouter";
 import { ShoppingBag } from "lucide-react";
+import { useEffect } from "react";
+import { useAuthStore } from "@/lib/auth-store";
 
 export default function Login() {
+  const [, setLocation] = useLocation();
+  const { isSignedIn, isLoaded } = useAuth();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const user = useAuthStore(s => s.user);
+
+  // If already authenticated in our store, redirect to dashboard
+  useEffect(() => {
+    if (isLoaded && isAuthenticated && user) {
+      if (user.role === "admin") setLocation("/admin");
+      else if (user.role === "vendor") setLocation("/vendor-dashboard");
+      else setLocation("/customer-dashboard");
+    }
+  }, [isLoaded, isAuthenticated, user, setLocation]);
+
   return (
     <div className="min-h-screen flex">
       <div className="flex-1 flex flex-col justify-center items-center px-4 bg-background">
@@ -15,8 +31,7 @@ export default function Login() {
           </span>
         </Link>
         <SignIn
-          routing="hash"
-          afterSignInUrl="/auth-callback"
+          forceRedirectUrl="/auth-callback"
           signUpUrl="/register"
         />
       </div>
@@ -46,3 +61,4 @@ export default function Login() {
     </div>
   );
 }
+

@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SignUp } from "@clerk/react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ShoppingBag, User, Store } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuthStore } from "@/lib/auth-store";
 
 export default function Register() {
+  const [, setLocation] = useLocation();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const user = useAuthStore(s => s.user);
+
   const initialRole = (new URLSearchParams(window.location.search).get("role") as "customer" | "vendor") || "customer";
   const [role, setRole] = useState<"customer" | "vendor">(initialRole);
+
+  // If already authenticated in our store, redirect to dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === "admin") setLocation("/admin");
+      else if (user.role === "vendor") setLocation("/vendor-dashboard");
+      else setLocation("/customer-dashboard");
+    }
+  }, [isAuthenticated, user, setLocation]);
 
   return (
     <div className="min-h-screen flex bg-muted/20">
@@ -34,8 +48,7 @@ export default function Register() {
         </div>
 
         <SignUp
-          routing="hash"
-          afterSignUpUrl={`/auth-callback?role=${role}`}
+          forceRedirectUrl={`/auth-callback?role=${role}`}
           signInUrl="/login"
           unsafeMetadata={{ role }}
         />
@@ -43,3 +56,4 @@ export default function Register() {
     </div>
   );
 }
+

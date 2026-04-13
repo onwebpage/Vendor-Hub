@@ -1,7 +1,8 @@
-import "dotenv/config";
+import "./load-env";
 import http from "node:http";
 import { pool } from "@workspace/db";
 import app, { setupFrontend } from "./app";
+
 import { logger } from "./lib/logger";
 
 const rawPort = process.env["PORT"];

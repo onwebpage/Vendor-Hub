@@ -55,6 +55,7 @@ export async function setupFrontend(httpServer: HttpServer) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       root: path.resolve(__dirname, "../../vendorkart"),
+      envDir: path.resolve(__dirname, "../../../"),
       server: {
         middlewareMode: true,
         allowedHosts: true,

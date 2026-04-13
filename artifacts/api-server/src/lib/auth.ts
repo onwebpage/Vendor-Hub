@@ -1,5 +1,5 @@
-import { Router, Request, Response, NextFunction } from "express";
-import { createClerkClient } from "@clerk/backend";
+import { Request, Response, NextFunction } from "express";
+import { createClerkClient, verifyToken } from "@clerk/backend";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
@@ -12,6 +12,8 @@ export const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
 });
 
+const secretKey = process.env.CLERK_SECRET_KEY!;
+
 export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -20,14 +22,14 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   }
   const token = authHeader.slice(7);
   try {
-    const payload = await clerkClient.verifyToken(token);
+    const payload = await verifyToken(token, { secretKey });
     const clerkUserId = payload.sub;
     
-    // Fetch user from DB to get their role
+    // Fetch user from DB to get their role and numeric ID
     const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
     
-    (req as any).userId = clerkUserId;
-    (req as any).clerkUserId = clerkUserId;
+    (req as any).userId = user?.id;           // DB integer ID — used by all route handlers
+    (req as any).clerkUserId = clerkUserId;   // Clerk string ID — used by /sync route
     (req as any).user = user;
     (req as any).userRole = user?.role || "customer";
     
@@ -54,12 +56,12 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
-    clerkClient.verifyToken(token)
+    verifyToken(token, { secretKey })
       .then(async payload => {
         const clerkUserId = payload.sub;
         const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
         
-        (req as any).userId = clerkUserId;
+        (req as any).userId = user?.id;
         (req as any).clerkUserId = clerkUserId;
         (req as any).user = user;
         (req as any).userRole = user?.role || "customer";
@@ -70,4 +72,3 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
     next();
   }
 }
-

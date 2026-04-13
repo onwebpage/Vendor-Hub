@@ -53,6 +53,8 @@ import VendorPolicy from "@/pages/public/VendorPolicy";
 import NotFound from "@/pages/not-found";
 import ChatBot from "@/components/ChatBot";
 import { LanguageProvider } from "@/lib/language-context";
+import { ClerkSync } from "@/components/shared/ClerkSync";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -144,6 +146,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <ClerkSync />
             <Router />
             <ChatBot />
           </WouterRouter>

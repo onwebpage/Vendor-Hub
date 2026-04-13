@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
+import { useClerk } from "@clerk/react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { FaFacebook, FaInstagram, FaLinkedinIn, FaYoutube, FaWhatsapp, FaPinterest, FaTelegram } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
@@ -315,7 +317,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = React.useState(false);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const [location, setLocation] = useLocation();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout: storeLogout } = useAuthStore();
+  const { signOut } = useClerk();
   const { language, setLanguage, t } = useLanguage();
   const socialLinks = useSocialLinks();
 
@@ -331,7 +334,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  const handleLogout = () => { logout(); setLocation("/"); };
+  const handleLogout = async () => { 
+    await signOut();
+    storeLogout(); 
+    setLocation("/"); 
+  };
   const getDashboardLink = () => {
     if (!user) return "/login";
     return user.role === "admin" ? "/admin" : user.role === "vendor" ? "/vendor-dashboard" : "/customer-dashboard";

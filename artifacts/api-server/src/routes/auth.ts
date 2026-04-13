@@ -20,13 +20,24 @@ router.post("/sync", authenticate, async (req, res) => {
 
     if (!email) return res.status(400).json({ message: "No email found in Clerk account" });
 
-    // Check if already synced
-    const existing = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
-    if (existing.length > 0) {
-      const userOut = existing[0];
-      return res.json({ user: userOut, message: "Already synced" });
+    // 1️⃣ Check if already synced by Clerk ID
+    const existingByClerkId = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId)).limit(1);
+    if (existingByClerkId.length > 0) {
+      return res.json({ user: existingByClerkId[0], message: "Already synced" });
     }
 
+    // 2️⃣ Check if a user with this email already exists (from a previous sign-up method)
+    const existingByEmail = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (existingByEmail.length > 0) {
+      // Update the existing user's clerkId to link the Clerk account
+      const [updated] = await db.update(usersTable)
+        .set({ clerkId: clerkUserId, updatedAt: new Date() })
+        .where(eq(usersTable.email, email))
+        .returning();
+      return res.json({ user: updated, message: "Linked existing account" });
+    }
+
+    // 3️⃣ New user — create them
     const userRole = role || "customer";
     const [user] = await db.insert(usersTable).values({
       clerkId: clerkUserId,
@@ -49,13 +60,13 @@ router.post("/sync", authenticate, async (req, res) => {
       });
     }
 
-    const userOut = user;
-    return res.status(201).json({ user: userOut, message: "User synced" });
+    return res.status(201).json({ user, message: "User synced" });
   } catch (err) {
     req.log.error({ err }, "Sync error");
     return res.status(500).json({ message: "Sync failed" });
   }
 });
+
 
 // Get current user from our DB using Clerk ID
 router.get("/me", authenticate, async (req, res) => {
