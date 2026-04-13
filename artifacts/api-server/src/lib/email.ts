@@ -19,8 +19,8 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
     const nodemailer = _require("nodemailer");
     transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
         user: GMAIL_USER,
         pass: GMAIL_APP_PASSWORD.replace(/\s/g, ""),
@@ -30,7 +30,9 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
       greetingTimeout: 15000,
       family: 4,
     });
-  } catch {
+    console.log("[Email] Transporter created successfully");
+  } catch (err) {
+    console.error("[Email] Failed to initialize transporter:", err);
     transporter = null;
   }
 }
