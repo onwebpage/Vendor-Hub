@@ -18,6 +18,7 @@ import Products from "@/pages/public/Products";
 import ProductDetail from "@/pages/public/ProductDetail";
 import Login from "@/pages/public/Login";
 import Register from "@/pages/public/Register";
+import AuthCallback from "@/pages/public/AuthCallback";
 import CustomerDashboard from "@/pages/customer/Dashboard";
 import Cart from "@/pages/customer/Cart";
 import CustomerOrders from "@/pages/customer/Orders";
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/vendor-policy" component={VendorPolicy} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/auth-callback" component={AuthCallback} />
 
       {/* Customer */}
       <Route path="/customer-dashboard" component={CustomerDashboard} />

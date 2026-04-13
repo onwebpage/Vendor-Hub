@@ -1,8 +1,12 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { ClerkProvider } from "@clerk/react";
 
-setAuthTokenGetter(() => localStorage.getItem("vendorkart_token"));
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    <App />
+  </ClerkProvider>
+);

@@ -1,39 +1,25 @@
 import { Request, Response, NextFunction } from "express";
-import crypto from "crypto";
+import { createClerkClient } from "@clerk/backend";
 
-export function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password + "vendorkart_salt").digest("hex");
-}
+export const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
 
-export function generateToken(userId: number, role: string): string {
-  const payload = JSON.stringify({ userId, role, iat: Date.now() });
-  return Buffer.from(payload).toString("base64");
-}
-
-export function verifyToken(token: string): { userId: number; role: string } | null {
-  try {
-    const payload = JSON.parse(Buffer.from(token, "base64").toString("utf8"));
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-export function authenticate(req: Request, res: Response, next: NextFunction): void {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
   const token = authHeader.slice(7);
-  const payload = verifyToken(token);
-  if (!payload) {
+  try {
+    const payload = await clerkClient.verifyToken(token);
+    (req as any).userId = payload.sub; // Clerk user ID
+    (req as any).clerkUserId = payload.sub;
+    next();
+  } catch {
     res.status(401).json({ message: "Invalid token" });
-    return;
   }
-  (req as any).userId = payload.userId;
-  (req as any).userRole = payload.role;
-  next();
 }
 
 export function requireRole(...roles: string[]) {
@@ -49,13 +35,16 @@ export function requireRole(...roles: string[]) {
 
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
+  if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
-    const payload = verifyToken(token);
-    if (payload) {
-      (req as any).userId = payload.userId;
-      (req as any).userRole = payload.role;
-    }
+    clerkClient.verifyToken(token)
+      .then(payload => {
+        (req as any).userId = payload.sub;
+        (req as any).clerkUserId = payload.sub;
+      })
+      .catch(() => {})
+      .finally(() => next());
+  } else {
+    next();
   }
-  next();
 }
