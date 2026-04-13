@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname_lib = path.dirname(fileURLToPath(import.meta.url));
 import { config } from "dotenv";
-config({ path: path.resolve(__dirname_lib, "../../../.env") });
+config({ path: path.resolve(__dirname_lib, "../../../../.env") });
 import { createRequire } from "node:module";
 
 const GMAIL_USER = process.env.GMAIL_USER;
