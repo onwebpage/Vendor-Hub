@@ -7,7 +7,7 @@ import {
   socialLinksTable, teamMembersTable, officeLocationsTable, legalPagesTable,
 } from "@workspace/db/schema";
 import { eq, count, sum, sql, asc } from "drizzle-orm";
-import { authenticate, requireRole, hashPassword } from "../lib/auth.js";
+import { authenticate, requireRole } from "../lib/auth.js";
 import { slugify, uniqueSlug } from "../lib/slugify.js";
 import { logActivity } from "../lib/activity.js";
 import { logEmail } from "../lib/email-log.js";
@@ -77,17 +77,16 @@ router.get("/vendors", async (req, res) => {
 
 router.post("/vendors", async (req, res) => {
   try {
-    const { name, email, password, businessName, phone, city, state, gstNumber, address, pincode, autoApprove } = req.body;
-    if (!name || !email || !password || !businessName) {
-      return res.status(400).json({ message: "Name, email, password and business name are required" });
+    const { name, email, businessName, phone, city, state, gstNumber, address, pincode, autoApprove } = req.body;
+    if (!name || !email || !businessName) {
+      return res.status(400).json({ message: "Name, email, and business name are required" });
     }
     const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
     if (existing.length > 0) {
       return res.status(409).json({ message: "Email already registered" });
     }
-    const hashed = hashPassword(password);
     const [user] = await db.insert(usersTable).values({
-      name, email, password: hashed, role: "vendor", phone,
+      name, email, role: "vendor", phone,
     }).returning();
 
     const slug = uniqueSlug(businessName);
@@ -325,7 +324,7 @@ router.get("/vendors-list", async (_req, res) => {
 router.get("/customers", async (_req, res) => {
   try {
     const customers = await db.select().from(usersTable).where(eq(usersTable.role, "customer"));
-    return res.json(customers.map(({ password: _, ...u }) => u));
+    return res.json(customers);
   } catch (err) {
     return res.status(500).json({ message: "Failed to list customers" });
   }

@@ -27,9 +27,10 @@ if (process.env["SERVE_FRONTEND"] !== "false") {
 httpServer.listen(port, "0.0.0.0", () => {
   logger.info({ port }, "Server listening on 0.0.0.0");
   logger.info({
-    GMAIL_USER: process.env.GMAIL_USER || "NOT SET",
-    GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD ? "SET" : "NOT SET",
-  }, "Email config");
+    CLERK_PUBLISHABLE_KEY: process.env.VITE_CLERK_PUBLISHABLE_KEY ? "PRESENT" : "MISSING ❌",
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY ? "PRESENT" : "MISSING ❌",
+  }, "Clerk Auth Config");
+
 });
 
 function shutdown(signal: string) {
