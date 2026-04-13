@@ -2,22 +2,33 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, vendorsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { Resend } from "resend";
 import { authenticate } from "../lib/auth.js";
 import { signToken } from "../lib/auth.js";
 import { generateOtp, setOtp, verifyOtp } from "../lib/otp.js";
 import { uniqueSlug } from "../lib/slugify.js";
+import { sendEmail } from "../lib/email.js";
 
 const router = Router();
 
-let resend: Resend | null = null;
-function getResend(): Resend | null {
-  if (!process.env.RESEND_API_KEY) return null;
-  if (!resend) resend = new Resend(process.env.RESEND_API_KEY);
-  return resend;
+function buildOtpHtml(otp: string): string {
+  return `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#f8f9fa;border-radius:16px;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <span style="font-size:24px;font-weight:bold;color:#1a1a2e;">Vendor<span style="color:#6366f1;">kart</span></span>
+      </div>
+      <h2 style="color:#1a1a2e;margin:0 0 8px 0;font-size:20px;">Your verification code</h2>
+      <p style="color:#555;margin:0 0 28px 0;line-height:1.6;">
+        Enter this code to sign in to your VendorKart account. It expires in <strong>10 minutes</strong>.
+      </p>
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:28px;text-align:center;margin-bottom:24px;">
+        <span style="font-size:40px;font-weight:700;letter-spacing:12px;color:#1a1a2e;font-family:monospace;">${otp}</span>
+      </div>
+      <p style="color:#999;font-size:13px;margin:0;line-height:1.6;">
+        If you didn't request this code, you can safely ignore this email. Someone may have entered your email address by mistake.
+      </p>
+    </div>
+  `;
 }
-const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL || "VendorKart <onboarding@resend.dev>";
 
 router.post("/send-otp", async (req, res) => {
   try {
@@ -33,38 +44,19 @@ router.post("/send-otp", async (req, res) => {
     const otp = generateOtp();
     setOtp(email, otp, name, role);
 
-    const client = getResend();
-    if (!client) {
-      console.warn(`[DEV] OTP for ${email}: ${otp}`);
-      return res.json({ message: "OTP sent (dev: check server logs)" });
-    }
-
-    const { error } = await client.emails.send({
-      from: FROM_EMAIL,
+    const sent = await sendEmail({
       to: email,
       subject: `${otp} is your VendorKart OTP`,
-      html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px 24px;background:#f8f9fa;border-radius:16px;">
-          <div style="text-align:center;margin-bottom:24px;">
-            <span style="font-size:24px;font-weight:bold;color:#1a1a2e;">Vendor<span style="color:#6366f1;">kart</span></span>
-          </div>
-          <h2 style="color:#1a1a2e;margin:0 0 8px 0;font-size:20px;">Your verification code</h2>
-          <p style="color:#555;margin:0 0 28px 0;line-height:1.6;">
-            Enter this code to sign in to your VendorKart account. It expires in <strong>10 minutes</strong>.
-          </p>
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:28px;text-align:center;margin-bottom:24px;">
-            <span style="font-size:40px;font-weight:700;letter-spacing:12px;color:#1a1a2e;font-family:monospace;">${otp}</span>
-          </div>
-          <p style="color:#999;font-size:13px;margin:0;line-height:1.6;">
-            If you didn't request this code, you can safely ignore this email. Someone may have entered your email address by mistake.
-          </p>
-        </div>
-      `,
+      text: `Your VendorKart verification code is: ${otp}. It expires in 10 minutes.`,
+      html: buildOtpHtml(otp),
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+    if (!sent) {
+      console.warn(`[OTP] No email provider configured or all failed. OTP for ${email}: ${otp}`);
+      if (process.env.NODE_ENV !== "production") {
+        return res.json({ message: `OTP sent (dev mode — check server logs): ${otp}` });
+      }
+      return res.status(500).json({ message: "Failed to send OTP email. Please check server email configuration." });
     }
 
     return res.json({ message: "OTP sent to your email" });
