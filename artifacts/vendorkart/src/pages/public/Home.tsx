@@ -445,17 +445,24 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════
           CATEGORIES — premium bento grid
       ═══════════════════════════════════════════════════ */}
-      <section className="py-24 bg-[#080c14]">
+      <section className="py-24 bg-[#080c14] relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/4 blur-[120px] rounded-full pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* Section header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
             <div>
-              <p className="text-blue-400 font-bold text-xs uppercase tracking-widest mb-3">{t.categories.browseByIndustry}</p>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block animate-pulse" />
+                <p className="text-blue-400 font-bold text-xs uppercase tracking-widest">{t.categories.browseByIndustry}</p>
+              </div>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
                 {t.categories.exploreTop}<br />
                 <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">{t.categories.wholesaleCategories}</span>
               </h2>
+              <p className="text-white/35 mt-3 text-sm max-w-md">Source from 12,000+ verified suppliers across all major industry verticals.</p>
             </div>
-            <Link href="/categories" className="group flex items-center gap-2 text-blue-400 font-semibold text-sm hover:text-blue-300 transition-colors whitespace-nowrap">
+            <Link href="/categories" className="group flex items-center gap-2.5 text-blue-400 font-semibold text-sm hover:text-blue-300 transition-colors whitespace-nowrap self-start sm:self-auto">
               {t.categories.viewAll}
               <span className="w-8 h-8 rounded-full border border-blue-500/30 flex items-center justify-center group-hover:bg-blue-500/10 group-hover:border-blue-400/50 transition-all">
                 <ArrowUpRight className="w-4 h-4" />
@@ -463,31 +470,131 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categoriesMeta.map((cat, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ y: -5, scale: 1.01 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <Link href={`/products?category=${cat.key}`} className="group block h-full">
-                  <div className={`relative rounded-2xl p-6 border ${cat.border} bg-gradient-to-br ${cat.gradient} hover:shadow-xl ${cat.glow} transition-all duration-300 h-full overflow-hidden`}>
-                    <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${cat.gradient} blur-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500`} />
-                    {cat.tag && (
-                      <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/60 border border-white/10">
-                        {cat.tag === "mostPopular" ? t.categories.mostPopular : t.categories.topSeller}
-                      </span>
-                    )}
-                    <div className="text-4xl mb-4">{cat.emoji}</div>
-                    <h3 className="font-bold text-white text-base leading-snug mb-1">{t.categories.names[i]}</h3>
-                    <p className="text-white/40 text-xs">{cat.count} {t.categories.products}</p>
-                    <div className="mt-4 flex items-center gap-1 text-white/30 text-xs group-hover:text-white/60 transition-colors">
+          {/* Bento grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4" style={{ gridAutoRows: "minmax(160px, auto)" }}>
+
+            {/* Featured card — Electronics (2 col × 2 row) */}
+            <motion.div
+              whileHover={{ scale: 1.015 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}
+              className="col-span-2 row-span-2"
+            >
+              <Link href={`/products?category=${categoriesMeta[0].key}`} className="group block h-full">
+                <div className={`relative rounded-3xl p-8 border ${categoriesMeta[0].border} bg-gradient-to-br ${categoriesMeta[0].gradient} h-full overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10`}
+                  style={{ minHeight: 340 }}>
+                  {/* Glows */}
+                  <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/10 blur-3xl pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/40 to-transparent" />
+
+                  {/* Badge */}
+                  <span className="absolute top-5 right-5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-blue-500/25 text-blue-300 border border-blue-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                    {t.categories.mostPopular}
+                  </span>
+
+                  {/* Big emoji */}
+                  <div className="text-7xl mb-6 drop-shadow-lg select-none">{categoriesMeta[0].emoji}</div>
+
+                  <div className="relative z-10">
+                    <h3 className="font-extrabold text-white text-2xl leading-snug mb-2">{t.categories.names[0]}</h3>
+                    <p className="text-white/45 text-sm mb-5">{categoriesMeta[0].count} {t.categories.products}</p>
+
+                    {/* Sub-tags */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {["Sensors", "PCBs", "Displays", "Components"].map(tag => (
+                        <span key={tag} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/8 border border-white/10 text-white/50">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-blue-400 text-sm font-semibold group-hover:gap-3 transition-all duration-200">
+                      <span>{t.categories.explore}</span> <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+
+            {/* Cards 1–4: fill right side of rows 1 & 2 */}
+            {categoriesMeta.slice(1, 5).map((cat, idx) => {
+              const i = idx + 1;
+              return (
+                <motion.div
+                  key={i}
+                  whileHover={{ y: -4, scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <Link href={`/products?category=${cat.key}`} className="group block h-full">
+                    <div className={`relative rounded-2xl p-5 border ${cat.border} bg-gradient-to-br ${cat.gradient} h-full overflow-hidden hover:shadow-xl ${cat.glow} transition-all duration-300`}>
+                      <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br ${cat.gradient} blur-xl opacity-0 group-hover:opacity-70 transition-opacity duration-500`} />
+                      {cat.tag && (
+                        <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/55 border border-white/10">
+                          {cat.tag === "topSeller" ? t.categories.topSeller : t.categories.mostPopular}
+                        </span>
+                      )}
+                      <div className="text-3xl mb-3 select-none">{cat.emoji}</div>
+                      <h3 className="font-bold text-white text-sm leading-snug mb-1">{t.categories.names[i]}</h3>
+                      <p className="text-white/35 text-xs">{cat.count} {t.categories.products}</p>
+                      <div className="mt-3 flex items-center gap-1 text-white/25 text-xs group-hover:text-white/60 group-hover:gap-1.5 transition-all">
+                        <span>{t.categories.explore}</span> <ArrowRight className="w-3 h-3" />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+
+            {/* Card 5: Home & Decor — wide (2 cols) */}
+            <motion.div
+              whileHover={{ y: -4, scale: 1.015 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="col-span-2"
+            >
+              <Link href={`/products?category=${categoriesMeta[5].key}`} className="group block h-full">
+                <div className={`relative rounded-2xl px-7 py-5 border ${categoriesMeta[5].border} bg-gradient-to-br ${categoriesMeta[5].gradient} h-full overflow-hidden hover:shadow-xl ${categoriesMeta[5].glow} transition-all duration-300 flex items-center gap-6`}>
+                  <div className="text-5xl select-none flex-shrink-0">{categoriesMeta[5].emoji}</div>
+                  <div>
+                    <h3 className="font-bold text-white text-base leading-snug mb-1">{t.categories.names[5]}</h3>
+                    <p className="text-white/35 text-xs mb-3">{categoriesMeta[5].count} {t.categories.products}</p>
+                    <div className="flex items-center gap-1.5 text-white/30 text-xs group-hover:text-white/60 transition-colors">
                       <span>{t.categories.explore}</span> <ArrowRight className="w-3 h-3" />
                     </div>
                   </div>
-                </Link>
-              </motion.div>
-            ))}
+                  <div className="absolute right-8 top-1/2 -translate-y-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {["Furniture", "Lighting", "Textiles"].map(tag => (
+                      <span key={tag} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/8 border border-white/10 text-white/50">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+
+            {/* Cards 6 & 7: Automotive + Food */}
+            {categoriesMeta.slice(6).map((cat, idx) => {
+              const i = idx + 6;
+              return (
+                <motion.div
+                  key={i}
+                  whileHover={{ y: -4, scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  <Link href={`/products?category=${cat.key}`} className="group block h-full">
+                    <div className={`relative rounded-2xl p-5 border ${cat.border} bg-gradient-to-br ${cat.gradient} h-full overflow-hidden hover:shadow-xl ${cat.glow} transition-all duration-300`}>
+                      <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br ${cat.gradient} blur-xl opacity-0 group-hover:opacity-70 transition-opacity duration-500`} />
+                      <div className="text-3xl mb-3 select-none">{cat.emoji}</div>
+                      <h3 className="font-bold text-white text-sm leading-snug mb-1">{t.categories.names[i]}</h3>
+                      <p className="text-white/35 text-xs">{cat.count} {t.categories.products}</p>
+                      <div className="mt-3 flex items-center gap-1 text-white/25 text-xs group-hover:text-white/60 group-hover:gap-1.5 transition-all">
+                        <span>{t.categories.explore}</span> <ArrowRight className="w-3 h-3" />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>

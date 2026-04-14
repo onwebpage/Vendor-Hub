@@ -177,22 +177,28 @@ function StatCard({
   return (
     <motion.div
       {...fadeIn}
-      className={`relative bg-card rounded-2xl p-6 border border-border/50 shadow-sm overflow-hidden ${locked ? "opacity-60" : ""}`}
+      className={`relative bg-card rounded-2xl p-5 border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-all ${locked ? "opacity-55" : ""}`}
     >
+      {/* Top accent bar */}
+      <div className={`absolute top-0 left-0 right-0 h-0.5 ${bg} opacity-80`} />
       <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-xl ${bg}`}>
+        <div className={`p-2.5 rounded-xl ${bg}`}>
           <Icon className={`w-5 h-5 ${color}`} />
         </div>
-        {locked && (
+        {locked ? (
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-2 py-1 rounded-lg font-semibold uppercase tracking-wide">
             <Lock className="w-2.5 h-2.5" /> Locked
+          </div>
+        ) : (
+          <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${bg} ${color}`}>
+            <TrendingUp className="w-2.5 h-2.5" /> Live
           </div>
         )}
       </div>
       <div className="text-3xl font-bold font-display tracking-tight">{value}</div>
-      <div className="text-sm font-medium text-muted-foreground mt-1">{label}</div>
+      <div className="text-sm font-semibold text-foreground mt-1">{label}</div>
       {subtext && <div className="text-xs text-muted-foreground/60 mt-0.5">{subtext}</div>}
-      <div className={`absolute -right-4 -bottom-4 w-20 h-20 rounded-full ${bg} opacity-30`} />
+      <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full ${bg} opacity-20`} />
     </motion.div>
   );
 }
@@ -402,21 +408,32 @@ function SmartDashboard({ isApproved }: { isApproved: boolean }) {
   );
 }
 
+const quickActionDescs: Record<string, string> = {
+  "Add New Product": "Grow your catalog",
+  "Manage Products": "Edit & update listings",
+  "View Orders": "Track & fulfil orders",
+  "Store Settings": "Profile & branding",
+};
+
 function QuickAction({ icon: Icon, label, href, disabled, color }: {
   icon: React.ElementType; label: string; href: string; disabled?: boolean; color: string;
 }) {
+  const desc = quickActionDescs[label] || "";
   const content = (
-    <div className={`flex items-center gap-3 p-4 rounded-2xl border transition-all duration-200 ${
+    <div className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${
       disabled
-        ? "border-border/30 bg-muted/30 opacity-50 cursor-not-allowed"
-        : "border-border/50 bg-card hover:border-primary/25 hover:shadow-md hover:bg-accent/50 cursor-pointer"
+        ? "border-border/30 bg-muted/20 opacity-50 cursor-not-allowed"
+        : "border-border/50 bg-card hover:border-primary/20 hover:shadow-md hover:bg-accent/40 cursor-pointer"
     }`}>
-      <div className={`p-2 rounded-xl ${color} flex-shrink-0`}>
+      <div className={`p-2.5 rounded-xl ${color} flex-shrink-0 group-hover:scale-110 transition-transform`}>
         <Icon className="w-4 h-4" />
       </div>
-      <span className="text-sm font-semibold flex-1">{label}</span>
-      {!disabled && <ChevronRight className="w-4 h-4 text-muted-foreground/50" />}
-      {disabled && <Lock className="w-3.5 h-3.5 text-muted-foreground/50" />}
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-bold block">{label}</span>
+        {desc && <span className="text-xs text-muted-foreground">{desc}</span>}
+      </div>
+      {!disabled && <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />}
+      {disabled && <Lock className="w-3.5 h-3.5 text-muted-foreground/40" />}
     </div>
   );
 
