@@ -15,7 +15,7 @@ async function sendViaResend(params: EmailParams): Promise<boolean> {
     const { Resend } = await import("resend");
     const client = new Resend(apiKey);
     const fromEmail =
-      process.env.RESEND_FROM_EMAIL || "VendorKart <onboarding@resend.dev>";
+      process.env.RESEND_FROM_EMAIL || "VendorKart <noreply@vendorkart.shop>";
 
     const { error } = await client.emails.send({
       from: fromEmail,
