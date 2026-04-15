@@ -6,7 +6,7 @@ import { useVendorBase } from "@/lib/use-vendor-base";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, ShoppingBag, Package, Users, Settings, 
-  CreditCard, Bell, LifeBuoy, LogOut, Store, Menu, Tag, Tags, FileText, Heart, Activity, MapPin, Crown, X
+  CreditCard, Bell, LifeBuoy, LogOut, Store, Menu, Tag, Tags, FileText, Heart, Activity, MapPin, Crown, X, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +15,18 @@ interface NavItem {
   label: string;
   href: string;
 }
+
+const roleLabel: Record<string, string> = {
+  customer: "Buyer",
+  vendor: "Seller",
+  admin: "Admin",
+};
+
+const roleBadgeStyle: Record<string, string> = {
+  customer: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  vendor: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  admin: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+};
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -89,6 +101,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     setLocation("/");
   };
 
+  const initials = user.name
+    .split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+
   const SidebarContent = ({ showLabels }: { showLabels: boolean }) => (
     <>
       <div className="h-16 md:h-20 flex items-center px-4 md:px-6 border-b border-border/50 justify-between flex-shrink-0">
@@ -130,10 +145,35 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         })}
       </div>
 
-      <div className="p-3 md:p-4 border-t border-border/50 flex-shrink-0">
+      <div className="p-3 md:p-4 border-t border-border/50 flex-shrink-0 space-y-2">
+        {showLabels && (
+          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-muted/50">
+            <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-sm border border-primary/20 shrink-0">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate leading-tight">{user.name}</p>
+              <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${roleBadgeStyle[user.role] || ""}`}>
+                {roleLabel[user.role] || user.role}
+              </span>
+            </div>
+            <Link href={user.role === "customer" ? "/customer-dashboard/profile" : `${vendorBase}/store-settings`}>
+              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <Settings className="h-3.5 w-3.5" />
+              </button>
+            </Link>
+          </div>
+        )}
+        {!showLabels && (
+          <div className="flex justify-center mb-1">
+            <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-sm border border-primary/20">
+              {initials}
+            </div>
+          </div>
+        )}
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-3 px-3 py-2.5 md:py-3 w-full rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200 ${!showLabels ? 'justify-center' : ''}`}
+          className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200 ${!showLabels ? 'justify-center' : ''}`}
         >
           <LogOut className="h-5 w-5 shrink-0" />
           {showLabels && <span className="font-medium">Log out</span>}
@@ -142,9 +182,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 
+  const currentNavLabel = navItems.find(item => item.href === location)?.label ||
+    location.split('/').pop()?.replace(/-/g, ' ') || 'Overview';
+
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Mobile overlay backdrop */}
       <AnimatePresence>
         {isMobileOpen && (
           <motion.div
@@ -158,7 +200,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Mobile Sidebar (slide-in overlay) */}
       <AnimatePresence>
         {isMobileOpen && (
           <motion.aside
@@ -173,7 +214,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar (always mounted, animates width) */}
       <motion.aside
         initial={false}
         animate={{ width: isDesktopExpanded ? 280 : 80 }}
@@ -182,12 +222,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent showLabels={isDesktopExpanded} />
       </motion.aside>
 
-      {/* Main Content Area */}
       <div className={`md:transition-all md:duration-300 ${isDesktopExpanded ? 'md:pl-[280px]' : 'md:pl-[80px]'}`}>
-        {/* Header */}
-        <header className="h-14 md:h-20 bg-card/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between shadow-sm">
+        <header className="h-14 md:h-16 bg-card/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
-            {/* Mobile hamburger */}
             <Button
               variant="ghost"
               size="icon"
@@ -196,7 +233,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            {/* Desktop collapse toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -205,24 +241,30 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-base md:text-xl font-display font-bold capitalize hidden sm:block">
-              {navItems.find(item => item.href === location)?.label ||
-               location.split('/').pop()?.replace(/-/g, ' ') || 'Overview'}
-            </h1>
+            <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground capitalize">{currentNavLabel}</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-4">
-            <Button variant="outline" size="icon" className="rounded-full relative h-8 w-8 md:h-10 md:w-10">
-              <Bell className="h-4 w-4 md:h-5 md:w-5" />
-              <span className="absolute top-0 right-0 h-2 w-2 md:h-2.5 md:w-2.5 bg-destructive rounded-full border-2 border-background"></span>
+          <div className="flex items-center gap-2 md:gap-3">
+            <Button variant="outline" size="icon" className="rounded-full relative h-9 w-9">
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-0.5 right-0.5 h-2 w-2 bg-destructive rounded-full border-2 border-background"></span>
             </Button>
-            <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 text-sm md:text-base">
-              {user.name.charAt(0).toUpperCase()}
+            <div className="flex items-center gap-2.5 pl-1">
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 text-sm">
+                {initials}
+              </div>
+              <div className="hidden md:block">
+                <p className="text-sm font-semibold leading-tight">{user.name.split(" ")[0]}</p>
+                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${roleBadgeStyle[user.role] || ""}`}>
+                  {roleLabel[user.role] || user.role}
+                </span>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="p-4 sm:p-6 md:p-8">
           <div className="max-w-7xl mx-auto w-full">
             {children}

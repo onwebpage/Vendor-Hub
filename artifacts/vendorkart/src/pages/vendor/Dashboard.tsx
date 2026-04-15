@@ -3,10 +3,10 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useGetVendorProfile } from "@workspace/api-client-react";
 import {
   Store, Package, ShoppingBag, IndianRupee, Clock,
-  Plus, Lock, ArrowRight, CheckCircle2, XCircle, Star, MapPin,
+  Plus, Lock, ArrowRight, CheckCircle2, XCircle, Star,
   AlertTriangle, Zap, BarChart3, Users, Shield, TrendingUp,
   Bell, ChevronRight, Sparkles, Building2, Phone, Mail, Link2, Copy, ExternalLink,
-  CalendarDays, Calendar
+  CalendarDays, Calendar, MapPin, Edit3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -17,7 +17,6 @@ import { customFetch } from "@workspace/api-client-react";
 import { useVendorBase } from "@/lib/use-vendor-base";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell
 } from "recharts";
 
 const fadeIn = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35 } };
@@ -35,13 +34,12 @@ function StoreUrlBar({ slug }: { slug: string }) {
   };
 
   return (
-    <div className="flex items-center gap-2 mt-3 p-2.5 rounded-xl bg-primary/5 border border-primary/15">
-      <Link2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-      <span className="text-xs text-primary font-mono flex-1 truncate">{storeUrl}</span>
+    <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-white/10 border border-white/15">
+      <Link2 className="w-3.5 h-3.5 text-white/70 flex-shrink-0" />
+      <span className="text-xs text-white/70 font-mono flex-1 truncate">{storeUrl}</span>
       <button
         onClick={handleCopy}
-        className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:bg-primary/15 px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
-        title="Copy store URL"
+        className="flex items-center gap-1 text-[11px] font-semibold text-white/90 hover:bg-white/15 px-2 py-1 rounded-md transition-colors flex-shrink-0"
       >
         <Copy className="w-3 h-3" />
         {copied ? "Copied!" : "Copy"}
@@ -50,8 +48,7 @@ function StoreUrlBar({ slug }: { slug: string }) {
         href={storeUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted px-2.5 py-1.5 rounded-lg transition-colors flex-shrink-0"
-        title="Open store in new tab"
+        className="flex items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white hover:bg-white/15 px-2 py-1 rounded-md transition-colors flex-shrink-0"
       >
         <ExternalLink className="w-3 h-3" />
         Visit
@@ -60,87 +57,39 @@ function StoreUrlBar({ slug }: { slug: string }) {
   );
 }
 
-function StatusBanner({ status, rejectionReason, slug, dashboardBase }: { status: string; rejectionReason?: string | null; slug?: string; dashboardBase: string }) {
-  if (status === "approved") {
-    const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-    const storeUrl = slug ? `${window.location.origin}${base}/${slug}` : null;
+function StatusBanner({ status, rejectionReason, slug, dashboardBase }: {
+  status: string; rejectionReason?: string | null; slug?: string; dashboardBase: string;
+}) {
+  if (status === "pending") {
     return (
-      <motion.div {...fadeIn} className="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 to-emerald-400/5 p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="p-2.5 rounded-xl bg-emerald-500/15 flex-shrink-0">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+      <motion.div {...fadeIn} className="rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/10 to-yellow-500/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="p-2.5 rounded-xl bg-amber-500/15 flex-shrink-0 w-fit">
+          <Clock className="w-5 h-5 text-amber-500" />
         </div>
         <div className="flex-1">
-          <p className="font-semibold text-emerald-700 dark:text-emerald-400">Your store is live and verified</p>
-          <p className="text-sm text-emerald-700/70 dark:text-emerald-400/70 mt-0.5">Buyers can discover your store and products across the marketplace.</p>
+          <h3 className="font-bold text-amber-700 dark:text-amber-400">Awaiting Admin Approval</h3>
+          <p className="text-amber-700/75 dark:text-amber-400/75 text-sm mt-0.5">
+            Your store is under review. We typically respond within 24–48 hours.
+          </p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {storeUrl && (
-            <a href={storeUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" variant="outline" className="rounded-xl gap-1.5 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10">
-                <ExternalLink className="w-3.5 h-3.5" /> View Store
-              </Button>
-            </a>
-          )}
-          <Link href={`${dashboardBase}/add-product`}>
-            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl border-0 gap-1.5">
-              <Plus className="w-4 h-4" /> Add Product
+        <div className="flex gap-2 flex-shrink-0">
+          <Link href={`${dashboardBase}/store-settings`}>
+            <Button size="sm" variant="outline" className="rounded-xl gap-1.5 border-amber-400/30 text-amber-700 hover:bg-amber-500/10 text-xs">
+              Complete Profile <ChevronRight className="w-3 h-3" />
             </Button>
           </Link>
         </div>
       </motion.div>
     );
   }
-
-  if (status === "pending") {
-    return (
-      <motion.div {...fadeIn} className="rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/10 to-yellow-500/5 p-6 mb-8">
-        <div className="flex items-start gap-4 mb-5">
-          <div className="p-2.5 rounded-xl bg-amber-500/15 flex-shrink-0">
-            <Clock className="w-5 h-5 text-amber-500" />
-          </div>
-          <div>
-            <h3 className="font-bold text-lg text-amber-700 dark:text-amber-400">Awaiting Admin Approval</h3>
-            <p className="text-amber-700/75 dark:text-amber-400/75 text-sm mt-0.5 leading-relaxed">
-              Your vendor account is being reviewed. Once approved, you can add products and your store will appear in the marketplace.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { step: 1, label: "Application Submitted", done: true },
-            { step: 2, label: "Admin Review", done: false, active: true },
-            { step: 3, label: "Store Activated", done: false },
-          ].map((s) => (
-            <div key={s.step} className={`flex items-center gap-2.5 rounded-xl p-3 border ${
-              s.done ? "bg-emerald-500/10 border-emerald-500/20" :
-              s.active ? "bg-amber-500/10 border-amber-500/25 animate-pulse" :
-              "bg-white/5 border-border/30"
-            }`}>
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${
-                s.done ? "bg-emerald-500 text-white" :
-                s.active ? "bg-amber-500 text-white" :
-                "bg-muted text-muted-foreground"
-              }`}>{s.done ? "✓" : s.step}</div>
-              <span className={`text-xs font-medium leading-tight ${
-                s.done ? "text-emerald-700 dark:text-emerald-400" :
-                s.active ? "text-amber-700 dark:text-amber-400" :
-                "text-muted-foreground"
-              }`}>{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-    );
-  }
-
   if (status === "rejected") {
     return (
-      <motion.div {...fadeIn} className="rounded-2xl border border-red-400/30 bg-gradient-to-r from-red-500/10 to-red-400/5 p-5 mb-8 flex items-start gap-4">
+      <motion.div {...fadeIn} className="rounded-2xl border border-red-400/30 bg-gradient-to-r from-red-500/10 to-red-400/5 p-5 flex items-start gap-4">
         <div className="p-2.5 rounded-xl bg-red-500/15 flex-shrink-0">
           <XCircle className="w-5 h-5 text-red-500" />
         </div>
         <div>
-          <h3 className="font-bold text-lg text-red-700 dark:text-red-400">Application Not Approved</h3>
+          <h3 className="font-bold text-red-700 dark:text-red-400">Application Not Approved</h3>
           <p className="text-red-700/75 dark:text-red-400/75 text-sm mt-0.5">
             {rejectionReason || "Your vendor application was not approved. Please contact support for more information."}
           </p>
@@ -148,15 +97,14 @@ function StatusBanner({ status, rejectionReason, slug, dashboardBase }: { status
       </motion.div>
     );
   }
-
   if (status === "suspended") {
     return (
-      <motion.div {...fadeIn} className="rounded-2xl border border-orange-400/30 bg-gradient-to-r from-orange-500/10 to-orange-400/5 p-5 mb-8 flex items-start gap-4">
+      <motion.div {...fadeIn} className="rounded-2xl border border-orange-400/30 bg-gradient-to-r from-orange-500/10 to-orange-400/5 p-5 flex items-start gap-4">
         <div className="p-2.5 rounded-xl bg-orange-500/15 flex-shrink-0">
           <AlertTriangle className="w-5 h-5 text-orange-500" />
         </div>
         <div>
-          <h3 className="font-bold text-lg text-orange-700 dark:text-orange-400">Account Suspended</h3>
+          <h3 className="font-bold text-orange-700 dark:text-orange-400">Account Suspended</h3>
           <p className="text-orange-700/75 dark:text-orange-400/75 text-sm mt-0.5">
             Your account has been suspended. Please contact our support team to resolve this.
           </p>
@@ -164,43 +112,7 @@ function StatusBanner({ status, rejectionReason, slug, dashboardBase }: { status
       </motion.div>
     );
   }
-
   return null;
-}
-
-function StatCard({
-  label, value, icon: Icon, color, bg, subtext, locked
-}: {
-  label: string; value: string | number; icon: React.ElementType;
-  color: string; bg: string; subtext?: string; locked?: boolean;
-}) {
-  return (
-    <motion.div
-      {...fadeIn}
-      className={`relative bg-card rounded-2xl p-5 border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-all ${locked ? "opacity-55" : ""}`}
-    >
-      {/* Top accent bar */}
-      <div className={`absolute top-0 left-0 right-0 h-0.5 ${bg} opacity-80`} />
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-2.5 rounded-xl ${bg}`}>
-          <Icon className={`w-5 h-5 ${color}`} />
-        </div>
-        {locked ? (
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-2 py-1 rounded-lg font-semibold uppercase tracking-wide">
-            <Lock className="w-2.5 h-2.5" /> Locked
-          </div>
-        ) : (
-          <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${bg} ${color}`}>
-            <TrendingUp className="w-2.5 h-2.5" /> Live
-          </div>
-        )}
-      </div>
-      <div className="text-3xl font-bold font-display tracking-tight">{value}</div>
-      <div className="text-sm font-semibold text-foreground mt-1">{label}</div>
-      {subtext && <div className="text-xs text-muted-foreground/60 mt-0.5">{subtext}</div>}
-      <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full ${bg} opacity-20`} />
-    </motion.div>
-  );
 }
 
 type AnalyticsData = {
@@ -225,24 +137,6 @@ function fmt(n: number) {
   return `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 }
 
-function AnalyticsKpiCard({ label, value, icon: Icon, color, bg, sub }: {
-  label: string; value: string; icon: React.ElementType; color: string; bg: string; sub?: string;
-}) {
-  return (
-    <motion.div {...fadeIn} className={`relative bg-card rounded-2xl p-5 border border-border/50 shadow-sm overflow-hidden`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-xl ${bg}`}>
-          <Icon className={`w-4.5 h-4.5 ${color}`} />
-        </div>
-      </div>
-      <div className="text-2xl font-bold font-display tracking-tight">{value}</div>
-      <div className="text-sm font-medium text-muted-foreground mt-0.5">{label}</div>
-      {sub && <div className="text-xs text-muted-foreground/55 mt-0.5">{sub}</div>}
-      <div className={`absolute -right-3 -bottom-3 w-16 h-16 rounded-full ${bg} opacity-25`} />
-    </motion.div>
-  );
-}
-
 const CHART_COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"];
 
 function SmartDashboard({ isApproved }: { isApproved: boolean }) {
@@ -265,36 +159,46 @@ function SmartDashboard({ isApproved }: { isApproved: boolean }) {
   if (!data) return null;
 
   const chartData = chartMode === "daily" ? data.dailyRevenue : data.monthlyRevenue;
-  const chartKey = chartMode === "daily" ? "label" : "label";
   const maxRevenue = Math.max(...data.topProducts.map(p => p.revenue), 1);
 
   const kpis = [
-    { label: "Total Revenue", value: fmt(data.totalRevenue), icon: IndianRupee, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", sub: "Gross from all orders" },
-    { label: "Vendor Earnings", value: fmt(data.vendorEarnings), icon: TrendingUp, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10", sub: "After 15% platform fee" },
-    { label: "Pending Orders", value: String(data.pendingOrders), icon: Clock, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10", sub: "Awaiting fulfilment" },
-    { label: "Total Orders", value: String(data.totalOrders), icon: ShoppingBag, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10", sub: "All-time order count" },
+    { label: "Total Revenue", value: fmt(data.totalRevenue), gradient: "from-emerald-500 to-teal-500", icon: IndianRupee, sub: "Gross earnings" },
+    { label: "Vendor Earnings", value: fmt(data.vendorEarnings), gradient: "from-blue-500 to-cyan-500", icon: TrendingUp, sub: "After platform fee" },
+    { label: "Pending Orders", value: String(data.pendingOrders), gradient: "from-amber-500 to-orange-500", icon: Clock, sub: "Need fulfillment" },
+    { label: "Total Orders", value: String(data.totalOrders), gradient: "from-violet-500 to-purple-600", icon: ShoppingBag, sub: "All-time count" },
   ];
 
   return (
     <motion.div {...fadeIn} className="space-y-5">
-      {/* Section Header */}
       <div className="flex items-center gap-2">
         <div className="p-1.5 rounded-lg bg-primary/10">
           <BarChart3 className="w-4 h-4 text-primary" />
         </div>
-        <h2 className="text-base font-bold">Smart Dashboard</h2>
+        <h2 className="text-base font-bold">Analytics</h2>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {kpis.map((kpi) => (
-          <AnalyticsKpiCard key={kpi.label} {...kpi} />
+        {kpis.map((kpi, i) => (
+          <motion.div
+            key={kpi.label}
+            {...fadeIn}
+            transition={{ duration: 0.35, delay: i * 0.07 }}
+            className={`relative rounded-2xl p-5 bg-gradient-to-br ${kpi.gradient} text-white overflow-hidden`}
+          >
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/10" />
+            <div className="relative">
+              <div className="p-2 rounded-xl bg-white/20 w-fit mb-3">
+                <kpi.icon className="w-4 h-4 text-white" />
+              </div>
+              <div className="text-2xl font-bold font-display tracking-tight">{kpi.value}</div>
+              <div className="text-sm font-semibold text-white mt-0.5">{kpi.label}</div>
+              <div className="text-xs text-white/65 mt-0.5">{kpi.sub}</div>
+            </div>
+          </motion.div>
         ))}
       </div>
 
-      {/* Revenue Chart + Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Revenue Chart */}
         <div className="lg:col-span-2 bg-card rounded-2xl border border-border/50 p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div>
@@ -328,7 +232,7 @@ function SmartDashboard({ isApproved }: { isApproved: boolean }) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis
-                dataKey={chartKey}
+                dataKey="label"
                 tick={{ fontSize: 10, fill: "currentColor", opacity: 0.4 }}
                 tickLine={false}
                 axisLine={false}
@@ -364,7 +268,6 @@ function SmartDashboard({ isApproved }: { isApproved: boolean }) {
           </ResponsiveContainer>
         </div>
 
-        {/* Top Products */}
         <div className="bg-card rounded-2xl border border-border/50 p-5 shadow-sm">
           <h3 className="font-bold text-sm mb-1">Top Products</h3>
           <p className="text-xs text-muted-foreground mb-4">By revenue earned</p>
@@ -380,7 +283,7 @@ function SmartDashboard({ isApproved }: { isApproved: boolean }) {
                 <div key={product.productId}>
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`}
+                      <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
                         style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}>
                         {i + 1}
                       </span>
@@ -391,10 +294,7 @@ function SmartDashboard({ isApproved }: { isApproved: boolean }) {
                   <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${(product.revenue / maxRevenue) * 100}%`,
-                        background: CHART_COLORS[i % CHART_COLORS.length]
-                      }}
+                      style={{ width: `${(product.revenue / maxRevenue) * 100}%`, background: CHART_COLORS[i % CHART_COLORS.length] }}
                     />
                   </div>
                   <p className="text-[10px] text-muted-foreground/60 mt-0.5">{product.quantity} units sold</p>
@@ -449,17 +349,11 @@ export default function VendorDashboard() {
     return (
       <DashboardLayout>
         <div className="space-y-6 p-2">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <Skeleton className="h-9 w-48 rounded-xl" />
-              <Skeleton className="h-4 w-64 rounded-lg" />
-            </div>
-            <Skeleton className="h-12 w-36 rounded-xl" />
+          <Skeleton className="h-36 w-full rounded-3xl" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
           </div>
-          <Skeleton className="h-32 w-full rounded-2xl" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}
-          </div>
+          <Skeleton className="h-72 rounded-2xl" />
         </div>
       </DashboardLayout>
     );
@@ -468,45 +362,6 @@ export default function VendorDashboard() {
   const isApproved = profile?.status === "approved";
   const isPending = profile?.status === "pending";
   const rating = profile?.rating ? parseFloat(String(profile.rating)) : 0;
-
-  const stats = [
-    {
-      label: "Total Revenue",
-      value: `₹${Number(profile?.totalSales || 0).toLocaleString("en-IN")}`,
-      icon: IndianRupee,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-500/10",
-      subtext: "Lifetime earnings",
-      locked: !isApproved,
-    },
-    {
-      label: "Products Listed",
-      value: profile?.productCount ?? 0,
-      icon: Package,
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-500/10",
-      subtext: "Active in marketplace",
-      locked: !isApproved,
-    },
-    {
-      label: "Pending Orders",
-      value: isApproved ? 0 : "—",
-      icon: ShoppingBag,
-      color: "text-violet-600 dark:text-violet-400",
-      bg: "bg-violet-500/10",
-      subtext: "Awaiting fulfillment",
-      locked: !isApproved,
-    },
-    {
-      label: "Store Rating",
-      value: isApproved ? (parseFloat(String(rating)) > 0 ? `${parseFloat(String(rating)).toFixed(1)} ★` : "New") : "—",
-      icon: Star,
-      color: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-500/10",
-      subtext: `${profile?.reviewCount ?? 0} reviews`,
-      locked: !isApproved,
-    },
-  ];
 
   const quickActions = [
     { icon: Plus, label: "Add New Product", href: `${dashboardBase}/add-product`, color: "bg-primary/10 text-primary", disabled: !isApproved },
@@ -518,135 +373,127 @@ export default function VendorDashboard() {
   const initials = (profile?.businessName || "?")
     .split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
 
+  const slug = (profile as any)?.slug;
+
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        {/* Header */}
-        <motion.div {...fadeIn} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight">{profile?.businessName || "My Store"}</h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {isApproved ? "Manage your store, products, and incoming orders." : "Complete your setup — approval needed to go live."}
-            </p>
-          </div>
-          {isApproved ? (
-            <Button className="rounded-xl h-11 px-6 shadow-md shadow-primary/20 gap-2" asChild>
-              <Link href={`${dashboardBase}/add-product`}>
-                <Plus className="w-4 h-4" /> Add Product
-              </Link>
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-semibold">
-              <Clock className="w-4 h-4" />
-              {isPending ? "Pending Approval" : profile?.status === "rejected" ? "Not Approved" : "Suspended"}
-            </div>
+      <div className="space-y-7">
+
+        {/* ── Hero Store Card ── */}
+        <motion.div {...fadeIn} className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-6 sm:p-8">
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: "radial-gradient(circle at 80% 20%, rgba(99,102,241,0.35), transparent 55%), radial-gradient(circle at 10% 80%, rgba(6,182,212,0.2), transparent 50%)"
+          }} />
+          {profile?.banner && (
+            <img src={profile.banner} alt="Banner" className="absolute inset-0 w-full h-full object-cover opacity-15 mix-blend-luminosity" />
           )}
-        </motion.div>
-
-        {/* Status Banner */}
-        <StatusBanner status={profile?.status ?? "pending"} rejectionReason={profile?.rejectionReason} slug={(profile as any)?.slug} dashboardBase={dashboardBase} />
-
-        {/* Store Profile Card */}
-        <motion.div {...fadeIn} className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
-          {/* Banner */}
-          <div className="h-36 relative overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-blue-500/10">
-            {profile?.banner ? (
-              <img src={profile.banner} alt="Banner" className="w-full h-full object-cover" />
-            ) : (
-              <div className="absolute inset-0 opacity-30" style={{
-                backgroundImage: "radial-gradient(circle at 20% 60%, rgba(99,102,241,0.6), transparent 50%), radial-gradient(circle at 80% 30%, rgba(59,130,246,0.5), transparent 50%)"
-              }} />
-            )}
-            {/* Status pill over banner */}
-            <div className={`absolute top-4 right-4 text-[11px] font-bold px-3 py-1.5 rounded-full border backdrop-blur-sm capitalize ${
-              isApproved ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300" :
-              isPending ? "bg-amber-500/20 border-amber-500/30 text-amber-300" :
-              "bg-red-500/20 border-red-500/30 text-red-300"
-            }`}>
-              {profile?.status ?? "pending"}
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-white/20 shadow-xl overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0">
+              {profile?.logo ? (
+                <img src={profile.logo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl font-extrabold text-white">{initials}</span>
+              )}
             </div>
-          </div>
-
-          <div className="px-6 pb-6">
-            {/* Logo */}
-            <div className="flex justify-between items-end -mt-10 mb-4">
-              <div className="w-20 h-20 rounded-2xl border-4 border-card shadow-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                {profile?.logo ? (
-                  <img src={profile.logo} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-extrabold text-primary">{initials}</span>
-                )}
-              </div>
-              <Button variant="outline" size="sm" className="rounded-xl gap-2" asChild>
-                <Link href={`${dashboardBase}/store-settings`}>
-                  <Store className="w-3.5 h-3.5" /> Edit Store
-                </Link>
-              </Button>
-            </div>
-
-            {/* Business name + info */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-bold leading-tight">{profile?.businessName || "Your Business"}</h2>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h1 className="text-xl sm:text-2xl font-display font-bold tracking-tight">{profile?.businessName || "My Store"}</h1>
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border capitalize ${
+                  isApproved ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300" :
+                  isPending ? "bg-amber-500/20 border-amber-500/30 text-amber-300" :
+                  "bg-red-500/20 border-red-500/30 text-red-300"
+                }`}>
+                  {profile?.status ?? "pending"}
+                </span>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-white/70 capitalize">
                   {profile?.subscriptionPlan ?? "basic"} plan
                 </span>
               </div>
-
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/60 mb-2">
                 {(profile?.city || profile?.state) && (
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                     {[profile.city, profile.state].filter(Boolean).join(", ")}
                   </span>
                 )}
                 {profile?.email && (
                   <span className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0" />
+                    <Mail className="w-3.5 h-3.5 flex-shrink-0" />
                     {profile.email}
                   </span>
                 )}
-                {profile?.phone && (
-                  <span className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0" />
-                    {profile.phone}
-                  </span>
-                )}
                 {profile?.gstNumber && (
-                  <span className="flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">GST: {profile.gstNumber}</span>
+                  <span className="flex items-center gap-1.5 text-emerald-400">
+                    <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+                    GST: {profile.gstNumber}
                   </span>
                 )}
               </div>
-
-              {profile?.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{profile.description}</p>
-              )}
-
-              {/* Store URL */}
-              {(profile as any)?.slug && (
-                <StoreUrlBar slug={(profile as any).slug} />
+              {slug && <StoreUrlBar slug={slug} />}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button variant="outline" size="sm" className="rounded-xl gap-1.5 border-white/20 text-white hover:bg-white/10 bg-transparent text-xs" asChild>
+                <Link href={`${dashboardBase}/store-settings`}>
+                  <Edit3 className="w-3.5 h-3.5" /> Edit Store
+                </Link>
+              </Button>
+              {isApproved && (
+                <Button size="sm" className="rounded-xl gap-1.5 bg-white text-slate-900 hover:bg-white/90 text-xs font-semibold" asChild>
+                  <Link href={`${dashboardBase}/add-product`}>
+                    <Plus className="w-3.5 h-3.5" /> Add Product
+                  </Link>
+                </Button>
               )}
             </div>
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, i) => (
-            <StatCard key={i} {...stat} />
-          ))}
-        </div>
+        {/* ── Status Banner (pending/rejected/suspended) ── */}
+        {!isApproved && (
+          <StatusBanner
+            status={profile?.status ?? "pending"}
+            rejectionReason={profile?.rejectionReason}
+            slug={slug}
+            dashboardBase={dashboardBase}
+          />
+        )}
 
-        {/* Smart Dashboard Analytics */}
+        {/* ── Pending Stats Grid ── */}
+        {!isApproved && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Total Revenue", value: "—", gradient: "from-emerald-500 to-teal-500", icon: IndianRupee, sub: "Locked until approval" },
+              { label: "Products Listed", value: String(profile?.productCount ?? 0), gradient: "from-blue-500 to-cyan-500", icon: Package, sub: "In your catalog" },
+              { label: "Pending Orders", value: "—", gradient: "from-amber-500 to-orange-500", icon: ShoppingBag, sub: "Locked until approval" },
+              { label: "Store Rating", value: "—", gradient: "from-violet-500 to-purple-600", icon: Star, sub: "No reviews yet" },
+            ].map((s, i) => (
+              <motion.div
+                key={i}
+                {...fadeIn}
+                transition={{ duration: 0.35, delay: i * 0.07 }}
+                className={`relative rounded-2xl p-5 bg-gradient-to-br ${s.gradient} text-white overflow-hidden opacity-50`}
+              >
+                <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/10" />
+                <div className="relative">
+                  <div className="p-2 rounded-xl bg-white/20 w-fit mb-3">
+                    <s.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-2xl font-bold font-display">{s.value}</div>
+                  <div className="text-sm font-semibold text-white mt-0.5">{s.label}</div>
+                  <div className="text-xs text-white/65 mt-0.5">{s.sub}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Smart Analytics (approved only) ── */}
         <SmartDashboard isApproved={isApproved} />
 
-        {/* Quick Actions + Tips */}
+        {/* ── Quick Actions + Tips ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Quick Actions */}
           <div className="lg:col-span-2">
-            <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
               <Zap className="w-4 h-4 text-primary" /> Quick Actions
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -656,9 +503,8 @@ export default function VendorDashboard() {
             </div>
           </div>
 
-          {/* Tips / Info Card */}
           <div>
-            <h2 className="text-base font-bold mb-4 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               {isApproved ? "Grow Your Store" : "What's Next?"}
             </h2>
