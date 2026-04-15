@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Mail, ArrowRight, Loader2, ChevronLeft } from "lucide-react";
+import { ShoppingBag, Mail, ArrowRight, Loader2, ChevronLeft, User, Store } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
@@ -23,6 +24,7 @@ export default function Login() {
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>("email");
+  const [role, setRole] = useState<"customer" | "vendor">("customer");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -122,8 +124,25 @@ export default function Login() {
             <form onSubmit={handleSendOtp} className="space-y-5">
               <div className="text-center mb-6">
                 <h1 className="text-2xl font-display font-bold mb-1">Welcome back</h1>
-                <p className="text-muted-foreground text-sm">Enter your email to receive a sign-in code</p>
+                <p className="text-muted-foreground text-sm">Sign in to your account</p>
               </div>
+
+              <Tabs value={role} onValueChange={(v) => setRole(v as "customer" | "vendor")}>
+                <TabsList className="grid w-full grid-cols-2 h-14 p-1 rounded-xl bg-secondary/50">
+                  <TabsTrigger
+                    value="customer"
+                    className="rounded-lg text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  >
+                    <User className="w-4 h-4 mr-2" /> Buy Wholesale
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="vendor"
+                    className="rounded-lg text-base font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  >
+                    <Store className="w-4 h-4 mr-2" /> Sell Products
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email address</Label>
