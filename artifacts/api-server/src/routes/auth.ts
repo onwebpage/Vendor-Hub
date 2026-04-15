@@ -4,6 +4,8 @@ import { usersTable, vendorsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { authenticate, signToken } from "../lib/auth.js";
 import { uniqueSlug } from "../lib/slugify.js";
+import { generateOtp, setOtp, verifyOtp } from "../lib/otp.js";
+import { sendEmail, otpEmailHtml } from "../lib/email.js";
 import crypto from "crypto";
 
 const router = Router();
@@ -103,6 +105,78 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ message: "Login failed" });
+  }
+});
+
+router.post("/send-otp", async (req, res) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email?.trim()) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const emailLower = email.trim().toLowerCase();
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, emailLower))
+      .limit(1);
+
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email address" });
+    }
+
+    const otp = generateOtp();
+    setOtp(emailLower, otp);
+
+    const sent = await sendEmail({
+      to: emailLower,
+      subject: "Your Vendorkart sign-in code",
+      text: `Your sign-in code is: ${otp}. It expires in 10 minutes.`,
+      html: otpEmailHtml(otp),
+    });
+
+    if (!sent) {
+      return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+    }
+
+    return res.json({ message: "OTP sent successfully" });
+  } catch (err) {
+    console.error("Send OTP error:", err);
+    return res.status(500).json({ message: "Failed to send OTP" });
+  }
+});
+
+router.post("/verify-otp", async (req, res) => {
+  try {
+    const { email, otp } = req.body as { email?: string; otp?: string };
+    if (!email?.trim() || !otp?.trim()) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const emailLower = email.trim().toLowerCase();
+    const result = verifyOtp(emailLower, otp.trim());
+
+    if (!result.valid) {
+      return res.status(401).json({ message: result.reason });
+    }
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, emailLower))
+      .limit(1);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const token = signToken({ userId: user.id, email: user.email, role: user.role });
+    return res.json({ token, user });
+  } catch (err) {
+    console.error("Verify OTP error:", err);
+    return res.status(500).json({ message: "OTP verification failed" });
   }
 });
 

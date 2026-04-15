@@ -138,6 +138,35 @@ async function sendViaSMTP(params: EmailParams): Promise<boolean> {
   }
 }
 
+export function otpEmailHtml(otp: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#18181b;padding:32px 40px;text-align:center;">
+          <span style="font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Vendor<span style="color:#a78bfa;">kart</span></span>
+        </td></tr>
+        <tr><td style="padding:40px;">
+          <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#18181b;">Your sign-in code</h2>
+          <p style="margin:0 0 32px;color:#71717a;font-size:15px;line-height:1.5;">Use the code below to sign in to your Vendorkart account. It expires in <strong>10 minutes</strong>.</p>
+          <div style="background:#f4f4f5;border-radius:12px;padding:24px;text-align:center;margin-bottom:32px;">
+            <span style="font-size:40px;font-weight:800;letter-spacing:12px;color:#18181b;font-variant-numeric:tabular-nums;">${otp}</span>
+          </div>
+          <p style="margin:0;color:#a1a1aa;font-size:13px;line-height:1.5;">If you didn't request this code, you can safely ignore this email. Never share this code with anyone.</p>
+        </td></tr>
+        <tr><td style="background:#f4f4f5;padding:20px 40px;text-align:center;">
+          <p style="margin:0;color:#a1a1aa;font-size:12px;">&copy; ${new Date().getFullYear()} Vendorkart. All rights reserved.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   if (await sendViaResend(params)) return true;
   if (await sendViaBrevo(params)) return true;
