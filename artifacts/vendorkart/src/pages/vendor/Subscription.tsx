@@ -177,7 +177,7 @@ export default function VendorSubscription() {
   const [subscribingPlanId, setSubscribingPlanId] = React.useState<number | null>(null);
 
   const { data: plans = [], isLoading: plansLoading } = useListSubscriptionPlans();
-  const { data: currentSub, isLoading: subLoading } = useGetCurrentSubscription({ query: { retry: false } });
+  const { data: currentSub, isLoading: subLoading } = useGetCurrentSubscription({ query: { retry: false } as any });
   const { data: vendorProfile } = useGetVendorProfile();
   const { mutateAsync: subscribe } = useSubscribe();
 

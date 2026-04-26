@@ -71,7 +71,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
 
   const { data: liveResults, isLoading: isSearching } = useListProducts(
     { search: debouncedQuery || undefined, limit: 5 },
-    { query: { enabled: isTyping } }
+    { query: { enabled: isTyping } as any }
   );
 
   const products = liveResults?.products ?? [];
@@ -423,12 +423,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               {/* 4. Product Listing */}
               <Link href="/products" className={nl("/products")}>{t.nav.productListing}</Link>
 
-              {/* 5. Product Details */}
-              <Link href="/products" className="px-2.5 py-2 rounded-lg hover:text-foreground hover:bg-secondary/60 transition-all whitespace-nowrap">
-                {t.nav.productDetails}
-              </Link>
-
-              {/* 6. Search + Filters — PREMIUM PILL */}
+              {/* 5. Search + Filters — PREMIUM PILL */}
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className="group relative flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/60 bg-secondary/30 hover:bg-secondary/60 hover:border-primary/30 transition-all duration-200 shadow-sm hover:shadow-md"
@@ -593,7 +588,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
               <Link href="/vendors" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/vendors" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>{t.nav.allVendors}</Link>
               <Link href="/products" className={`flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors ${location === "/products" ? "bg-secondary/60 text-primary" : ""}`} onClick={closeAll}>{t.nav.productListing}</Link>
-              <Link href="/products" className="flex items-center p-3 font-medium text-base hover:bg-secondary/60 rounded-xl transition-colors" onClick={closeAll}>{t.nav.productDetails}</Link>
 
               {/* Search + Filters premium pill in mobile menu */}
               <button

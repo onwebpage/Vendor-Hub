@@ -74,6 +74,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/products" component={Products} />
       <Route path="/products/:id" component={ProductDetail} />
+      <Route path="/categories">{() => <Redirect to="/products" />}</Route>
       <Route path="/vendors" component={Vendors} />
       <Route path="/vendors/:slug">{(params) => <Redirect to={`/${params.slug}`} />}</Route>
       <Route path="/about" component={About} />

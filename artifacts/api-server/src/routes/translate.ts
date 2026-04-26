@@ -80,10 +80,12 @@ router.post("/translate", async (req, res) => {
     const source = typeof body.source === "string" ? body.source : "en";
 
     if (!Array.isArray(texts) || typeof target !== "string") {
-      return res.status(400).json({ error: "Invalid request" });
+      res.status(400).json({ error: "Invalid request" });
+      return;
     }
     if (!SUPPORTED_TARGETS.has(target)) {
-      return res.json({ translations: texts });
+      res.json({ translations: texts });
+      return;
     }
 
     const safeTexts = texts.map((t) => (typeof t === "string" ? t : ""));

@@ -452,7 +452,7 @@ export default function VendorDashboard() {
         {!isApproved && (
           <StatusBanner
             status={profile?.status ?? "pending"}
-            rejectionReason={profile?.rejectionReason}
+            rejectionReason={(profile as any)?.rejectionReason}
             slug={slug}
             dashboardBase={dashboardBase}
           />

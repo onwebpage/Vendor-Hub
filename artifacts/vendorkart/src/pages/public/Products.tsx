@@ -206,7 +206,7 @@ export default function Products() {
   // Client-side filtering for price and MOQ (server doesn't support these yet)
   const filteredProducts = (data?.products ?? []).filter((p) => {
     const price = parseFloat(String(p.price));
-    const moq = Number(p.minOrderQty ?? 1);
+    const moq = Number(p.moq ?? 1);
     if (price < priceRange[0] || price > priceRange[1]) return false;
     if (moq > moqMax) return false;
     if (bulkOnly && moq < 10) return false;

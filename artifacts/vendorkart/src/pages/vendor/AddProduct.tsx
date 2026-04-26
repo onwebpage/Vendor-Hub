@@ -58,7 +58,7 @@ export default function AddProduct() {
   const { toast } = useToast();
   const { data: categories } = useListCategories();
   const { data: vendorProfile, isLoading: profileLoading, isError: profileError } = useGetVendorProfile();
-  const { data: currentSub } = useGetCurrentSubscription({ query: { retry: false } });
+  const { data: currentSub } = useGetCurrentSubscription({ query: { retry: false } as any });
   const { mutateAsync: createProduct, isPending } = useCreateProduct();
 
   const [productCount, setProductCount] = React.useState<number | null>(null);
@@ -200,7 +200,7 @@ export default function AddProduct() {
             {vendorProfile.status === "suspended" ? "Account Suspended" : "Account Not Approved"}
           </h2>
           <p className="text-muted-foreground mb-6 leading-relaxed">
-            {vendorProfile.rejectionReason || "Your vendor account is not active. Please contact support for assistance."}
+            {(vendorProfile as any).rejectionReason || "Your vendor account is not active. Please contact support for assistance."}
           </p>
           <Button variant="outline" onClick={() => setLocation(dashboardBase)}>
             Back to Dashboard

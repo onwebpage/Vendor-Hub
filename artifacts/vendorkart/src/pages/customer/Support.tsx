@@ -46,7 +46,7 @@ function NewTicketModal({ onClose, onCreated }: { onClose: () => void; onCreated
     }
     setSaving(true);
     try {
-      await createTicket({ data: { subject: form.subject, description: form.description, priority: form.priority } });
+      await createTicket({ data: { subject: form.subject, description: form.description, priority: form.priority as any } });
       toast({ title: "Support ticket created!", description: "Our team will respond within 24 hours." });
       onCreated();
       onClose();

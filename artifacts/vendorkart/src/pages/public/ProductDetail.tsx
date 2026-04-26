@@ -95,7 +95,7 @@ export default function ProductDetail() {
   const { mutate: removeFromWishlist, isPending: removingFromWishlist } = useRemoveFromWishlist();
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuthStore();
-  const { data: wishlistItems } = useGetWishlist({ query: { enabled: isAuthenticated && user?.role === "customer" } });
+  const { data: wishlistItems } = useGetWishlist({ query: { enabled: isAuthenticated && user?.role === "customer" } as any });
   
   const [quantity, setQuantity] = useState<number>(0);
   const [activeImage, setActiveImage] = useState<number>(0);

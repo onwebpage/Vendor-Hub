@@ -229,7 +229,7 @@ export default function VendorStore() {
                 {vendor.isFeatured && (
                   <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-[10px] font-semibold">Featured</Badge>
                 )}
-                {vendor.subscriptionPlan && vendor.subscriptionPlan !== "free" && (
+                {vendor.subscriptionPlan && (
                   <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/25 text-[10px] font-semibold capitalize">
                     <Award className="w-2.5 h-2.5 mr-1" />{vendor.subscriptionPlan}
                   </Badge>

@@ -8,6 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
+  setUser: (user: User) => void;
 }
 
 const storedUser = localStorage.getItem('vendorkart_user');
@@ -36,5 +37,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('vendorkart_token');
     setAuthTokenGetter(null);
     set({ user: null, token: null, isAuthenticated: false });
+  },
+
+  setUser: (user) => {
+    localStorage.setItem('vendorkart_user', JSON.stringify(user));
+    set({ user, isAuthenticated: true });
   },
 }));
