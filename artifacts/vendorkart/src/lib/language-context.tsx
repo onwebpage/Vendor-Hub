@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { autoTranslator } from "./auto-translate";
 
 export type Language = "en" | "hi" | "bn";
 
@@ -629,6 +630,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLanguageState(lang);
     localStorage.setItem(STORAGE_KEY, lang);
   };
+
+  useEffect(() => {
+    autoTranslator.init();
+  }, []);
+
+  useEffect(() => {
+    autoTranslator.setLanguage(language);
+  }, [language]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t: translations[language] }}>

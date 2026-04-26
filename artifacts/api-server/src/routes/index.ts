@@ -18,6 +18,7 @@ import adminRouter from "./admin.js";
 import contactRouter from "./contact.js";
 import teamRouter from "./team.js";
 import legalRouter from "./legal.js";
+import translateRouter from "./translate.js";
 
 const router = Router();
 
@@ -40,5 +41,6 @@ router.use("/admin", adminRouter);
 router.use("/contact", contactRouter);
 router.use("/team", teamRouter);
 router.use("/legal", legalRouter);
+router.use(translateRouter);
 
 export default router;
