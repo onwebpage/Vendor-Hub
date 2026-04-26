@@ -40,7 +40,7 @@ const CATEGORIES = [
 
 export default function CustomerDashboard() {
   const { data: user } = useGetMe();
-  const { data: ordersData } = useListOrders({ page: 1 });
+  const { data: ordersData } = useListOrders({ page: 1, limit: 5 } as any);
   const { data: cart } = useGetCart();
   const { data: wishlist } = useGetWishlist();
 

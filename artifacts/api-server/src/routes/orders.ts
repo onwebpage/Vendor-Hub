@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { ordersTable, cartItemsTable, addressesTable, usersTable, couponsTable, productsTable, vendorsTable } from "@workspace/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { authenticate, requireRole } from "../lib/auth.js";
 import { generateOrderNumber } from "../lib/slugify.js";
 import { logEmail } from "../lib/email-log.js";
@@ -14,20 +14,26 @@ router.get("/", authenticate, async (req, res) => {
   try {
     const userId = (req as any).userId;
     const userRole = (req as any).userRole;
-    const page = Number(req.query.page) || 1;
-    const limit = 10;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
     const offset = (page - 1) * limit;
 
     let orders;
+    let total: number;
     if (userRole === "admin") {
       orders = await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt)).limit(limit).offset(offset);
+      const [{ value }] = await db.select({ value: count() }).from(ordersTable);
+      total = Number(value);
     } else {
       orders = await db.select().from(ordersTable)
         .where(eq(ordersTable.customerId, userId))
         .orderBy(desc(ordersTable.createdAt)).limit(limit).offset(offset);
+      const [{ value }] = await db.select({ value: count() }).from(ordersTable)
+        .where(eq(ordersTable.customerId, userId));
+      total = Number(value);
     }
 
-    return res.json({ orders, total: orders.length, page });
+    return res.json({ orders, total, page });
   } catch (err) {
     return res.status(500).json({ message: "Failed to list orders" });
   }

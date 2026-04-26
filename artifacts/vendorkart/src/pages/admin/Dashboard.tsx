@@ -1,6 +1,6 @@
 import React from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useGetAdminStats, useListAllVendors, useApproveVendor } from "@workspace/api-client-react";
+import { useGetAdminStats, useListAllVendors, useApproveVendor, useRejectVendor } from "@workspace/api-client-react";
 import { Users, Store, Package, IndianRupee, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   // Fetch pending vendors specifically for the quick approval widget
   const { data: vendorsData, refetch: refetchVendors } = useListAllVendors({ status: 'pending' });
   const { mutate: approveVendor } = useApproveVendor();
+  const { mutate: rejectVendor } = useRejectVendor();
   const { toast } = useToast();
 
   const handleApprove = (id: number) => {
@@ -21,6 +22,21 @@ export default function AdminDashboard() {
         refetchVendors();
       }
     });
+  };
+
+  const handleReject = (id: number, businessName: string) => {
+    const reason = window.prompt(`Reject ${businessName}? Optionally enter a reason:`, "");
+    if (reason === null) return;
+    rejectVendor(
+      { id, data: { reason: reason || undefined } as any },
+      {
+        onSuccess: () => {
+          toast({ title: "Vendor Rejected", variant: "destructive" });
+          refetchVendors();
+        },
+        onError: () => toast({ title: "Failed to reject vendor", variant: "destructive" }),
+      }
+    );
   };
 
   if (isLoading) return <DashboardLayout><div className="p-8"><Skeleton className="h-64 w-full rounded-3xl" /></div></DashboardLayout>;
@@ -67,7 +83,7 @@ export default function AdminDashboard() {
                     <p className="text-sm text-muted-foreground">{vendor.email} • {vendor.city}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="rounded-lg text-destructive hover:bg-destructive hover:text-destructive-foreground">
+                    <Button size="sm" variant="outline" className="rounded-lg text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => handleReject(vendor.id, vendor.businessName)}>
                       Reject
                     </Button>
                     <Button size="sm" className="rounded-lg bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(vendor.id)}>

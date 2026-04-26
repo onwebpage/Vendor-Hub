@@ -46,8 +46,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   }, [vendorBase, location, user?.role]);
 
+  React.useEffect(() => {
+    if (!user) {
+      setLocation("/login", { replace: true });
+    }
+  }, [user, setLocation]);
+
   if (!user) {
-    setLocation("/login");
     return null;
   }
 
