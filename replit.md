@@ -60,6 +60,8 @@ Custom email-OTP flow (Clerk has been fully removed):
 - pnpm version pinned to 10.26.1 (matches installed Replit version)
 - `COREPACK_ENABLE_AUTO_PIN=0 COREPACK_ENABLE_PROJECT_SPEC=0` flags used to bypass corepack version enforcement
 - Windows-specific packages (`@rollup/rollup-win32-x64-msvc`, etc.) removed from root devDependencies
+- **Database**: Migrated from external Railway PostgreSQL to Replit-native PostgreSQL (helium). DB connection uses PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE env vars with `ssl: false`. drizzle-kit uses `drizzle.config.cjs` (CJS format) for schema pushes.
+- **Schema push**: Run `pnpm --filter @workspace/db run push` to sync schema to Replit DB
 
 ## Admin Panel Features
 

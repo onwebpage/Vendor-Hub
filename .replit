@@ -34,7 +34,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm dev"
+args = "COREPACK_ENABLE_AUTO_PIN=0 COREPACK_ENABLE_PROJECT_SPEC=0 pnpm dev"
 waitForPort = 5000
 
 [[ports]]
@@ -44,10 +44,6 @@ externalPort = 3000
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 18177
-externalPort = 3003
 
 [deployment]
 deploymentTarget = "autoscale"
