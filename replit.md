@@ -20,7 +20,7 @@ This is a **pnpm monorepo** with a unified Express + Vite dev server:
 
 - **Frontend**: React 19, TypeScript, Vite 7, Tailwind CSS 4, Radix UI, TanStack Query, Zustand, Wouter
 - **Backend**: Express 5, Node.js 22, Pino logger
-- **Database**: Supabase PostgreSQL via `pg` driver (connection pooler, Transaction mode). Drizzle ORM is the primary query layer. `@supabase/supabase-js` client is also available for realtime, storage, and convenience queries.
+- **Database**: Replit PostgreSQL (built-in) via `pg` driver. Drizzle ORM is the primary query layer. Connection uses `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` environment variables provided by Replit.
 - **Auth**: Custom JWT-based OTP authentication (no Clerk). 6-digit OTP via Resend email, 10-min expiry, JWT tokens (7-day) signed with `JWT_SECRET`.
 - **Payments**: Razorpay
 - **Email**: Resend API (secret: `RESEND_API_KEY`; from address configurable via `RESEND_FROM_EMAIL` env var, defaults to `VendorKart <onboarding@resend.dev>`)
@@ -37,8 +37,8 @@ In **production**, the unified Express server (`artifacts/api-server`) serves bo
 
 ## Environment Variables
 
-- `DATABASE_URL` — PostgreSQL connection string (stored as Replit secret)
-- `JWT_SECRET` — Secret key for signing JWT auth tokens (env var, auto-generated on first setup)
+- `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` — Replit PostgreSQL credentials (managed automatically by Replit)
+- `JWT_SECRET` — Secret key for signing JWT auth tokens (set in `.replit` userenv shared)
 - `RESEND_API_KEY` — Resend API key for OTP emails (stored as Replit secret). Without it, OTPs are printed to server logs (dev only).
 - `RESEND_FROM_EMAIL` — (optional) Custom from address e.g. `VendorKart <hello@yourdomain.com>`, defaults to `VendorKart <onboarding@resend.dev>`
 - `PORT` — Server port (set to 5000)
@@ -59,11 +59,9 @@ Custom email-OTP flow (Clerk has been fully removed):
 - Node.js 22 module installed
 - pnpm version pinned to 10.26.1 (matches installed Replit version)
 - `COREPACK_ENABLE_AUTO_PIN=0 COREPACK_ENABLE_PROJECT_SPEC=0` flags used to bypass corepack version enforcement
-- Windows-specific packages (`@rollup/rollup-win32-x64-msvc`, etc.) removed from root devDependencies
-- **Database**: Migrated to Supabase PostgreSQL. Connection uses `SUPABASE_DB_URL` (Transaction mode pooler, port 6543) with `ssl: { rejectUnauthorized: false }`. drizzle-kit uses `drizzle.config.cjs` (CJS format) for schema pushes.
-- **Schema push**: Run `pnpm --filter @workspace/db run push` to sync Drizzle schema to Supabase
-- **Supabase client**: `lib/db/src/supabase.ts` exports `supabase` (anon key) and `supabaseAdmin` (service role). Import via `@workspace/db/supabase`. Examples in `artifacts/api-server/src/lib/supabase-examples.ts`.
-- **Supabase secrets**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`
+- **Database**: Uses Replit's built-in PostgreSQL. Connection prioritizes `PGHOST` env var (auto-set by Replit). drizzle-kit uses `drizzle.config.cjs` (CJS format) for schema pushes.
+- **Schema push**: Run `pnpm --filter @workspace/db run push` to sync Drizzle schema to the Replit PostgreSQL
+- **DB connection priority**: `PGHOST` > `DATABASE_URL` > `SUPABASE_DB_URL` (updated in `lib/db/src/index.ts` and `lib/db/drizzle.config.cjs`)
 
 ## Admin Panel Features
 
