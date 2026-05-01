@@ -14,6 +14,12 @@ function isValidUrl(str: string): boolean {
 }
 
 function getPoolConfig(): pg.PoolConfig {
+  if (process.env.SUPABASE_DB_URL && isValidUrl(process.env.SUPABASE_DB_URL)) {
+    return {
+      connectionString: process.env.SUPABASE_DB_URL,
+      ssl: { rejectUnauthorized: false },
+    };
+  }
   if (process.env.PGHOST) {
     return {
       host: process.env.PGHOST,
@@ -27,14 +33,8 @@ function getPoolConfig(): pg.PoolConfig {
   if (process.env.DATABASE_URL && isValidUrl(process.env.DATABASE_URL)) {
     return { connectionString: process.env.DATABASE_URL };
   }
-  if (process.env.SUPABASE_DB_URL && isValidUrl(process.env.SUPABASE_DB_URL)) {
-    return {
-      connectionString: process.env.SUPABASE_DB_URL,
-      ssl: { rejectUnauthorized: false },
-    };
-  }
   throw new Error(
-    "PGHOST, DATABASE_URL, or SUPABASE_DB_URL must be set.",
+    "SUPABASE_DB_URL, PGHOST, or DATABASE_URL must be set.",
   );
 }
 
