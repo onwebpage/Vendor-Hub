@@ -20,7 +20,7 @@ This is a **pnpm monorepo** with a unified Express + Vite dev server:
 
 - **Frontend**: React 19, TypeScript, Vite 7, Tailwind CSS 4, Radix UI, TanStack Query, Zustand, Wouter
 - **Backend**: Express 5, Node.js 22, Pino logger
-- **Database**: PostgreSQL via `pg` driver, Drizzle ORM
+- **Database**: Supabase PostgreSQL via `pg` driver (connection pooler, Transaction mode). Drizzle ORM is the primary query layer. `@supabase/supabase-js` client is also available for realtime, storage, and convenience queries.
 - **Auth**: Custom JWT-based OTP authentication (no Clerk). 6-digit OTP via Resend email, 10-min expiry, JWT tokens (7-day) signed with `JWT_SECRET`.
 - **Payments**: Razorpay
 - **Email**: Resend API (secret: `RESEND_API_KEY`; from address configurable via `RESEND_FROM_EMAIL` env var, defaults to `VendorKart <onboarding@resend.dev>`)
@@ -60,8 +60,10 @@ Custom email-OTP flow (Clerk has been fully removed):
 - pnpm version pinned to 10.26.1 (matches installed Replit version)
 - `COREPACK_ENABLE_AUTO_PIN=0 COREPACK_ENABLE_PROJECT_SPEC=0` flags used to bypass corepack version enforcement
 - Windows-specific packages (`@rollup/rollup-win32-x64-msvc`, etc.) removed from root devDependencies
-- **Database**: Migrated from external Railway PostgreSQL to Replit-native PostgreSQL (helium). DB connection uses PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE env vars with `ssl: false`. drizzle-kit uses `drizzle.config.cjs` (CJS format) for schema pushes.
-- **Schema push**: Run `pnpm --filter @workspace/db run push` to sync schema to Replit DB
+- **Database**: Migrated to Supabase PostgreSQL. Connection uses `SUPABASE_DB_URL` (Transaction mode pooler, port 6543) with `ssl: { rejectUnauthorized: false }`. drizzle-kit uses `drizzle.config.cjs` (CJS format) for schema pushes.
+- **Schema push**: Run `pnpm --filter @workspace/db run push` to sync Drizzle schema to Supabase
+- **Supabase client**: `lib/db/src/supabase.ts` exports `supabase` (anon key) and `supabaseAdmin` (service role). Import via `@workspace/db/supabase`. Examples in `artifacts/api-server/src/lib/supabase-examples.ts`.
+- **Supabase secrets**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`
 
 ## Admin Panel Features
 
