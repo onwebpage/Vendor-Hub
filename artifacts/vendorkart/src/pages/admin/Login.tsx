@@ -20,26 +20,21 @@ export default function AdminLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    if (username !== "admin") {
-      setError("Invalid username or password.");
-      return;
-    }
-
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/auth/login`, {
+      const res = await fetch(`${BASE}/api/auth/admin-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "admin@vendorkart.com", password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        setError("Invalid username or password.");
+        setError(data.message || "Invalid username or password.");
         return;
       }
 
-      const data = await res.json();
       if (data.user?.role !== "admin") {
         setError("Access denied. Admin privileges required.");
         return;

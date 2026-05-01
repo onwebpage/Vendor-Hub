@@ -108,6 +108,39 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post("/admin-login", async (req, res) => {
+  try {
+    const { username, password } = req.body as { username?: string; password?: string };
+    if (!username?.trim() || !password) {
+      return res.status(400).json({ message: "Username and password are required" });
+    }
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"))
+      .limit(1);
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    if (user.name?.toLowerCase() !== username.trim().toLowerCase()) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    const token = signToken({ userId: user.id, email: user.email, role: user.role });
+    return res.json({ token, user });
+  } catch (err) {
+    console.error("Admin login error:", err);
+    return res.status(500).json({ message: "Login failed" });
+  }
+});
+
 router.post("/send-otp", async (req, res) => {
   try {
     const { email } = req.body as { email?: string };

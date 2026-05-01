@@ -10,7 +10,8 @@ import {
   Mail, Phone, User, BookOpen, Building2, HeadphonesIcon, ChevronDown, ChevronUp,
   Image, Globe, Trash2, Plus, Percent, BarChart3, FileText, Zap, Crown, PieChart,
   X, ImageIcon, Loader2, Pencil, AlertTriangle, UserCircle2, Linkedin, Twitter,
-  Github, Instagram, GripVertical, ArrowUp, ArrowDown, EyeOff
+  Github, Instagram, GripVertical, ArrowUp, ArrowDown, EyeOff,
+  KeyRound, Lock, ShieldCheck
 } from "lucide-react";
 import { useRef } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -3486,6 +3487,211 @@ function LegalPagesPanel() {
   );
 }
 
+// ─── ADMIN CREDENTIALS / SETTINGS ────────────────────────────────────────────
+function AdminCredentialsPanel() {
+  const { token, logout } = useAdminAuthStore();
+  const [currentUsername, setCurrentUsername] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    fetch(`${BASE}/api/admin/settings/credentials`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.username) setCurrentUsername(d.username); })
+      .catch(() => {});
+  }, [token]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (newPassword && newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    if (newPassword && newPassword.length < 6) {
+      setError("New password must be at least 6 characters.");
+      return;
+    }
+    if (!newUsername.trim() && !newPassword) {
+      setError("Enter a new username or a new password to save.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`${BASE}/api/admin/settings/credentials`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          currentPassword,
+          newUsername: newUsername.trim() || undefined,
+          newPassword: newPassword || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Failed to update credentials.");
+        return;
+      }
+      setSuccess("Credentials updated! Please log in again with your new credentials.");
+      setCurrentPassword("");
+      setNewUsername("");
+      setNewPassword("");
+      setConfirmPassword("");
+      if (data.username) setCurrentUsername(data.username);
+      setTimeout(() => { logout(); setLocation("/admin-login"); }, 2500);
+    } catch {
+      setError("Connection error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-xl space-y-6">
+      {/* Info card */}
+      <div className="bg-white/3 rounded-3xl border border-white/8 p-6">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="p-2.5 rounded-xl bg-indigo-500/10">
+            <ShieldCheck className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
+            <p className="text-white font-semibold text-sm">Current Admin Account</p>
+            <p className="text-white/40 text-xs mt-0.5">
+              Username: <span className="text-indigo-300 font-mono">{currentUsername || "…"}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Change form */}
+      <div className="bg-white/3 rounded-3xl border border-white/8 p-6">
+        <h2 className="text-white font-bold text-base mb-5 flex items-center gap-2">
+          <KeyRound className="w-4 h-4 text-indigo-400" /> Update Credentials
+        </h2>
+        <form onSubmit={handleSave} className="space-y-4">
+          {/* Current password */}
+          <div>
+            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
+              Current Password <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Input
+                type={showCurrent ? "text" : "password"}
+                placeholder="Enter your current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                className="pl-10 pr-11 h-11 rounded-xl bg-white/6 border-white/12 text-white placeholder:text-white/25 focus:border-indigo-500/60"
+              />
+              <button type="button" onClick={() => setShowCurrent(!showCurrent)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="border-t border-white/6 pt-4">
+            <p className="text-white/30 text-xs mb-4">Leave a field blank to keep it unchanged.</p>
+
+            {/* New username */}
+            <div className="mb-4">
+              <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
+                New Username
+              </label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <Input
+                  type="text"
+                  placeholder={`Current: ${currentUsername || "admin"}`}
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  className="pl-10 h-11 rounded-xl bg-white/6 border-white/12 text-white placeholder:text-white/25 focus:border-indigo-500/60"
+                />
+              </div>
+            </div>
+
+            {/* New password */}
+            <div className="mb-4">
+              <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
+                New Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <Input
+                  type={showNew ? "text" : "password"}
+                  placeholder="Enter new password (min. 6 chars)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pl-10 pr-11 h-11 rounded-xl bg-white/6 border-white/12 text-white placeholder:text-white/25 focus:border-indigo-500/60"
+                />
+                <button type="button" onClick={() => setShowNew(!showNew)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                  {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm password */}
+            <div>
+              <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <Input
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="Re-enter new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 pr-11 h-11 rounded-xl bg-white/6 border-white/12 text-white placeholder:text-white/25 focus:border-indigo-500/60"
+                />
+                <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
+            </div>
+          )}
+          {success && (
+            <div className="flex items-center gap-2 text-emerald-400 text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> {success}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            disabled={saving || !!success}
+            className="w-full h-11 rounded-xl font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 border-0 shadow-lg shadow-indigo-500/20 transition-all"
+          >
+            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : "Save Changes"}
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const SECTIONS: Record<string, { title: string; component: React.ElementType }> = {
   "/admin": { title: "Dashboard Overview", component: Overview },
@@ -3509,6 +3715,7 @@ const SECTIONS: Record<string, { title: string; component: React.ElementType }> 
   "/admin/emails": { title: "Email System", component: EmailLogsPanel },
   "/admin/contact": { title: "Contact Messages", component: ContactMessagesPanel },
   "/admin/activity": { title: "Activity Logs", component: ActivityLogsPanel },
+  "/admin/settings": { title: "Admin Settings", component: AdminCredentialsPanel },
 };
 
 export default function AdminPanel() {

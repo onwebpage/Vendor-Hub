@@ -2,7 +2,7 @@ import "./load-env";
 import http from "node:http";
 import { pool } from "@workspace/db";
 import app, { setupFrontend } from "./app";
-
+import { seedAdminUser } from "./lib/seed-admin.js";
 import { logger } from "./lib/logger";
 
 const rawPort = process.env["PORT"];
@@ -34,6 +34,7 @@ httpServer.listen(port, "0.0.0.0", () => {
     },
     "Auth Config",
   );
+  void seedAdminUser();
 });
 
 function shutdown(signal: string) {

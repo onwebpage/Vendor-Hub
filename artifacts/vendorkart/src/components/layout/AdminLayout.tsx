@@ -32,6 +32,7 @@ const NAV = [
   { icon: Mail, label: "Emails", href: "/admin/emails" },
   { icon: MessageSquare, label: "Contact", href: "/admin/contact" },
   { icon: Activity, label: "Activity", href: "/admin/activity" },
+  { icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
 
 function SidebarContent({

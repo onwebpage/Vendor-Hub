@@ -1,4 +1,5 @@
 import { Router } from "express";
+import crypto from "crypto";
 import { db } from "@workspace/db";
 import {
   vendorsTable, usersTable, productsTable, ordersTable, couponsTable,
@@ -1016,6 +1017,86 @@ router.delete("/team-members/:id", async (req, res) => {
     return res.json({ message: "Team member deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to delete team member" });
+  }
+});
+
+// ─── Admin Credentials ────────────────────────────────────────────────────────
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const candidate = crypto.scryptSync(password, salt, 64).toString("hex");
+  return crypto.timingSafeEqual(Buffer.from(hash, "hex"), Buffer.from(candidate, "hex"));
+}
+
+router.get("/settings/credentials", async (req, res) => {
+  try {
+    const [admin] = await db
+      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"))
+      .limit(1);
+    if (!admin) return res.status(404).json({ message: "Admin user not found" });
+    return res.json({ username: admin.name, email: admin.email });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch credentials" });
+  }
+});
+
+router.put("/settings/credentials", async (req, res) => {
+  try {
+    const { currentPassword, newUsername, newPassword } = req.body as {
+      currentPassword?: string;
+      newUsername?: string;
+      newPassword?: string;
+    };
+
+    if (!currentPassword) {
+      return res.status(400).json({ message: "Current password is required" });
+    }
+    if (!newUsername?.trim() && !newPassword) {
+      return res.status(400).json({ message: "Provide a new username or password to update" });
+    }
+
+    const [admin] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"))
+      .limit(1);
+
+    if (!admin) return res.status(404).json({ message: "Admin user not found" });
+
+    if (!admin.passwordHash || !verifyPassword(currentPassword, admin.passwordHash)) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    const updates: Partial<typeof usersTable.$inferInsert> = { updatedAt: new Date() };
+
+    if (newUsername?.trim()) {
+      updates.name = newUsername.trim();
+    }
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "New password must be at least 6 characters" });
+      }
+      updates.passwordHash = hashPassword(newPassword);
+    }
+
+    const [updated] = await db
+      .update(usersTable)
+      .set(updates)
+      .where(eq(usersTable.id, admin.id))
+      .returning({ id: usersTable.id, name: usersTable.name, email: usersTable.email });
+
+    logActivity({ action: "admin_credentials_updated", resource: "admin", details: "Admin credentials updated" });
+    return res.json({ message: "Credentials updated successfully", username: updated.name, email: updated.email });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update credentials" });
   }
 });
 
