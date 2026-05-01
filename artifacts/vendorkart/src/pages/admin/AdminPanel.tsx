@@ -3546,13 +3546,14 @@ function AdminCredentialsPanel() {
         setError(data.message || "Failed to update credentials.");
         return;
       }
-      setSuccess("Credentials updated! Please log in again with your new credentials.");
+      const updatedUsername = data.username || currentUsername;
+      setSuccess(`Credentials saved! Logging you out — sign in with username "${updatedUsername}".`);
       setCurrentPassword("");
       setNewUsername("");
       setNewPassword("");
       setConfirmPassword("");
       if (data.username) setCurrentUsername(data.username);
-      setTimeout(() => { logout(); setLocation("/admin-login"); }, 2500);
+      setTimeout(() => { logout(); setLocation("/admin-login"); }, 3500);
     } catch {
       setError("Connection error. Please try again.");
     } finally {
