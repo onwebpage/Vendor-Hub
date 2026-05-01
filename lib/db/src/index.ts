@@ -5,6 +5,12 @@ import * as schema from "./schema";
 const { Pool } = pg;
 
 function getPoolConfig(): pg.PoolConfig {
+  if (process.env.SUPABASE_DB_URL) {
+    return {
+      connectionString: process.env.SUPABASE_DB_URL,
+      ssl: { rejectUnauthorized: false },
+    };
+  }
   if (process.env.PGHOST) {
     return {
       host: process.env.PGHOST,
@@ -17,7 +23,7 @@ function getPoolConfig(): pg.PoolConfig {
   }
   if (!process.env.DATABASE_URL) {
     throw new Error(
-      "DATABASE_URL must be set. Did you forget to provision a database?",
+      "SUPABASE_DB_URL or DATABASE_URL must be set.",
     );
   }
   return { connectionString: process.env.DATABASE_URL };
