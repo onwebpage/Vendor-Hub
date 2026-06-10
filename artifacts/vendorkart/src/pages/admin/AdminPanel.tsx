@@ -2294,23 +2294,109 @@ function ContactInfoPanel() {
 }
 
 // ─── BANNERS ──────────────────────────────────────────────────────────────────
+function BannerImageDropzone({ value, onChange, token }: { value: string; onChange: (url: string) => void; token: string | null }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(value);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setPreview(URL.createObjectURL(file));
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await fetch(`${BASE}/api/admin/banners/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.url) { onChange(data.url); setPreview(data.url); }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  };
+
+  return (
+    <div className="col-span-2">
+      <label className="text-white/50 text-xs mb-1 block">Banner Image</label>
+      <div
+        onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={onDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`relative w-full rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden
+          ${isDragging ? "border-indigo-400 bg-indigo-500/10" : "border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/8"}`}
+        style={{ minHeight: preview ? 120 : 88 }}
+      >
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+        {preview ? (
+          <div className="relative group">
+            <img src={preview} alt="preview" className="w-full h-32 object-cover" />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <p className="text-white text-xs font-medium">Click or drop to replace</p>
+            </div>
+            {uploading && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); setPreview(""); onChange(""); }}
+              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-6 gap-2">
+            {uploading ? <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" /> : <ImageIcon className="w-6 h-6 text-white/25" />}
+            <p className="text-white/40 text-xs text-center">
+              {uploading ? "Uploading…" : isDragging ? "Drop image here" : "Drag & drop or click to upload"}
+            </p>
+            <p className="text-white/20 text-[10px]">PNG, JPG, WebP · max 5MB</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function BannersPanel() {
   const { data: banners, loading } = useAdminFetch<any[]>("/api/admin/banners");
   const { token } = useAdminAuthStore();
   const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ title: "", subtitle: "", imageUrl: "", linkUrl: "", position: "home_top", isActive: true });
   const setF = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
+  const resetForm = () => setForm({ title: "", subtitle: "", imageUrl: "", linkUrl: "", position: "home_top", isActive: true });
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch(`${BASE}/api/admin/banners`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setShowForm(false);
-    setForm({ title: "", subtitle: "", imageUrl: "", linkUrl: "", position: "home_top", isActive: true });
-    window.location.reload();
+    setSubmitting(true);
+    try {
+      await fetch(`${BASE}/api/admin/banners`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      setShowForm(false);
+      resetForm();
+      window.location.reload();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleToggle = async (b: any) => {
@@ -2323,6 +2409,7 @@ function BannersPanel() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!confirm("Delete this banner?")) return;
     await fetch(`${BASE}/api/admin/banners/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
     window.location.reload();
   };
@@ -2333,7 +2420,7 @@ function BannersPanel() {
     <div className="space-y-5">
       <div className="flex justify-between items-center">
         <p className="text-white/60 text-sm">Manage promotional banners shown across the marketplace.</p>
-        <Button onClick={() => setShowForm(!showForm)} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9">
+        <Button onClick={() => { setShowForm(!showForm); resetForm(); }} className="rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 h-9">
           <Plus className="w-4 h-4" /> Add Banner
         </Button>
       </div>
@@ -2342,29 +2429,38 @@ function BannersPanel() {
         <form onSubmit={handleCreate} className="bg-white/3 rounded-2xl border border-indigo-500/25 p-6 space-y-4">
           <h3 className="text-white font-bold">New Banner</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2"><label className="text-white/50 text-xs mb-1 block">Title *</label>
-              <Input value={form.title} onChange={e => setF("title", e.target.value)} placeholder="Summer Sale — Up to 40% Off" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required /></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Subtitle</label>
-              <Input value={form.subtitle} onChange={e => setF("subtitle", e.target.value)} placeholder="Shop wholesale deals now" className="bg-white/5 border-white/10 text-white rounded-xl h-9" /></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Position</label>
+            <div className="col-span-2">
+              <label className="text-white/50 text-xs mb-1 block">Title *</label>
+              <Input value={form.title} onChange={e => setF("title", e.target.value)} placeholder="Summer Sale — Up to 40% Off" className="bg-white/5 border-white/10 text-white rounded-xl h-9" required />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Subtitle</label>
+              <Input value={form.subtitle} onChange={e => setF("subtitle", e.target.value)} placeholder="Shop wholesale deals now" className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Position</label>
               <select value={form.position} onChange={e => setF("position", e.target.value)} className="w-full h-9 rounded-xl bg-white/5 border border-white/10 text-white px-3 text-sm">
                 <option value="home_top">Homepage Top</option>
                 <option value="home_mid">Homepage Middle</option>
                 <option value="category_top">Category Page</option>
                 <option value="product_top">Product Page</option>
-              </select></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Image URL</label>
-              <Input value={form.imageUrl} onChange={e => setF("imageUrl", e.target.value)} placeholder="https://..." className="bg-white/5 border-white/10 text-white rounded-xl h-9" /></div>
-            <div><label className="text-white/50 text-xs mb-1 block">Link URL</label>
-              <Input value={form.linkUrl} onChange={e => setF("linkUrl", e.target.value)} placeholder="/products" className="bg-white/5 border-white/10 text-white rounded-xl h-9" /></div>
+              </select>
+            </div>
+            <BannerImageDropzone value={form.imageUrl} onChange={url => setF("imageUrl", url)} token={token} />
+            <div>
+              <label className="text-white/50 text-xs mb-1 block">Link URL</label>
+              <Input value={form.linkUrl} onChange={e => setF("linkUrl", e.target.value)} placeholder="/products" className="bg-white/5 border-white/10 text-white rounded-xl h-9" />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" id="bannerActive" checked={form.isActive} onChange={e => setF("isActive", e.target.checked)} className="w-4 h-4" />
             <label htmlFor="bannerActive" className="text-white/60 text-sm cursor-pointer">Active (visible on site)</label>
           </div>
           <div className="flex gap-3 justify-end">
-            <Button type="button" variant="ghost" onClick={() => setShowForm(false)} className="rounded-xl text-white/50 h-9">Cancel</Button>
-            <Button type="submit" className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9">Create Banner</Button>
+            <Button type="button" variant="ghost" onClick={() => { setShowForm(false); resetForm(); }} className="rounded-xl text-white/50 h-9">Cancel</Button>
+            <Button type="submit" disabled={submitting} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 h-9 gap-2">
+              {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Create Banner
+            </Button>
           </div>
         </form>
       )}

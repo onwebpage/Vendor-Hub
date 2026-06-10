@@ -49,6 +49,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api", router);
+app.use("/uploads", express.static(path.resolve(__dirname, "../../api-server/public/uploads")));
 
 export async function setupFrontend(httpServer: HttpServer) {
   if (isDev) {
